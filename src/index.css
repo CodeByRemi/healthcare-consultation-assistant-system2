@@ -9,11 +9,6 @@
   --text:#ffffff;
 }
 
-body{
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  color: var(--text);
-  background: var(--bg-dark);
-}
 
 /***** Utilities mapped to classnames used in components *****/
 .bg-background-dark{ background: var(--bg-dark); }

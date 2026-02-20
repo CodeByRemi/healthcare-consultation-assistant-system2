@@ -1,40 +1,51 @@
-import { useNavigate } from "react-router-dom";
-
 export default function Navbar() {
-  const navigate = useNavigate();
-
-  const handleNavClick = (item: string) => {
-    if (item === "Login") {
-      navigate("/choose-path");
-    }
-  };
-
   return (
-    <nav className="absolute w-full top-0 z-50 py-6">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwGxHeUaYhBFlm1FiEDBlhJgd4Ll4hcaEI0dbgBRDE2tTjLHwzT_Is4u-OcH5V9PVb0qc4xE1Iuaj1Bs3L3XjhoD4MkxLkKKX2sOHIJu8J5G7RNiiZ9EEQbfXZ0RVWp1xgSYPBJJEjcJ7muFBTwBgRdrbCr6Nc5iKdfwI3PUaYUneVk08jaEpwJsA4X0rh_KooINYMU4jHaDO7ivnpNmX1XQR8K7Q0bIb2a3G91zMP0wltAuChzDOzL9JqkuAH2tQ2IB_5UNX0_Gk"
-            alt="Medicare Logo"
-            className="h-8 opacity-80"
+    <nav className="fixed w-full top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex justify-between items-center">
+        
+        {/* Logo */}
+        <div className="flex items-center gap-2">
+          <div
+            className="w-4 h-4 rounded-sm bg-[#2D8CFF]"
+            aria-hidden="true"
           />
-          <span className="text-xl font-bold tracking-widest uppercase text-primary">
+          <span className="text-sm font-bold tracking-widest uppercase text-gray-900">
             Medicare
           </span>
         </div>
 
-        <div className="hidden md:flex gap-10 text-sm font-medium uppercase">
-          {["Services", "Doctors", "About Us", "Login", "Contact Us"].map(
-            (item) => (
-              <button
-                key={item}
-                onClick={() => handleNavClick(item)}
-                className="hover:text-secondary transition-colors cursor-pointer"
-              >
-                {item}
-              </button>
-            )
-          )}
+        {/* Navigation */}
+        <div className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase text-gray-700">
+          <button className="hover:text-gray-900 transition-colors">
+            Services
+          </button>
+
+          <button className="hover:text-gray-900 transition-colors">
+            Doctors
+          </button>
+
+          <button className="hover:text-gray-900 transition-colors">
+            About Us
+          </button>
+
+          <button className="hover:text-gray-900 transition-colors">
+            Cases
+          </button>
+
+          {/* Login – Correct Navigation */}
+         
+            <button
+              className="text-gray-800 bg-red-800 hover:text-gray-900 transition-colors"
+              onClick={() => window.location.href = "/choose-path"}
+            >
+               Login
+            </button>
+           
+          
+
+          <button className="px-3 py-1.5 rounded border border-gray-300 text-gray-800 hover:bg-gray-50 transition-colors">
+            Contact Us
+          </button>
         </div>
       </div>
     </nav>

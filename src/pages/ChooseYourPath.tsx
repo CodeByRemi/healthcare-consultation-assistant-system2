@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-
+import { FaUserInjured } from "react-icons/fa";   // medical patient
+import { FaUserMd } from "react-icons/fa";
+import patientimg from "../assets/patientreg.png";
 export default function ChooseYourPath() {
   const navigate = useNavigate();
 
@@ -34,8 +36,13 @@ export default function ChooseYourPath() {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="w-8 h-8 bg-linear-to-br from-[#0A6ED1] to-[#9C8C74] rounded-lg flex items-center justify-center text-white font-bold">
-              M
+             <div className="w-8 h-8 bg-linear-to-br from-[#0A6ED1] to-[#9C8C74] rounded-lg flex items-center justify-center text-white font-bold overflow-hidden">
+              
+              <img
+                src={patientimg}
+                alt="Medicare Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="text-xl font-bold tracking-widest uppercase text-[#3B3835]">
               Medicare
@@ -86,22 +93,37 @@ export default function ChooseYourPath() {
                 />
 
                 {/* Icon */}
-                <motion.div
-                  className="relative z-10 w-16 h-16 rounded-full bg-linear-to-br from-[#0A6ED1] to-[#3B3835] flex items-center justify-center text-white mb-8 shadow-lg"
-                  whileHover={{ scale: 1.1, rotate: 10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <span className="material-icons-round text-3xl">person</span>
-                </motion.div>
+               <motion.div
+  className="relative z-10 w-20 h-20 rounded-full 
+             bg-gradient-to-br from-[#0A6ED1] via-[#17A2B8] to-[#2ECC71]
+             flex items-center justify-center text-white mb-8 shadow-xl"
+  initial={{ scale: 0, rotate: -30, opacity: 0 }}
+  animate={{ scale: 1, rotate: 0, opacity: 1 }}
+  whileHover={{ scale: 1.15, rotate: 8 }}
+  transition={{ type: "spring", stiffness: 120, damping: 10 }}
+>
+  <FaUserInjured className="text-4xl text-white drop-shadow-md" />
+</motion.div>
 
-                {/* Text Content */}
-                <h2 className="relative z-10 text-3xl font-serif text-[#3B3835] mb-4">
-                  Patient Sign Up
-                </h2>
+{/* Text Content */}
+<motion.h2
+  className="relative z-10 text-3xl font-serif text-[#0A6ED1] mb-4"
+  initial={{ y: 20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ delay: 0.2, duration: 0.6 }}
+>
+  Patient Sign Up
+</motion.h2>
 
-                <p className="relative z-10 text-gray-600 mb-8 leading-relaxed">
-                  Begin your journey towards personalized, premium care with our intuitive health management suite.
-                </p>
+<motion.p
+  className="relative z-10 text-gray-600 mb-8 leading-relaxed max-w-md"
+  initial={{ y: 20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ delay: 0.35, duration: 0.6 }}
+>
+  Begin your journey towards personalized, premium care with our intuitive
+  health management suite.
+</motion.p>
 
                 {/* Register Button */}
                 <motion.button
@@ -128,24 +150,37 @@ export default function ChooseYourPath() {
                   initial={{ opacity: 0 }}
                 />
 
-                {/* Icon */}
-                <motion.div
-                  className="relative z-10 w-16 h-16 rounded-full bg-linear-to-br from-[#9C8C74] to-[#0A6ED1] flex items-center justify-center text-white mb-8 shadow-lg"
-                  whileHover={{ scale: 1.1, rotate: -10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <span className="material-icons-round text-3xl">business_center</span>
-                </motion.div>
+<motion.div
+  className="relative z-10 w-20 h-20 rounded-full 
+             bg-gradient-to-br from-[#1B4F72] via-[#0A6ED1] to-[#17A2B8]
+             flex items-center justify-center text-white mb-8 shadow-xl"
+  initial={{ scale: 0, rotate: 30, opacity: 0 }}
+  animate={{ scale: 1, rotate: 0, opacity: 1 }}
+  whileHover={{ scale: 1.15, rotate: -8 }}
+  transition={{ type: "spring", stiffness: 120, damping: 10 }}
+>
+  <FaUserMd className="text-4xl text-white drop-shadow-md" />
+</motion.div>
 
-                {/* Text Content */}
-                <h2 className="relative z-10 text-3xl font-serif text-[#3B3835] mb-4">
-                  Doctor Sign Up
-                </h2>
+{/* Text Content */}
+<motion.h2
+  className="relative z-10 text-3xl font-serif text-[#1B4F72] mb-4"
+  initial={{ y: 20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ delay: 0.2, duration: 0.6 }}
+>
+  Doctor Sign Up
+</motion.h2>
 
-                <p className="relative z-10 text-gray-600 mb-8 leading-relaxed">
-                  Join an elite network of providers and streamline your practice with our advanced clinical tools.
-                </p>
-
+<motion.p
+  className="relative z-10 text-gray-600 mb-8 leading-relaxed max-w-md"
+  initial={{ y: 20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ delay: 0.35, duration: 0.6 }}
+>
+  Join our trusted network of certified healthcare professionals and deliver
+  premium care through a secure, intelligent platform.
+</motion.p>
                 {/* Join Network Button */}
                 <motion.button
                   onClick={() => navigate("/doctor")}

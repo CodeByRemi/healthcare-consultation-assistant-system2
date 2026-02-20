@@ -1,4 +1,11 @@
-export default function Input({ label, placeholder, icon, type = "text" }) {
+interface InputProps {
+  label: string;
+  placeholder: string;
+  icon?: string;
+  type?: string;
+}
+
+export default function Input({ label, placeholder, icon, type = "text" }: InputProps) {
   return (
     <div className="space-y-2">
       <label className="font-medium">{label}</label>
