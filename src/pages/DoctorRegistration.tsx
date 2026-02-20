@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/patientreg.png";;
 
 const SPECIALIZATIONS = [
   "Cardiology",
@@ -100,7 +101,7 @@ export default function DoctorRegistration() {
         {/* Logo */}
         <div className="flex items-center gap-4 text-white">
           <div className="size-6 text-[#58b814] animate-float-slow">
-            <span className="material-symbols-outlined text-[24px]">medical_services</span>
+            <img src={logo}  className="w-20 h-8" alt="MedCare logo" />
           </div>
           <h2 className="text-white text-xl font-bold leading-tight tracking-[-0.015em]">MedCare</h2>
         </div>
@@ -147,7 +148,7 @@ export default function DoctorRegistration() {
             </div>
 
             {/* Trust Indicators */}
-            <div className="flex flex-col gap-4 mt-4 border-t border-[#2f3829] pt-6">
+            {/* <div className="flex flex-col gap-4 mt-4 border-t border-[#2f3829] pt-6">
               <div className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-[#58b814] mt-1">verified_user</span>
                 <div>
@@ -162,17 +163,17 @@ export default function DoctorRegistration() {
                   <p className="text-sm text-[#a9b89d]">Access premium insurance rates.</p>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Decorative block */}
-            <div className="mt-8 rounded-xl overflow-hidden h-48 w-full relative bg-[#20261c] border border-[#2f3829] hidden lg:block animate-fade-up delay-3">
+            {/* <div className="mt-8 rounded-xl overflow-hidden h-48 w-full relative bg-[#20261c] border border-[#2f3829] hidden lg:block animate-fade-up delay-3">
               <div className="absolute inset-0 bg-linear-to-br from-[#20261c] to-[#141811] opacity-90" />
               <div className="absolute inset-0 opacity-10 shimmer" style={{ backgroundImage: 'radial-gradient(#58b814 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs text-[#a9b89d] font-mono">
                 <span>SECURE_ENCLAVE_V.2.0</span>
                 <span className="material-symbols-outlined text-sm">lock</span>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Right Column - Form */}
