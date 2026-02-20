@@ -43,6 +43,11 @@ export default function CredentialsForm() {
           Submit Credentials →
         </button>
       </div>
+
+      {/* Move Login link under the submission button */}
+      <div className="mt-4 text-right">
+        <a href="#" className="text-sm text-text-muted hover:text-primary font-medium">Login</a>
+      </div>
     </div>
   );
 }

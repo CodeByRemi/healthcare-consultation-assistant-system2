@@ -5,21 +5,12 @@ export default function Header() {
         <span className="material-symbols-outlined text-primary">
           medical_services
         </span>
-        <h2 className="text-xl font-bold">MedElite</h2>
+        <h2 className="text-xl font-bold">MedCare</h2>
       </div>
 
-      <nav className="hidden md:flex items-center gap-8">
-        {["Benefits", "Network", "Support"].map(link => (
-          <a key={link} href="#" className="text-sm hover:text-primary">
-            {link}
-          </a>
-        ))}
-        <button className="bg-primary text-black px-4 py-2 rounded-lg font-bold">
-          Login
-        </button>
-        <button className="border border-border-dark px-4 py-2 rounded-lg">
-          Contact Us
-        </button>
+      {/* Simplified navbar per request: remove extra links and buttons */}
+      <nav className="hidden md:flex items-center gap-8" aria-label="Main Navigation">
+        {/* Intentionally left minimal */}
       </nav>
     </header>
   );
