@@ -8,11 +8,13 @@ import {
 } from 'react-icons/fa';
 import logo from "../../assets/patientreg.png";
 import { toast } from 'sonner';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../lib/firebase";
 
 export default function DoctorLogin() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    npi: '',
+    email: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -27,12 +29,17 @@ export default function DoctorLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    try {
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
       toast.success('Welcome back, Doctor!');
       navigate('/doctor/dashboard');
-    }, 1500);
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error("Invalid credentials.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -105,11 +112,11 @@ export default function DoctorLogin() {
                 Email Address
               </label>
               <input 
-                type="text"
-                name="npi"
-                value={formData.npi}
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter your 10-digit NPI"
+                placeholder="doctor@hospital.com"
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#0da540] focus:ring-4 focus:ring-[#0da540]/10 transition-all outline-none text-slate-800 placeholder:text-slate-400"
                 required
               />

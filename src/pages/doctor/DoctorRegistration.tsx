@@ -70,7 +70,7 @@ export default function DoctorRegistration() {
 
   const handleNextStep = () => {
     if (validateForm()) {
-      navigate('/doctor/step-2');
+      navigate('/doctor/step-2', { state: { prevData: formData } });
     } else {
       toast.error("Please fill in all required fields correctly.");
     }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaShieldAlt as Shield, 
   FaIdCard as IdCard, 
@@ -9,13 +9,21 @@ import {
   FaArrowLeft as ArrowLeft,
   FaFileMedical as MedicalFile
 } from "react-icons/fa";
-import logo from "../../assets/patientreg.png";import { toast } from "sonner";
+import logo from "../../assets/patientreg.png";
+import { toast } from "sonner";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db, storage } from "../../lib/firebase";
+
 export default function DoctorRegistrationStep3() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [idFile, setIdFile] = useState<File | null>(null);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, setFile: (f: File | null) => void, fieldName: string) => {
     if (event.target.files?.length) {
@@ -36,14 +44,68 @@ export default function DoctorRegistrationStep3() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleComplete = () => {
-    if (validateForm()) {
+  const handleComplete = async () => {
+    if (!validateForm()) {
+      toast.error("Please complete all requirements.");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const prevData = location.state?.prevData;
+      if (!prevData) {
+        throw new Error("Missing previous registration data. Please start over.");
+      }
+
+      // 1. Create Authentication User
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        prevData.email, 
+        prevData.password
+      );
+      const user = userCredential.user;
+
+      // 2. Upload Files
+      // We use simple names but could use extensive unique names
+      const idRef = ref(storage, `doctors/${user.uid}/id_document`);
+      const licenseRef = ref(storage, `doctors/${user.uid}/medical_license`);
+
+      // Upload simultaneously
+      const uploadTasks = [
+        uploadBytes(idRef, idFile!).then(() => getDownloadURL(idRef)),
+        uploadBytes(licenseRef, licenseFile!).then(() => getDownloadURL(licenseRef))
+      ];
+
+      const [idUrl, licenseUrl] = await Promise.all(uploadTasks);
+
+      // 3. Create Doctor Document in Firestore
+      // We exclude password from Firestore
+      const { password, ...doctorProfileData } = prevData;
+
+      await setDoc(doc(db, "doctors", user.uid), {
+        uid: user.uid,
+        ...doctorProfileData,
+        idDocumentUrl: idUrl,
+        licenseDocumentUrl: licenseUrl,
+        verificationStatus: 'pending',
+        createdAt: new Date().toISOString(),
+        role: "doctor"
+      });
+
       toast.success("Registration submitted successfully!");
       navigate('/verification');
-    } else {
-      toast.error("Please complete all requirements.");
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      let errorMessage = "Failed to submit registration.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "Email is already in use.";
+      }
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-['Manrope'] bg-slate-50">
@@ -217,7 +279,8 @@ export default function DoctorRegistrationStep3() {
               <button 
                 type="button"
                 onClick={() => navigate(-1)}
-                className="w-1/3 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 group text-base"
+                disabled={isSubmitting}
+                className="w-1/3 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 group text-base disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 Back
@@ -226,10 +289,11 @@ export default function DoctorRegistrationStep3() {
               <button 
                 type="button"
                 onClick={handleComplete}
-                className={`w-2/3 py-4 bg-[#0da540] text-white font-bold rounded-xl shadow-lg shadow-[#0da540]/20 transition-all duration-200 flex items-center justify-center gap-2 group text-base hover:bg-[#098734] active:scale-[0.98]`}
+                disabled={isSubmitting}
+                className={`w-2/3 py-4 bg-[#0da540] text-white font-bold rounded-xl shadow-lg shadow-[#0da540]/20 transition-all duration-200 flex items-center justify-center gap-2 group text-base hover:bg-[#098734] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed`}
               >
-                Complete Registration
-                <CheckCircle2 className="w-5 h-5" />
+                {isSubmitting ? "Submitting..." : "Complete Registration"}
+                {!isSubmitting && <CheckCircle2 className="w-5 h-5" />}
               </button>
             </div>
           </form>

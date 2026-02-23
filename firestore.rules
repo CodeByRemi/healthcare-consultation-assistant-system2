@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the user is accessing their own document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Rules for the 'users' collection (assuming a shared collection for profiles, or separate collections)
+    
+    // Patient Profiles
+    match /patients/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId); // Users create their own profile on signup
+      allow update: if isAuthenticated() && isOwner(userId);
+      // Delete typically restricted or handled via admin functions
+    }
+
+    // Doctor Profiles
+    match /doctors/{userId} {
+      allow read: if isAuthenticated(); // Maybe public read for basic info (name, specialty)? 
+      // For now, let's restrict write to owner
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Appointments (Example structure)
+    match /appointments/{appointmentId} {
+    	allow read: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid);
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

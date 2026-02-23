@@ -8,12 +8,13 @@ import {
   FaCheckCircle as CheckCircle2,
   FaBriefcaseMedical as Briefcase
 } from 'react-icons/fa';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import logo from "../../assets/patientreg.png";
 import { toast } from 'sonner';
 
 export default function DoctorRegistrationStep2() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     hospital: '',
     experience: '',
@@ -55,7 +56,7 @@ export default function DoctorRegistrationStep2() {
 
   const handleNextStep = () => {
     if (validateForm()) {
-      navigate('/doctor/step-3');
+      navigate('/doctor/step-3', { state: { prevData: { ...location.state?.prevData, ...formData } } });
     } else {
       toast.error("Please fill in all required fields correctly.");
     }

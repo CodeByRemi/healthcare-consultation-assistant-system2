@@ -2,19 +2,35 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
 import { toast } from "sonner";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../../lib/firebase";
 
 export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  });
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    try {
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
       toast.success("Welcome back!");
-      navigate("/patient/dashboard");
-    }, 1500);
+      navigate("/"); // Redirect to home
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error("Invalid email or password.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -35,6 +51,9 @@ export default function LoginForm() {
             </label>
             <input
               type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
               placeholder="john@example.com"
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#0A6ED1] focus:ring-4 focus:ring-[#0A6ED1]/10 transition-all outline-none text-slate-800 placeholder:text-slate-400"
               required
@@ -51,6 +70,9 @@ export default function LoginForm() {
             </div>
             <input
               type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
               placeholder="••••••••"
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#0A6ED1] focus:ring-4 focus:ring-[#0A6ED1]/10 transition-all outline-none text-slate-800 placeholder:text-slate-400"
               required
