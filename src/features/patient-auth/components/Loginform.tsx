@@ -33,7 +33,7 @@ export default function LoginForm() {
         navigate("/patient/dashboard", { replace: true }); 
       }, 100);
       
-    } catch (error: any) {
+    } catch (error) {
       console.error("Login error:", error);
       toast.error("Invalid email or password.");
     } finally {

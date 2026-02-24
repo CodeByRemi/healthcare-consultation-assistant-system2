@@ -122,7 +122,7 @@ export default function PatientSidebar({ isOpen, onToggle }: SidebarProps) {
                     ${!isOpen && "justify-center px-0"}
                   `}
                 >
-                  <item.icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110 ${isActive ? "text-[#0A6ED1]" : "text-slate-400 group-hover:text-[#0A6ED1]"}`} />
+                  <item.icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? "text-[#0A6ED1]" : "text-slate-400 group-hover:text-[#0A6ED1]"}`} />
                   <span className={`whitespace-nowrap transition-all duration-300 overflow-hidden ${!isOpen ? "w-0 opacity-0 hidden" : "w-auto opacity-100"}`}>
                     {item.label}
                   </span>
@@ -145,7 +145,7 @@ export default function PatientSidebar({ isOpen, onToggle }: SidebarProps) {
               onClick={handleLogout}
               className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl text-red-500 hover:bg-red-50 transition-colors group ${!isOpen && "justify-center px-0"}`}
             >
-              <FaSignOutAlt className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+              <FaSignOutAlt className="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" />
               <span className={`font-medium whitespace-nowrap transition-all duration-300 overflow-hidden ${!isOpen ? "w-0 opacity-0 hidden" : "w-auto opacity-100"}`}>
                 Sign Out
               </span>

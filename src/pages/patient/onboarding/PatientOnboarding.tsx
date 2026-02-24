@@ -81,7 +81,7 @@ export default function PatientOnboarding() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 font-sans">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row min-h-150">
         
         {/* Sidebar / Progress */}
         <div className="bg-[#0A6ED1] p-8 text-white md:w-1/3 flex flex-col justify-between">

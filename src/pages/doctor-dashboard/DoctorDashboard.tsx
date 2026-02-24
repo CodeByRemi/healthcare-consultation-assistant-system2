@@ -8,8 +8,7 @@ import {
   FaClock, 
   FaEllipsisH,
   FaCheckCircle,
-  FaArrowRight,
-  FaChartLine
+  FaArrowRight
 } from "react-icons/fa";
 
 export default function DoctorDashboard() {

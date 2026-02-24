@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
-import { FaCalendarAlt, FaCheck, FaClock, FaPlus, FaTimes, FaAngleLeft, FaAngleRight } from "react-icons/fa";
+import { FaCalendarAlt, FaPlus, FaAngleLeft, FaAngleRight } from "react-icons/fa";
 
 export default function DoctorSchedule() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -31,13 +31,13 @@ export default function DoctorSchedule() {
   };
 
   // Mock Appointments Data
-  const [appointments, setAppointments] = useState([
+  const [appointments] = useState([
     { id: 1, patient: "Alice Johnson", time: "09:00 AM", duration: "30 min", type: "General Consultation", status: "Confirmed", notes: "Regular checkup" },
     { id: 2, patient: "Robert Smith", time: "10:30 AM", duration: "45 min", type: "Follow-up", status: "Pending", notes: "Review lab results" },
     { id: 3, patient: "Emily Davis", time: "02:00 PM", duration: "30 min", type: "Health Checkup", status: "Confirmed", notes: "" },
   ]);
 
-  const [availableSlots, setAvailableSlots] = useState([
+  const [availableSlots] = useState([
       "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"
   ]);
 
@@ -171,7 +171,7 @@ export default function DoctorSchedule() {
                                                     )}
                                                 </div>
                                             ) : (
-                                                <div className="h-full min-h-[60px] rounded-xl border-2 border-dashed border-transparent group-hover:border-slate-200 flex items-center justify-center">
+                                                <div className="h-full min-h-15 rounded-xl border-2 border-dashed border-transparent group-hover:border-slate-200 flex items-center justify-center">
                                                     <button className="opacity-0 group-hover:opacity-100 text-slate-400 font-medium text-sm flex items-center gap-2 hover:text-[#0A6ED1] transition-all">
                                                         <FaPlus /> Add Booking
                                                     </button>

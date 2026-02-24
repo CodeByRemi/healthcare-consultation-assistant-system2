@@ -6,14 +6,14 @@ import { useAuth } from "../../context/AuthContext";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 
 export default function PatientProfile() {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   
   // Mock data - would normally come from DB
   const [profileData, setProfileData] = useState({
     fullName: "John Doe",
-    email: user?.email || "john.doe@example.com",
+    email: currentUser?.email || "john.doe@example.com",
     phone: "+1 (555) 123-4567",
     address: "123 Health St, Medical City, NY 10001",
     bloodType: "O+",
@@ -36,7 +36,6 @@ export default function PatientProfile() {
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <PatientDashboardHeader 
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-          isSidebarOpen={isSidebarOpen}
         />
         
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">

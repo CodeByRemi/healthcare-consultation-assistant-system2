@@ -2,7 +2,7 @@ import { useState } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { Link } from "react-router-dom";
-import { FaSearch, FaUserInjured, FaCheck, FaTimes, FaClock, FaEllipsisH } from "react-icons/fa";
+import { FaSearch, FaCheck, FaTimes, FaClock, FaEllipsisH } from "react-icons/fa";
 
 export default function MyPatients() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -15,7 +15,7 @@ export default function MyPatients() {
     { id: 202, name: "Emma Wilson", age: 29, reason: "Annual Physical", time: "Tomorrow 10:00 AM", status: "Pending", type: "Returning", image: "https://i.pravatar.cc/150?u=emma" },
   ]);
 
-  const [patients, setPatients] = useState([
+  const [patients] = useState([
     { id: 1, name: "Alice Johnson", age: 34, lastVisit: "Feb 12, 2026", condition: "Hypertension", image: "https://i.pravatar.cc/150?u=alice" },
     { id: 2, name: "Robert Smith", age: 52, lastVisit: "Jan 30, 2026", condition: "Type 2 Diabetes", image: "https://i.pravatar.cc/150?u=robert" },
   ]);

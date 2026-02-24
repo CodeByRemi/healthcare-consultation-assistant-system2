@@ -80,7 +80,6 @@ export default function PatientChat() {
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         <PatientDashboardHeader 
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-          isSidebarOpen={isSidebarOpen}
         />
         
         <div className="flex-1 overflow-hidden flex flex-col p-4 md:p-6 max-w-5xl mx-auto w-full">

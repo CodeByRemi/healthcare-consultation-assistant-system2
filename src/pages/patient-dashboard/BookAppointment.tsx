@@ -150,7 +150,7 @@ export default function BookAppointment() {
   const [selectedTime, setSelectedTime] = useState("Any Time");
   const [selectedDay, setSelectedDay] = useState("Any Day");
   const [hoveredSpecialty, setHoveredSpecialty] = useState<string | null>(null);
-  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<typeof doctors[0] | null>(null);
 
   const filteredDoctors = doctors.filter(doc => {
     const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -173,7 +173,6 @@ export default function BookAppointment() {
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <PatientDashboardHeader 
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-          isSidebarOpen={isSidebarOpen}
         />
         
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
@@ -288,15 +287,15 @@ export default function BookAppointment() {
 
                             <div className="space-y-3 mb-6">
                                 <div className="flex items-center gap-2 text-slate-500 text-sm">
-                                    <FaMapMarkerAlt className="text-slate-400 min-w-[16px]" />
+                                    <FaMapMarkerAlt className="text-slate-400 min-w-4" />
                                     <span className="truncate">{doc.location}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-500 text-sm">
-                                    <FaUserMd className="text-slate-400 min-w-[16px]" />
+                                    <FaUserMd className="text-slate-400 min-w-4" />
                                     {doc.experience} Experience
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-500 text-sm">
-                                    <FaCalendarAlt className="text-slate-400 min-w-[16px]" />
+                                    <FaCalendarAlt className="text-slate-400 min-w-4" />
                                     <span className="truncate">
                                         {doc.availableDays ? doc.availableDays.slice(0, 3).join(", ") + (doc.availableDays.length > 3 ? "..." : "") : "Mon-Fri"}
                                     </span>
@@ -330,7 +329,7 @@ export default function BookAppointment() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                         onClick={() => setSelectedDoctor(null)}
                     >
                         <motion.div 
@@ -340,7 +339,7 @@ export default function BookAppointment() {
                             onClick={(e) => e.stopPropagation()}
                             className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
                         >
-                            <div className="relative h-40 bg-gradient-to-r from-[#0A6ED1] to-cyan-500">
+                            <div className="relative h-40 bg-linear-to-r from-[#0A6ED1] to-cyan-500">
                                 <button 
                                     onClick={() => setSelectedDoctor(null)}
                                     className="absolute top-4 right-4 bg-black/20 hover:bg-black/30 text-white p-2 rounded-full transition-colors backdrop-blur-sm"

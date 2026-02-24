@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
-import { FaUserInjured, FaArrowLeft, FaComments, FaFileMedical, FaRobot, FaPaperPlane } from "react-icons/fa";
+import { FaArrowLeft, FaComments, FaFileMedical, FaRobot, FaPaperPlane } from "react-icons/fa";
 
 export default function PatientDetails() { // Dynamic route /doctor/patients/:id
   const { id } = useParams();
@@ -166,7 +166,7 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
             )}
 
             {activeTab === 'ai-assistant' && (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 h-[600px] flex flex-col overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 h-150 flex flex-col overflow-hidden">
                 <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#0A6ED1] rounded-full flex items-center justify-center text-white shadow-md">

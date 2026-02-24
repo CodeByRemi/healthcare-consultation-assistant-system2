@@ -81,7 +81,7 @@ export default function DoctorProfile() {
                   <h3 className="text-lg font-bold text-slate-900 mb-4">Professional Bio</h3>
                   {isEditing ? (
                     <textarea 
-                      className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#0A6ED1]/20 focus:border-[#0A6ED1] outline-none min-h-[120px]"
+                      className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#0A6ED1]/20 focus:border-[#0A6ED1] outline-none min-h-30"
                       value={profileData.bio}
                       onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
                     />

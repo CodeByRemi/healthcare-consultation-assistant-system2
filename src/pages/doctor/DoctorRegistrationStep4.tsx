@@ -79,7 +79,7 @@ export default function DoctorRegistrationStep4() {
 
       // 3. Create Doctor Document in Firestore
       // We exclude password from Firestore
-      const { password, ...doctorProfileData } = prevData;
+      const { password: _password, ...doctorProfileData } = prevData;
 
       await setDoc(doc(db, "doctors", user.uid), {
         uid: user.uid,
@@ -93,10 +93,10 @@ export default function DoctorRegistrationStep4() {
 
       toast.success("Registration submitted successfully!");
       navigate('/verification');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Registration error:", error);
       let errorMessage = "Failed to submit registration.";
-      if (error.code === 'auth/email-already-in-use') {
+      if ((error as any).code === 'auth/email-already-in-use') {
         errorMessage = "Email is already in use.";
       }
       toast.error(errorMessage);

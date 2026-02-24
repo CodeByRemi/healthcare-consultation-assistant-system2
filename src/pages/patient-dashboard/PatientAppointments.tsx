@@ -36,7 +36,6 @@ export default function PatientAppointments() {
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <PatientDashboardHeader 
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-          isSidebarOpen={isSidebarOpen}
         />
         
         <div className="flex-1 overflow-y-auto p-6 md:p-8">

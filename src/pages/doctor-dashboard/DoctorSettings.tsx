@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
-import { FaUserMd, FaBell, FaLock, FaCalendarAlt, FaToggleOn, FaToggleOff } from "react-icons/fa";
+import { FaUserMd, FaBell, FaCalendarAlt, FaToggleOn, FaToggleOff } from "react-icons/fa";
 
 export default function DoctorSettings() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

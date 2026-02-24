@@ -3,10 +3,9 @@ import { Link } from "react-router-dom";
 
 interface HeaderProps {
   toggleSidebar: () => void;
-  isSidebarOpen: boolean;
 }
 
-export default function PatientDashboardHeader({ toggleSidebar, isSidebarOpen }: HeaderProps) {
+export default function PatientDashboardHeader({ toggleSidebar }: HeaderProps) {
   return (
     <header className="h-20 bg-white border-b border-slate-100 px-6 md:px-8 flex items-center justify-between sticky top-0 z-10 transition-all duration-200">
       <div className="flex items-center gap-4">
