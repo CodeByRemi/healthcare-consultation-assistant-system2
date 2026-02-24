@@ -51,7 +51,7 @@ export default function RegisterForm() {
       });
 
       toast.success("Account created successfully!");
-      navigate("/");
+      navigate("/patient/onboarding");
     } catch (error: any) {
       console.error("Registration error:", error);
       let errorMessage = "Failed to create account.";

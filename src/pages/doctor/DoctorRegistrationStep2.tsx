@@ -80,7 +80,7 @@ export default function DoctorRegistrationStep2() {
           <div className="max-w-md">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white/90 text-sm font-medium mb-6 backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-[#0A6ED1] animate-pulse"></span>
-              Step 2 of 3
+              Step 2 of 4
             </div>
             
             <h1 className="text-4xl lg:text-5xl font-['Newsreader'] font-medium text-white mb-6 leading-tight">

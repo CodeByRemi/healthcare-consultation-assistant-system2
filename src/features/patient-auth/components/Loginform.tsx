@@ -22,9 +22,17 @@ export default function LoginForm() {
     setIsSubmitting(true);
 
     try {
+      console.log("Attempting sign in with:", formData.email);
       await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      console.log("Sign in successful!");
       toast.success("Welcome back!");
-      navigate("/"); // Redirect to home
+      
+      // Delay navigation slightly to ensure state updates
+      setTimeout(() => {
+        console.log("Navigating to dashboard...");
+        navigate("/patient/dashboard", { replace: true }); 
+      }, 100);
+      
     } catch (error: any) {
       console.error("Login error:", error);
       toast.error("Invalid email or password.");
@@ -66,7 +74,7 @@ export default function LoginForm() {
                 <FaLock className="w-4 h-4 text-[#0A6ED1]" />
                 Password
               </label>
-              <a href="#" className="text-xs font-medium text-[#0A6ED1] hover:underline">Forgot password?</a>
+              <Link to="/patient/forgot-password" className="text-xs font-medium text-[#0A6ED1] hover:underline">Forgot password?</Link>
             </div>
             <input
               type="password"

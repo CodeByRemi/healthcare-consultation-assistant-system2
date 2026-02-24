@@ -34,7 +34,7 @@ export default function DoctorLogin() {
       await signInWithEmailAndPassword(auth, formData.email, formData.password);
       toast.success('Welcome back, Doctor!');
       navigate('/doctor/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
       toast.error("Invalid credentials.");
     } finally {
@@ -128,7 +128,7 @@ export default function DoctorLogin() {
                   <FaLock className="w-4 h-4 text-[#0da540]" />
                   Password
                 </label>
-                <a href="#" className="text-xs font-medium text-[#0da540] hover:underline">Forgot?</a>
+                <Link to="/doctor/forgot-password" className="text-xs font-medium text-[#0da540] hover:underline">Forgot?</Link>
               </div>
               <input 
                 type="password"
