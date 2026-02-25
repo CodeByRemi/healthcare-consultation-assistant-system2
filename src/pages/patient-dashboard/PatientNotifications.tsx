@@ -3,6 +3,7 @@ import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { FaBell, FaCalendarCheck, FaInfoCircle, FaCheckDouble, FaTrash } from "react-icons/fa";
+import { toast } from "sonner";
 
 interface Notification {
   id: number;
@@ -16,39 +17,16 @@ interface Notification {
 export default function PatientNotifications() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: "appointment",
-      title: "Appointment Confirmed",
-      message: "Your appointment with Dr. Sarah Smith has been confirmed for tomorrow at 10:00 AM.",
-      time: "2 hours ago",
-      read: false
-    },
-    {
-      id: 2,
-      type: "system",
-      title: "Profile Update",
-      message: "You successfully updated your medical history.",
-      time: "Yesterday",
-      read: true
-    },
-    {
-      id: 3,
-      type: "info",
-      title: "New Feature Available",
-      message: "You can now chat with our AI assistant for quick health queries.",
-      time: "2 days ago",
-      read: true
-    }
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const markAllAsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
+    toast.success("Marked all as read");
   };
 
   const deleteNotification = (id: number) => {
     setNotifications(notifications.filter(n => n.id !== id));
+    toast.success("Notification dismissed");
   };
 
   const getIcon = (type: string) => {

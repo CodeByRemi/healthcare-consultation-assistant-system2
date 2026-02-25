@@ -3,6 +3,7 @@ import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { FaBell, FaCalendarCheck, FaInfoCircle, FaCheckDouble, FaTrash, FaClipboardList, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface Notification {
   id: number;
@@ -17,51 +18,21 @@ export default function DoctorNotifications() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
   
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: "appointment",
-      title: "New Appointment Request",
-      message: "Patient John Doe requested an appointment for tomorrow at 2:00 PM.",
-      time: "10 mins ago",
-      read: false
-    },
-    {
-      id: 2,
-      type: "system",
-      title: "System Maintenance",
-      message: "Platform maintenance scheduled for Saturday 2:00 AM - 4:00 AM.",
-      time: "Yesterday",
-      read: true
-    },
-    {
-      id: 3,
-      type: "patient",
-      title: "New Message",
-      message: "Sarah Wilson sent a message regarding her prescription.",
-      time: "2 hours ago",
-      read: false
-    },
-    {
-      id: 4,
-      type: "warning",
-      title: "Credential Update Required",
-      message: "Your medical license verification needs to be renewed in 30 days.",
-      time: "3 days ago",
-      read: true
-    }
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const markAllAsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
+    toast.success("Marked all as read");
   };
 
   const deleteNotification = (id: number) => {
     setNotifications(notifications.filter(n => n.id !== id));
+    toast.success("Notification dismissed");
   };
 
   const markAsRead = (id: number) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+    toast.success("Marked as read");
   };
 
   const getIcon = (type: string) => {

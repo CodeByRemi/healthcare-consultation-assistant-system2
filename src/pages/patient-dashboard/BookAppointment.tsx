@@ -1,153 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaSearch, FaMapMarkerAlt, FaStar, FaUserMd, FaClock, FaCalendarAlt, FaTimes, FaGraduationCap } from "react-icons/fa";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
-// Mock Doctors Data
-const doctors = [
-  {
-    id: 1,
-    name: "Dr. Sarah Smith",
-    specialty: "Cardiologist",
-    rating: 4.9,
-    reviews: 124,
-    location: "New York, NY",
-    experience: "12 years",
-    about: "Dr. Sarah Smith is a highly experienced Cardiologist with over 12 years of practice. She specializes in preventive cardiology and heart failure management. She is dedicated to providing comprehensive care to her patients.",
-    education: "MD from Harvard Medical School",
-    languages: ["English", "Spanish"],
-    consultationFee: "$150",
-    image: "https://randomuser.me/api/portraits/women/44.jpg",
-    availability: "Available Today",
-    timeSlots: ["09:00 AM", "02:00 PM", "04:00 PM"],
-    availableDays: ["Monday", "Wednesday", "Friday"]
-  },
-  {
-    id: 2,
-    name: "Dr. James Wilson",
-    specialty: "Dermatologist",
-    rating: 4.8,
-    reviews: 89,
-    location: "Brooklyn, NY",
-    experience: "8 years",
-    about: "Dr. James Wilson is a board-certified Dermatologist specializing in cosmetic and medical dermatology. He has a keen interest in skin cancer screening and acne treatment.",
-    education: "MD from Johns Hopkins University",
-    languages: ["English"],
-    consultationFee: "$120",
-    image: "https://randomuser.me/api/portraits/men/32.jpg",
-    availability: "Available Tomorrow",
-    timeSlots: ["10:00 AM", "01:00 PM"],
-    availableDays: ["Tuesday", "Thursday"]
-  },
-  {
-    id: 3,
-    name: "Dr. Emily Chen",
-    specialty: "Pediatrician",
-    rating: 5.0,
-    reviews: 210,
-    location: "Queens, NY",
-    experience: "15 years",
-    image: "https://randomuser.me/api/portraits/women/68.jpg",
-    availability: "Next Available: Mon 27",
-    timeSlots: ["09:00 AM", "11:00 AM"],
-    availableDays: ["Monday", "Tuesday", "Wednesday"]
-  },
-  {
-    id: 4,
-    name: "Dr. Michael Ross",
-    specialty: "Neurologist",
-    rating: 4.7,
-    reviews: 76,
-    location: "Manhattan, NY",
-    experience: "10 years",
-    image: "https://randomuser.me/api/portraits/men/86.jpg",
-    availability: "Available Today",
-    timeSlots: ["03:00 PM", "05:00 PM"],
-    availableDays: ["Wednesday", "Friday"]
-  },
-   {
-    id: 5,
-    name: "Dr. Lisa Wong",
-    specialty: "Psychiatrist",
-    rating: 4.9,
-    reviews: 150,
-    location: "Staten Island, NY",
-    experience: "11 years",
-    image: "https://randomuser.me/api/portraits/women/24.jpg",
-    availability: "Available Today",
-    timeSlots: ["10:00 AM", "12:00 PM"],
-    availableDays: ["Monday", "Thursday"]
-  },
-  {
-    id: 6,
-    name: "Dr. David Kim",
-    specialty: "Orthopedic Surgeon",
-    rating: 4.8,
-    reviews: 95,
-    location: "Bronx, NY",
-    experience: "14 years",
-    image: "https://randomuser.me/api/portraits/men/11.jpg",
-    availability: "Available Tomorrow",
-    timeSlots: ["09:00 AM", "04:00 PM"],
-    availableDays: ["Tuesday", "Friday"]
-  },
-  {
-    id: 7,
-    name: "Dr. Robert Taylor",
-    specialty: "General Medicine",
-    rating: 4.9,
-    reviews: 180,
-    location: "Manhattan, NY",
-    experience: "20 years",
-    image: "https://randomuser.me/api/portraits/men/45.jpg",
-    availability: "Available Today",
-    timeSlots: ["09:00 AM", "02:00 PM", "05:00 PM"],
-    availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-  },
-  {
-    id: 8,
-    name: "Dr. Amanda White",
-    specialty: "General Medicine",
-    rating: 4.8,
-    reviews: 145,
-    location: "Brooklyn, NY",
-    experience: "10 years",
-    image: "https://randomuser.me/api/portraits/women/33.jpg",
-    availability: "Available Tomorrow",
-    timeSlots: ["10:00 AM", "03:00 PM"],
-    availableDays: ["Monday", "Wednesday", "Friday"]
-  },
-];
+const timePreferences = ["Any Time", "Morning", "Afternoon", "Evening"];
+const dayPreferences = ["Any Day", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const specialties = [
-  { label: "All", value: "All", description: "View all available doctors" },
-  { label: "General Medicine", value: "General Medicine", description: "Primary Care & Routine Checkups" },
-  { label: "Cardiologist", value: "Cardiologist", description: "Heart & Blood Vessels Specialist" },
-  { label: "Dermatologist", value: "Dermatologist", description: "Skin, Hair & Nails Specialist" },
-  { label: "Pediatrician", value: "Pediatrician", description: "Child & Infant Healthcare" },
-  { label: "Neurologist", value: "Neurologist", description: "Brain & Nervous System Specialist" },
-  { label: "Psychiatrist", value: "Psychiatrist", description: "Mental Health & Therapy" },
-  { label: "Orthopedic Surgeon", value: "Orthopedic Surgeon", description: "Bones, Joints & Muscles" }
+  { value: "All", label: "All Specialists", description: "View all available doctors" },
+  { value: "General", label: "General Doctor", description: "Primary care physicians" },
+  { value: "Cardiology", label: "Cardiologist", description: "Heart specialists" },
+  { value: "Dermatology", label: "Dermatologist", description: "Skin specialists" },
+  { value: "Neurology", label: "Neurologist", description: "Brain & nerve specialists" },
+  { value: "Pediatrics", label: "Pediatrician", description: "Child specialists" }
 ];
-
-const timePreferences = [
-  "Any Time", 
-  "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", 
-  "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"
-];
-
-const dayPreferences = [
-  "Any Day", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
-];
-
 
 export default function BookAppointment() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
   const [selectedTime, setSelectedTime] = useState("Any Time");
+  
+  // Doctors state initialized to empty
+  const [doctors, setDoctors] = useState<any[]>([]);
+
+  useEffect(() => {
+     // Simulate fetching doctors
+     // setDoctors([...]);
+     toast.info("Please search effectively to find a doctor.");
+  }, []);
+
+  const handleBookAppointment = () => {
+    toast.success("Appointment booked successfully!");
+    setSelectedDoctor(null);
+  };
+
   const [selectedDay, setSelectedDay] = useState("Any Day");
   const [hoveredSpecialty, setHoveredSpecialty] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<typeof doctors[0] | null>(null);
@@ -440,7 +330,7 @@ export default function BookAppointment() {
                                         </div>
 
                                         <div className="pt-6 border-t border-slate-100">
-                                            <button className="w-full bg-[#0A6ED1] hover:bg-[#095bb0] text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                            <button onClick={handleBookAppointment} className="w-full bg-[#0A6ED1] hover:bg-[#095bb0] text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                                                 Book Appointment Now
                                             </button>
                                             <p className="text-center text-xs text-slate-400 mt-3">

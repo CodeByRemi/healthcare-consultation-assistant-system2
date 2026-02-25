@@ -1,23 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { FaUserMd, FaMapMarkerAlt, FaEnvelope, FaPhone, FaGraduationCap } from "react-icons/fa";
+import { toast } from "sonner";
 
 export default function DoctorProfile() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
   const [profileData, setProfileData] = useState({
-    name: "Dr. Sarah Smith",
-    specialty: "Cardiologist",
-    email: "dr.smith@medicare.com",
-    phone: "+1 (555) 987-6543",
-    location: "New York, NY",
-    bio: "Dr. Smith is a board-certified cardiologist with over 15 years of experience treating complex heart conditions.",
-    education: "MD from Harvard Medical School, Residency at Johns Hopkins",
-    experience: "15 Years",
-    languages: "English, Spanish"
+    name: "",
+    specialty: "",
+    email: "",
+    phone: "",
+    location: "Unknown",
+    bio: "",
+    education: "",
+    experience: "",
+    languages: ""
   });
+
+  useEffect(() => {
+    // Simulate data fetch
+    toast.info("Loading profile...");
+    // setProfileData({ ... });
+  }, []);
+
+  const handleSave = () => {
+     setIsEditing(false);
+     toast.success("Profile saved successfully!");
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-['Manrope']">
@@ -37,7 +49,14 @@ export default function DoctorProfile() {
                 <p className="text-slate-500">Manage your professional information.</p>
               </div>
               <button 
-                onClick={() => setIsEditing(!isEditing)}
+                onClick={() => {
+                    if (isEditing) {
+                        handleSave();
+                    } else {
+                        setIsEditing(true);
+                        toast.info("Edit mode enabled");
+                    }
+                }}
                 className={`px-6 py-2 rounded-xl font-semibold transition-colors ${
                   isEditing 
                   ? "bg-green-600 text-white hover:bg-green-700" 
@@ -55,17 +74,17 @@ export default function DoctorProfile() {
                   <div className="w-32 h-32 mx-auto bg-blue-50 rounded-full flex items-center justify-center text-[#0A6ED1] mb-4 text-4xl border-4 border-blue-100">
                     <FaUserMd />
                   </div>
-                  <h2 className="text-xl font-bold text-slate-900">{profileData.name}</h2>
-                  <p className="text-[#0A6ED1] font-medium mb-4">{profileData.specialty}</p>
+                  <h2 className="text-xl font-bold text-slate-900">{profileData.name || "Doctor Name"}</h2>
+                  <p className="text-[#0A6ED1] font-medium mb-4">{profileData.specialty || "Specialty"}</p>
                   
                   <div className="space-y-3 text-left">
                     <div className="flex items-center gap-3 text-slate-600 text-sm">
                       <FaEnvelope className="text-slate-400 w-4 h-4" />
-                      <span className="truncate">{profileData.email}</span>
+                      <span className="truncate">{profileData.email || "email@example.com"}</span>
                     </div>
                     <div className="flex items-center gap-3 text-slate-600 text-sm">
                       <FaPhone className="text-slate-400 w-4 h-4" />
-                      <span>{profileData.phone}</span>
+                      <span>{profileData.phone || "Phone Number"}</span>
                     </div>
                     <div className="flex items-center gap-3 text-slate-600 text-sm">
                       <FaMapMarkerAlt className="text-slate-400 w-4 h-4" />
@@ -84,10 +103,11 @@ export default function DoctorProfile() {
                       className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#0A6ED1]/20 focus:border-[#0A6ED1] outline-none min-h-30"
                       value={profileData.bio}
                       onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                      placeholder="Enter biography..."
                     />
                   ) : (
                     <p className="text-slate-600 leading-relaxed">
-                      {profileData.bio}
+                      {profileData.bio || "No biography provided yet."}
                     </p>
                   )}
                 </div>
@@ -106,9 +126,10 @@ export default function DoctorProfile() {
                           className="w-full p-2 border border-slate-200 rounded-lg outline-none"
                           value={profileData.education}
                           onChange={(e) => setProfileData({...profileData, education: e.target.value})}
+                          placeholder="Degrees..."
                         />
                       ) : (
-                        <div className="text-slate-900 font-medium">{profileData.education}</div>
+                        <div className="text-slate-900 font-medium">{profileData.education || "Not specified"}</div>
                       )}
                     </div>
                     <div>
@@ -119,9 +140,10 @@ export default function DoctorProfile() {
                           className="w-full p-2 border border-slate-200 rounded-lg outline-none"
                           value={profileData.experience}
                           onChange={(e) => setProfileData({...profileData, experience: e.target.value})}
+                          placeholder="Years..."
                         />
                       ) : (
-                        <div className="text-slate-900 font-medium">{profileData.experience}</div>
+                        <div className="text-slate-900 font-medium">{profileData.experience || "Not specified"}</div>
                       )}
                     </div>
                      <div>
@@ -132,9 +154,10 @@ export default function DoctorProfile() {
                           className="w-full p-2 border border-slate-200 rounded-lg outline-none"
                           value={profileData.languages}
                           onChange={(e) => setProfileData({...profileData, languages: e.target.value})}
+                          placeholder="Languages..."
                         />
                       ) : (
-                        <div className="text-slate-900 font-medium">{profileData.languages}</div>
+                        <div className="text-slate-900 font-medium">{profileData.languages || "Not specified"}</div>
                       )}
                     </div>
                   </div>

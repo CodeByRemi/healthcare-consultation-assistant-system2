@@ -1,32 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import { FaUserCircle, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEdit, FaSave } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import PatientMobileFooter from "./components/PatientMobileFooter";
+import { toast } from "sonner";
 
 export default function PatientProfile() {
   const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   
-  // Mock data - would normally come from DB
+  // Mock data - initialized to empty or defaults
   const [profileData, setProfileData] = useState({
-    fullName: "John Doe",
-    email: currentUser?.email || "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Health St, Medical City, NY 10001",
-    bloodType: "O+",
-    height: "180 cm",
-    weight: "75 kg",
-    dob: "1990-05-15",
-    allergies: "Peanuts, Penicillin",
-    chronicConditions: "None"
+    fullName: "",
+    email: currentUser?.email || "",
+    phone: "",
+    address: "",
+    bloodType: "",
+    height: "",
+    weight: "",
+    dob: "",
+    allergies: "",
+    chronicConditions: ""
   });
+
+  useEffect(() => {
+    toast.info("Loading patient profile...");
+    // Simulate fetch
+    // setProfileData({...});
+  }, []);
 
   const handleSave = () => {
     // API call to save data would go here
     setIsEditing(false);
+    toast.success("Profile updated successfully!");
   };
 
   return (
@@ -43,7 +51,14 @@ export default function PatientProfile() {
             <div className="mb-6 flex justify-between items-center">
               <h1 className="text-2xl md:text-3xl font-bold text-slate-800">My Profile</h1>
               <button 
-                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                onClick={() => {
+                   if(isEditing) {
+                       handleSave();
+                   } else {
+                       setIsEditing(true);
+                       toast.info("Edit mode enabled");
+                   }
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                   isEditing 
                     ? "bg-green-600 text-white hover:bg-green-700" 
@@ -65,21 +80,21 @@ export default function PatientProfile() {
                     </div>
                   )}
                 </div>
-                <h2 className="text-xl font-bold text-slate-800">{profileData.fullName}</h2>
-                <p className="text-slate-500 mb-4">Patient ID: #PAT-2024-889</p>
+                <h2 className="text-xl font-bold text-slate-800">{profileData.fullName || "Your Name"}</h2>
+                <p className="text-slate-500 mb-4">Patient ID: #PAT-XXXX-XXX</p>
                 
                 <div className="w-full space-y-3 border-t border-slate-100 pt-4">
                   <div className="flex items-center gap-3 text-slate-600">
                     <FaEnvelope className="text-[#0A6ED1]" />
-                    <span className="text-sm truncate">{profileData.email}</span>
+                    <span className="text-sm truncate">{profileData.email || "email@example.com"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-slate-600">
                     <FaPhone className="text-[#0A6ED1]" />
-                    <span className="text-sm">{profileData.phone}</span>
+                    <span className="text-sm">{profileData.phone || "Phone Number"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-slate-600">
                     <FaMapMarkerAlt className="text-[#0A6ED1]" />
-                    <span className="text-sm">{profileData.address}</span>
+                    <span className="text-sm">{profileData.address || "Address"}</span>
                   </div>
                 </div>
               </div>

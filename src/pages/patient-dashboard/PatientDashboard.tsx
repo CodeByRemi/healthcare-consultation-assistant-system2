@@ -1,10 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
+import { toast } from "sonner";
 
 export default function PatientDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [userName, setUserName] = useState("Patient");
+  const [vitals, setVitals] = useState({ bp: "--/--", hr: "-- bpm" });
+
+  useEffect(() => {
+    toast.success("Welcome to your dashboard");
+    // Simulate data fetch
+    // setUser("John");
+    // setVitals({ bp: "120/80", hr: "72 bpm" });
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -20,7 +30,7 @@ export default function PatientDashboard() {
             <div className="max-w-7xl mx-auto w-full">
               <header className="mb-8">
                 <h1 className="text-3xl md:text-4xl font-['Newsreader'] font-medium mb-2">
-                  Welcome back, <span className="italic text-[#0A6ED1]">John</span>
+                  Welcome back, <span className="italic text-[#0A6ED1]">{userName}</span>
                 </h1>
                 <p className="text-slate-500">
                   Here's what's happening with your health today.
@@ -35,7 +45,7 @@ export default function PatientDashboard() {
                   <div className="text-slate-500 text-sm">
                     No upcoming appointments.
                   </div>
-                  <button className="mt-4 text-[#0A6ED1] font-medium text-sm hover:underline">
+                  <button onClick={() => toast.info("Redirecting to appointment scheduler...")} className="mt-4 text-[#0A6ED1] font-medium text-sm hover:underline">
                     Schedule New
                   </button>
                 </div>
@@ -45,11 +55,11 @@ export default function PatientDashboard() {
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Blood Pressure</span>
-                      <span className="font-medium">120/80</span>
+                      <span className="font-medium">{vitals.bp}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Heart Rate</span>
-                      <span className="font-medium">72 bpm</span>
+                      <span className="font-medium">{vitals.hr}</span>
                     </div>
                   </div>
                 </div>
@@ -57,16 +67,16 @@ export default function PatientDashboard() {
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                   <h3 className="font-semibold text-lg mb-4">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <button className="p-3 bg-slate-50 rounded-xl text-sm font-medium hover:bg-slate-100 transition-colors text-left">
+                    <button onClick={() => toast.success("Locating nearby doctors...")} className="p-3 bg-slate-50 rounded-xl text-sm font-medium hover:bg-slate-100 transition-colors text-left">
                       Find Doctor
                     </button>
-                    <button className="p-3 bg-slate-50 rounded-xl text-sm font-medium hover:bg-slate-100 transition-colors text-left">
+                    <button onClick={() => toast.success("Requesting prescription refill...")} className="p-3 bg-slate-50 rounded-xl text-sm font-medium hover:bg-slate-100 transition-colors text-left">
                       Refill RX
                     </button>
-                    <button className="p-3 bg-slate-50 rounded-xl text-sm font-medium hover:bg-slate-100 transition-colors text-left">
+                    <button onClick={() => toast.info("Opening secure messages...")} className="p-3 bg-slate-50 rounded-xl text-sm font-medium hover:bg-slate-100 transition-colors text-left">
                       Messages
                     </button>
-                    <button className="p-3 bg-slate-50 rounded-xl text-sm font-medium hover:bg-slate-100 transition-colors text-left">
+                    <button onClick={() => toast.info("Fetching lab results...")} className="p-3 bg-slate-50 rounded-xl text-sm font-medium hover:bg-slate-100 transition-colors text-left">
                       Lab Results
                     </button>
                   </div>
