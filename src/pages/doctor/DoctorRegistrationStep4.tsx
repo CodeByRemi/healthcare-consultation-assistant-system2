@@ -92,7 +92,8 @@ export default function DoctorRegistrationStep4() {
 
       // 3. Create Doctor Document in Firestore
       // We exclude password and raw file object from Firestore
-      const { password, profilePhoto, ...doctorProfileData } = prevData;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _p, profilePhoto: _pp, ...doctorProfileData } = prevData;
 
       await setDoc(doc(db, "doctors", user.uid), {
         uid: user.uid,

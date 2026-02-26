@@ -29,6 +29,8 @@ import PatientDetails from "./pages/doctor-dashboard/PatientDetails";
 import DoctorSettings from "./pages/doctor-dashboard/DoctorSettings";
 import DoctorSchedule from "./pages/doctor-dashboard/DoctorSchedule";
 import DoctorNotifications from "./pages/doctor-dashboard/DoctorNotifications";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import UpdatePassword from "./pages/common/UpdatePassword";
 
 // In your Routes
 
@@ -37,7 +39,9 @@ function App() {
     <>
       <Toaster position="top-center" richColors />
       <Routes>
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/" element={<Home />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
         <Route path="/choose-path" element={<ChooseYourPath />} />
         <Route path="/patient-reg" element={<PatientReg />} />
         <Route path="/patient/onboarding" element={<PatientOnboarding />} />
@@ -64,6 +68,7 @@ function App() {
         <Route path="/doctor/login" element={<DoctorLogin />} />
         <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
         <Route path="/doctor/forgot-password" element={<ForgotPassword />} />
+        <Route path="/admindashboard" element={<AdminDashboard />} />
       </Routes>
     </>
   );

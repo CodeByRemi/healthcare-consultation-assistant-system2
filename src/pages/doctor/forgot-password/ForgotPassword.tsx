@@ -26,7 +26,7 @@ export default function ForgotPassword() {
       toast.success("Reset email sent successfully.");
     } catch (error: unknown) {
       console.error("Forgot password error:", error);
-      const errorMessage = (error as any).code === 'auth/user-not-found'
+      const errorMessage = (error as { code?: string }).code === 'auth/user-not-found'
         ? "No account found with this email."
         : "Unable to send reset email. Please try again.";
       toast.error(errorMessage);

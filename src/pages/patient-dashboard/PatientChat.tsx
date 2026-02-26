@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { FaPaperPlane, FaRobot, FaUser, FaPlus, FaHistory, FaEllipsisV, FaTrash } from "react-icons/fa";
+import { FaPaperPlane, FaRobot, FaUser, FaPlus, FaHistory } from "react-icons/fa";
 import { model } from "../../lib/firebase";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";

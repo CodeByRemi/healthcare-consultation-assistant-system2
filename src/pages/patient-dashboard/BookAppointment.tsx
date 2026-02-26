@@ -103,9 +103,35 @@ export default function BookAppointment() {
     
     // Specialty Filter
     const matchesSpecialty = selectedSpecialty === "All" || specialty === selectedSpecialty;
+
+    // Time/Day Filter (Mock implementation since we don't have real schedule data available for all docs)
+    // In a real app, we would check doc.availability against selectedDay/Time
+    const matchesDay = selectedDay === "Any Day" || (doc.availableDays && doc.availableDays.includes(selectedDay)) || true; // Default true for demo
+    const matchesTime = selectedTime === "Any Time" || true; // Default true for demo
     
-    return matchesSearch && matchesSpecialty;
+    return matchesSearch && matchesSpecialty && matchesDay && matchesTime;
   });
+
+  // Generate simulated time slots based on selected date
+  const getAvailableTimeSlots = (dateString: string) => {
+    if (!dateString) return [];
+    // Mock simulation: different slots for different days/dates
+    const date = new Date(dateString);
+    const day = date.getDay();
+    
+    // Weekend logic (just for variety)
+    if (day === 0 || day === 6) {
+        return ["10:00 AM", "11:00 AM", "02:00 PM"];
+    }
+    
+    return [
+        "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", 
+        "11:00 AM", "11:30 AM", "02:00 PM", "02:30 PM", 
+        "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
+    ];
+  };
+
+  const currentSlots = getAvailableTimeSlots(bookingDate);
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -365,21 +391,32 @@ export default function BookAppointment() {
 
                                             <div>
                                                 <div className="text-xs font-semibold text-slate-500 mb-2 uppercase">Available Times</div>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    {(selectedDoctor.timeSlots || ["09:00 AM", "10:00 AM", "11:00 AM"]).map((time: string) => (
-                                                        <button 
-                                                            key={time} 
-                                                            onClick={() => setBookingTime(time)}
-                                                            className={`px-2 py-2 rounded-lg text-sm font-medium border transition-colors text-center ${
-                                                                bookingTime === time 
-                                                                ? "bg-[#0A6ED1] text-white border-[#0A6ED1]" 
-                                                                : "bg-white text-slate-600 border-slate-200 hover:border-[#0A6ED1]"
-                                                            }`}
-                                                        >
-                                                            {time}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                                
+                                                {!bookingDate ? (
+                                                    <div className="text-sm text-slate-400 italic bg-slate-50 p-3 rounded-lg border border-slate-100 text-center">
+                                                        Please select a date to view available times
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {currentSlots.length > 0 ? (
+                                                            currentSlots.map((time: string) => (
+                                                                <button 
+                                                                    key={time} 
+                                                                    onClick={() => setBookingTime(time)}
+                                                                    className={`px-2 py-2 rounded-lg text-sm font-medium border transition-colors text-center ${
+                                                                        bookingTime === time 
+                                                                        ? "bg-[#0A6ED1] text-white border-[#0A6ED1]" 
+                                                                        : "bg-white text-slate-600 border-slate-200 hover:border-[#0A6ED1] hover:text-[#0A6ED1]"
+                                                                    }`}
+                                                                >
+                                                                    {time}
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <div className="col-span-3 text-sm text-slate-400 text-center py-2">No slots available for this date</div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 

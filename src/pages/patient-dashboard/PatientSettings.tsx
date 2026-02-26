@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
@@ -86,6 +87,16 @@ export default function PatientSettings() {
                   {/* Account Settings */}
                   {activeTab === "account" && (
                     <div className="space-y-8">
+                       <div className="p-6 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Password</h3>
+                          <p className="text-slate-500 dark:text-slate-400 mb-4 text-sm">Update your password to keep your account secure.</p>
+                          <Link 
+                            to="/update-password" 
+                            className="inline-flex px-4 py-2 bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-500 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors"
+                          >
+                            Change Password
+                          </Link>
+                       </div>
                       <div>
                         <h2 className="text-xl font-bold text-slate-900 mb-4">Account Preferences</h2>
                         <div className="space-y-4">

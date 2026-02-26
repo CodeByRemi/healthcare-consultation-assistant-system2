@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { FaUserMd, FaBell, FaCalendarAlt, FaToggleOn, FaToggleOff } from "react-icons/fa";
@@ -48,13 +49,26 @@ export default function DoctorSettings() {
                 </button>
                  <button 
                   onClick={() => setActiveTab("account")}
-                  className={`w-full text-left px-4 py-3 rounded-xl transition-colors font-medium flex items-center gap-3 ${activeTab === "account" ? "bg-[#0A6ED1] text-white shadow-lg shadow-blue-500/20" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                  className={`w-full text-left px-4 py-3 rounded-xl transition-colors font-medium flex items-center gap-3 ${activeTab === "account" ? "bg-[#0A6ED1] text-white shadow-lg shadow-blue-500/20" : "bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"}`}
                 >
                   <FaUserMd /> Account
                 </button>
               </div>
 
-              <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+              <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-8">
+                {activeTab === "account" && (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Account Settings</h2>
+                        <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-100 dark:border-slate-600">
+                             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Password</h3>
+                             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Update your password to keep your account secure.</p>
+                             <Link to="/update-password" className="px-4 py-2 bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-500 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors">
+                                Change Password
+                             </Link>
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === "availability" && (
                   <div className="space-y-6">
                     <h2 className="text-xl font-bold text-slate-900 mb-4">Availability Settings</h2>
