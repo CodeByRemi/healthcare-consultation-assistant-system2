@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { FaPaperPlane, FaRobot } from "react-icons/fa";
+import ReactMarkdown from "react-markdown";
+import { model } from "../../lib/firebase";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
@@ -39,7 +41,7 @@ export default function PatientChat() {
     if (!input.trim()) return;
 
     const userMessage: Message = {
-      id: messages.length + 1,
+      id: Date.now(),
       text: input,
       sender: "user",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -49,28 +51,31 @@ export default function PatientChat() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiResponses = [
-        "I understand. Could you tell me more about your symptoms?",
-        "That sounds like it could be related to stress. Have you been sleeping well?",
-        "I recommend booking an appointment with a specialist for a check-up.",
-        "Please make sure to stay hydrated and rest.",
-        "Is there anything else you'd like to ask?",
-        "Based on what you're saying, a general physician would be a good start."
-      ];
-      const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
-
+    try {
+      const result = await model.generateContent(input);
+      const response = result.response;
+      const text = response.text();
+      
       const aiMessage: Message = {
-        id: messages.length + 2,
-        text: randomResponse,
+        id: Date.now() + 1,
+        text: text,
         sender: "ai",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error("AI Error:", error);
+      const errorMessage: Message = {
+        id: Date.now() + 1,
+        text: "I apologize, but I'm having trouble connecting right now. Please try again later.",
+        sender: "ai",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -110,7 +115,21 @@ export default function PatientChat() {
                                     ? "bg-[#0A6ED1] text-white rounded-br-none" 
                                     : "bg-white border border-slate-100 text-slate-700 rounded-bl-none"
                                 }`}>
-                                    <p className="leading-relaxed">{msg.text}</p>
+                                    <div className={`leading-relaxed text-sm md:text-base prose prose-slate max-w-none ${
+                                        msg.sender === "user" ? "prose-invert" : ""
+                                    }`}>
+                                        <ReactMarkdown 
+                                            components={{
+                                                ul: ({node, ...props}) => <ul className="list-disc pl-4 my-2" {...props} />,
+                                                ol: ({node, ...props}) => <ol className="list-decimal pl-4 my-2" {...props} />,
+                                                li: ({node, ...props}) => <li className="my-1" {...props} />,
+                                                p: ({node, ...props}) => <p className="my-1" {...props} />,
+                                                strong: ({node, ...props}) => <strong className="font-semibold" {...props} />,
+                                            }}
+                                        >
+                                            {msg.text}
+                                        </ReactMarkdown>
+                                    </div>
                                     <span className={`text-[10px] block mt-1 opacity-70 ${msg.sender === "user" ? "text-blue-100" : "text-slate-400"}`}>
                                         {msg.timestamp}
                                     </span>

@@ -68,24 +68,33 @@ export default function LoginForm() {
             />
           </div>
 
-          <div className="space-y-1.5">
+            <div className="space-y-1.5">
              <div className="flex justify-between items-center">
               <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                <FaLock className="w-4 h-4 text-[#0A6ED1]" />
-                Password
+              <FaLock className="w-4 h-4 text-[#0A6ED1]" />
+              Password
               </label>
               <Link to="/patient/forgot-password" className="text-xs font-medium text-[#0A6ED1] hover:underline">Forgot password?</Link>
             </div>
-            <input
-              type="password"
+            <div className="relative">
+              <input
+              type={formData.showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="••••••••"
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#0A6ED1] focus:ring-4 focus:ring-[#0A6ED1]/10 transition-all outline-none text-slate-800 placeholder:text-slate-400"
               required
-            />
-          </div>
+              />
+              <button
+              type="button"
+              onClick={() => setFormData({ ...formData, showPassword: !formData.showPassword })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+              {formData.showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            </div>
 
           <div className="flex items-center gap-3">
             <input

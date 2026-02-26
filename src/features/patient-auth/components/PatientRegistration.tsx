@@ -1,4 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../../../lib/firebase';
+import { toast } from 'sonner';
 import './PatientRegistration.css';
 
 interface FormData {
@@ -22,6 +27,7 @@ interface FormErrors {
 }
 
 export default function PatientRegistration() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     email: '',
@@ -91,28 +97,45 @@ export default function PatientRegistration() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitted(true);
 
     if (validateForm()) {
       setIsLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        console.log('Form submitted:', formData);
-        setIsLoading(false);
-        setShowSuccess(true);
-        // Reset form
-        setFormData({
-          fullName: '',
-          email: '',
-          phoneNumber: '',
-          gender: '',
-          password: '',
-          confirmPassword: '',
-          agreeToTerms: false,
+      
+      try {
+        const { user } = await createUserWithEmailAndPassword(
+          auth, 
+          formData.email, 
+          formData.password
+        );
+
+        await setDoc(doc(db, "patients", user.uid), {
+          uid: user.uid,
+          fullName: formData.fullName,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+          gender: formData.gender,
+          role: "patient",
+          onboardingCompleted: false,
+          createdAt: new Date().toISOString()
         });
-      }, 1500);
+
+        toast.success("Account created successfully!");
+        navigate('/patient/onboarding'); // Redirect to onboarding
+        
+      } catch (error: any) {
+        console.error("Registration error:", error);
+        let msg = "Failed to create account.";
+        if (error.code === 'auth/email-already-in-use') {
+          msg = "Email is already registered.";
+        } else if (error.code === 'auth/weak-password') {
+          msg = "Password should be at least 6 characters.";
+        }
+        toast.error(msg);
+        setIsLoading(false);
+      }
     }
   };
 

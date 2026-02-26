@@ -1,11 +1,31 @@
 import { FaBars, FaBell, FaUserCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import { useState, useEffect } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../../lib/firebase";
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
 export default function PatientDashboardHeader({ toggleSidebar }: HeaderProps) {
+  const { currentUser } = useAuth();
+  const [userName, setUserName] = useState("Patient");
+
+  useEffect(() => {
+    const fetchName = async () => {
+      if (currentUser) {
+        const docRef = doc(db, "patients", currentUser.uid);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          setUserName(snap.data().fullName || "Patient");
+        }
+      }
+    };
+    fetchName();
+  }, [currentUser]);
+
   return (
     <header className="h-20 bg-white border-b border-slate-100 px-6 md:px-8 flex items-center justify-between sticky top-0 z-10 transition-all duration-200">
       <div className="flex items-center gap-4">
@@ -34,7 +54,7 @@ export default function PatientDashboardHeader({ toggleSidebar }: HeaderProps) {
              {/* Profile Image or Fallback */}
              <FaUserCircle className="w-full h-full text-slate-400" />
           </div>
-          <span className="hidden md:block font-medium text-sm text-slate-700">John Doe</span>
+          <span className="hidden md:block font-medium text-sm text-slate-700">{userName}</span>
         </Link>
       </div>
     </header>

@@ -5,36 +5,69 @@ import { FaUserCircle, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEdit, FaSave } fro
 import { useAuth } from "../../context/AuthContext";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { toast } from "sonner";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+
 
 export default function PatientProfile() {
   const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   
-  // Mock data - initialized to empty or defaults
   const [profileData, setProfileData] = useState({
     fullName: "",
-    email: currentUser?.email || "",
-    phone: "",
+    email: "",
+    phoneNumber: "",
     address: "",
-    bloodType: "",
-    height: "",
-    weight: "",
+    bloodGroup: "",
+    gender: "",
     dob: "",
     allergies: "",
-    chronicConditions: ""
+    conditions: "",
+    medications: ""
   });
 
-  useEffect(() => {
-    toast.info("Loading patient profile...");
-    // Simulate fetch
-    // setProfileData({...});
-  }, []);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSave = () => {
-    // API call to save data would go here
-    setIsEditing(false);
-    toast.success("Profile updated successfully!");
+  // Fetch Data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (currentUser) {
+        try {
+          const docRef = doc(db, "patients", currentUser.uid);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            setProfileData(prev => ({...prev, ...snap.data()})); // Merge
+          }
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchData();
+  }, [currentUser]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setProfileData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    if (!currentUser) return;
+    try {
+      const docRef = doc(db, "patients", currentUser.uid);
+      await updateDoc(docRef, {
+        ...profileData,
+        updatedAt: new Date().toISOString()
+      });
+      setIsEditing(false);
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("Failed to save changes.");
+    }
   };
 
   return (
@@ -90,11 +123,19 @@ export default function PatientProfile() {
                   </div>
                   <div className="flex items-center gap-3 text-slate-600">
                     <FaPhone className="text-[#0A6ED1]" />
-                    <span className="text-sm">{profileData.phone || "Phone Number"}</span>
+                    {isEditing ? (
+                        <input className="border rounded p-1 text-sm w-full" name="phoneNumber" value={profileData.phoneNumber} onChange={handleChange} />
+                    ) : (
+                        <span className="text-sm">{profileData.phoneNumber || "Phone Number"}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 text-slate-600">
                     <FaMapMarkerAlt className="text-[#0A6ED1]" />
-                    <span className="text-sm">{profileData.address || "Address"}</span>
+                    {isEditing ? (
+                        <input className="border rounded p-1 text-sm w-full" name="address" value={profileData.address} onChange={handleChange} />
+                    ) : (
+                        <span className="text-sm">{profileData.address || "Address"}</span>
+                    )}
                   </div>
                 </div>
               </div>

@@ -3,18 +3,33 @@ import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { toast } from "sonner";
+import { useAuth } from "../../context/AuthContext";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
 
 export default function PatientDashboard() {
+  const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [userName, setUserName] = useState("Patient");
   const [vitals, setVitals] = useState({ bp: "--/--", hr: "-- bpm" });
 
   useEffect(() => {
-    toast.success("Welcome to your dashboard");
-    // Simulate data fetch
-    // setUser("John");
-    // setVitals({ bp: "120/80", hr: "72 bpm" });
-  }, []);
+    const fetchUserData = async () => {
+      if (currentUser) {
+        try {
+          const userDoc = await getDoc(doc(db, "patients", currentUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserName(userData.fullName || "Patient");
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [currentUser]);
 
   return (
     <div className="min-h-screen">

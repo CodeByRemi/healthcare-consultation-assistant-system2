@@ -58,6 +58,13 @@ export default function PatientOnboarding() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent submission if not on final step
+    if (step < 3) {
+      handleNext();
+      return;
+    }
+
     if (!currentUser) return;
 
     setIsLoading(true);

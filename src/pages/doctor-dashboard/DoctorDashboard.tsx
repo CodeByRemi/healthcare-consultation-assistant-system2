@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { 
@@ -13,7 +16,9 @@ import {
 import { toast } from "sonner";
 
 export default function DoctorDashboard() {
+  const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [doctorName, setDoctorName] = useState("Doctor");
 
   // Mock Data - Removed
   const [stats, setStats] = useState([
@@ -27,8 +32,21 @@ export default function DoctorDashboard() {
   const [patientQueue, setPatientQueue] = useState<any[]>([]);
 
   useEffect(() => {
-     toast.success("Dashboard loaded successfully");
-  }, []);
+     const fetchDoctorData = async () => {
+       if (currentUser) {
+         try {
+           const docRef = doc(db, "doctors", currentUser.uid);
+           const docSnap = await getDoc(docRef);
+           if (docSnap.exists()) {
+             setDoctorName(docSnap.data().fullName || "Doctor");
+           }
+         } catch (error) {
+           console.error("Error fetching doctor data:", error);
+         }
+       }
+     };
+     fetchDoctorData();
+  }, [currentUser]);
 
   const handleShowAllAppointments = () => {
     toast.info("Loading all appointments...");
@@ -51,7 +69,7 @@ export default function DoctorDashboard() {
             <header className="flex justify-between items-end">
                 <div>
                    <h1 className="text-3xl md:text-4xl font-['Newsreader'] font-medium mb-1 text-slate-900">
-                     Good morning, Dr. Smith
+                     Good morning, <span className="text-[#0A6ED1]">Dr. {doctorName.split(' ').pop()}</span>
                    </h1>
                    <p className="text-slate-500">Here's what's happening in your clinic today.</p>
                 </div>

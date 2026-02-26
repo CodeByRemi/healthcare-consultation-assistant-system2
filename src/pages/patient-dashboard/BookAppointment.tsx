@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { FaSearch, FaMapMarkerAlt, FaStar, FaUserMd, FaClock, FaCalendarAlt, FaTimes, FaGraduationCap } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { useAuth } from "../../context/AuthContext";
 
 const timePreferences = ["Any Time", "Morning", "Afternoon", "Evening"];
 const dayPreferences = ["Any Day", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -19,41 +23,93 @@ const specialties = [
 ];
 
 export default function BookAppointment() {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
-  const [selectedTime, setSelectedTime] = useState("Any Time");
   
-  // Doctors state initialized to empty
-  const [doctors, setDoctors] = useState<any[]>([]);
+  // Doctor List State
+  const [doctorList, setDoctorList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-     // Simulate fetching doctors
-     // setDoctors([...]);
-     toast.info("Please search effectively to find a doctor.");
-  }, []);
-
-  const handleBookAppointment = () => {
-    toast.success("Appointment booked successfully!");
-    setSelectedDoctor(null);
-  };
+  // Booking State
+  const [bookingDate, setBookingDate] = useState("");
+  const [bookingTime, setBookingTime] = useState("");
 
   const [selectedDay, setSelectedDay] = useState("Any Day");
+  const [selectedTime, setSelectedTime] = useState("Any Time"); // Filter preference
+  
+  // Selected Doctor for Modal
+  const [selectedDoctor, setSelectedDoctor] = useState<any | null>(null);
   const [hoveredSpecialty, setHoveredSpecialty] = useState<string | null>(null);
-  const [selectedDoctor, setSelectedDoctor] = useState<typeof doctors[0] | null>(null);
 
-  const filteredDoctors = doctors.filter(doc => {
-    const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          doc.specialty.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const q = query(collection(db, "doctors")); 
+        const querySnapshot = await getDocs(q);
+        const docs = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setDoctorList(docs);
+      } catch (error) {
+        console.error("Error fetching doctors:", error);
+        toast.error("Failed to load doctors.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
+
+  const handleBookAppointment = async () => {
+    if (!selectedDoctor || !bookingDate || !bookingTime) {
+      toast.error("Please select a doctor, date, and time.");
+      return;
+    }
+
+    if (!currentUser) {
+      toast.error("You must be logged in to book.");
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "appointments"), {
+        doctorId: selectedDoctor.id,
+        doctorName: selectedDoctor.fullName,
+        patientId: currentUser.uid,
+        date: bookingDate,
+        time: bookingTime,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        specialty: selectedDoctor.specialty
+      });
+
+      toast.success("Appointment request sent!");
+      setSelectedDoctor(null);
+      setBookingDate("");
+      setBookingTime("");
+    } catch (error) {
+      console.error("Booking failed:", error);
+      toast.error("Failed to book appointment.");
+    }
+  };
+
+  const filteredDoctors = doctorList.filter(doc => {
+    const name = doc.fullName || "";
+    const specialty = doc.specialty || "";
     
-    const matchesSpecialty = selectedSpecialty === "All" || doc.specialty === selectedSpecialty;
+    // Search
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          specialty.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesTime = selectedTime === "Any Time" || doc.timeSlots.includes(selectedTime);
-
-    // Some legacy mocks might not have availableDays yet, default to allow if missing for now
-    const matchesDay = selectedDay === "Any Day" || (doc.availableDays && doc.availableDays.includes(selectedDay));
-
-    return matchesSearch && matchesSpecialty && matchesTime && matchesDay;
+    // Specialty Filter
+    const matchesSpecialty = selectedSpecialty === "All" || specialty === selectedSpecialty;
+    
+    return matchesSearch && matchesSpecialty;
   });
 
   return (
@@ -303,25 +359,33 @@ export default function BookAppointment() {
                                         <div>
                                             <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
                                                 <FaCalendarAlt className="text-[#0A6ED1]" />
-                                                Available Slots
+                                                Select Appointment Time
                                             </h3>
                                             
                                             <div className="mb-4">
-                                                <div className="text-xs font-semibold text-slate-500 mb-2 uppercase">Days</div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {(selectedDoctor.availableDays || ["Mon", "Wed", "Fri"]).map((day: string) => (
-                                                        <span key={day} className="px-3 py-1 bg-blue-50 text-[#0A6ED1] rounded-lg text-sm font-medium border border-blue-100">
-                                                            {day}
-                                                        </span>
-                                                    ))}
-                                                </div>
+                                                <label className="text-xs font-semibold text-slate-500 mb-2 uppercase block">Date</label>
+                                                <input 
+                                                    type="date" 
+                                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg mb-4 cursor-pointer focus:ring-2 focus:ring-[#0A6ED1]"
+                                                    value={bookingDate}
+                                                    onChange={(e) => setBookingDate(e.target.value)}
+                                                    min={new Date().toISOString().split('T')[0]}
+                                                />
                                             </div>
 
                                             <div>
-                                                <div className="text-xs font-semibold text-slate-500 mb-2 uppercase">Times</div>
+                                                <div className="text-xs font-semibold text-slate-500 mb-2 uppercase">Available Times</div>
                                                 <div className="grid grid-cols-3 gap-2">
-                                                    {selectedDoctor.timeSlots.map((time: string) => (
-                                                        <button key={time} className="px-2 py-2 bg-white hover:bg-[#0A6ED1] hover:text-white text-slate-600 rounded-lg text-sm font-medium border border-slate-200 transition-colors text-center">
+                                                    {(selectedDoctor.timeSlots || ["09:00 AM", "10:00 AM", "11:00 AM"]).map((time: string) => (
+                                                        <button 
+                                                            key={time} 
+                                                            onClick={() => setBookingTime(time)}
+                                                            className={`px-2 py-2 rounded-lg text-sm font-medium border transition-colors text-center ${
+                                                                bookingTime === time 
+                                                                ? "bg-[#0A6ED1] text-white border-[#0A6ED1]" 
+                                                                : "bg-white text-slate-600 border-slate-200 hover:border-[#0A6ED1]"
+                                                            }`}
+                                                        >
                                                             {time}
                                                         </button>
                                                     ))}
@@ -330,8 +394,16 @@ export default function BookAppointment() {
                                         </div>
 
                                         <div className="pt-6 border-t border-slate-100">
-                                            <button onClick={handleBookAppointment} className="w-full bg-[#0A6ED1] hover:bg-[#095bb0] text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                                                Book Appointment Now
+                                            <button 
+                                                onClick={handleBookAppointment} 
+                                                disabled={!bookingDate || !bookingTime}
+                                                className={`w-full py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 ${
+                                                    (!bookingDate || !bookingTime) 
+                                                    ? "bg-slate-300 text-slate-500 cursor-not-allowed" 
+                                                    : "bg-[#0A6ED1] hover:bg-[#095bb0] text-white shadow-blue-500/20 active:scale-[0.98]"
+                                                }`}
+                                            >
+                                                {(!bookingDate || !bookingTime) ? "Select Date & Time" : "Confirm Booking"}
                                             </button>
                                             <p className="text-center text-xs text-slate-400 mt-3">
                                                 No payment required to book. Pay at the clinic.
