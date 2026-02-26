@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { FaSearch, FaMapMarkerAlt, FaStar, FaUserMd, FaClock, FaCalendarAlt, FaTimes, FaGraduationCap } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { collection, getDocs, addDoc, query } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
+import { db } from "../../lib/firebase";
 
 const timePreferences = ["Any Time", "Morning", "Afternoon", "Evening"];
 const dayPreferences = ["Any Day", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -24,14 +23,12 @@ const specialties = [
 
 export default function BookAppointment() {
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("All");
-  
+
   // Doctor List State
   const [doctorList, setDoctorList] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Booking State
   const [bookingDate, setBookingDate] = useState("");
@@ -51,14 +48,12 @@ export default function BookAppointment() {
         const querySnapshot = await getDocs(q);
         const docs = querySnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data()
+          ...(doc.data() as any)
         }));
         setDoctorList(docs);
       } catch (error) {
         console.error("Error fetching doctors:", error);
         toast.error("Failed to load doctors.");
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -248,8 +243,7 @@ export default function BookAppointment() {
                                 </div>
                             </div>
 
-                            <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
-                                <span className="text-sm font-semibold text-slate-700">{doc.consultationFee || '$100'}</span>
+                            <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-end">
                                 <button className="text-[#0A6ED1] font-medium hover:underline text-sm">
                                     View Details
                                 </button>
@@ -333,14 +327,10 @@ export default function BookAppointment() {
                                             </p>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                                <div className="text-slate-400 text-xs uppercase font-bold mb-1">Consultation Fee</div>
-                                                <div className="text-slate-900 font-bold text-lg">{selectedDoctor.consultationFee || "$100"}</div>
-                                            </div>
+                                        <div className="grid grid-cols-1 gap-4">
                                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                                 <div className="text-slate-400 text-xs uppercase font-bold mb-1">Availability</div>
-                                                <div className="text-green-600 font-bold text-sm">{selectedDoctor.availability}</div>
+                                                <div className="text-green-600 font-bold text-sm">{selectedDoctor.availability || "Available Today"}</div>
                                             </div>
                                         </div>
 
@@ -406,7 +396,7 @@ export default function BookAppointment() {
                                                 {(!bookingDate || !bookingTime) ? "Select Date & Time" : "Confirm Booking"}
                                             </button>
                                             <p className="text-center text-xs text-slate-400 mt-3">
-                                                No payment required to book. Pay at the clinic.
+                                                Book your consultation now.
                                             </p>
                                         </div>
                                     </div>

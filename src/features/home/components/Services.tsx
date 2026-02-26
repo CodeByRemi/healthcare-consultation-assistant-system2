@@ -1,4 +1,3 @@
-import React from 'react';
 import { FaUserMd, FaStethoscope, FaHeartbeat, FaCalendarCheck } from 'react-icons/fa';
 
 const services = [

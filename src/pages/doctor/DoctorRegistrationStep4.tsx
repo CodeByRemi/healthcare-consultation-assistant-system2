@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaShieldAlt as Shield, 
@@ -65,11 +66,23 @@ export default function DoctorRegistrationStep4() {
       const user = userCredential.user;
 
       // 2. Upload Files
-      // We use simple names but could use extensive unique names
       const idRef = ref(storage, `doctors/${user.uid}/id_document`);
       const licenseRef = ref(storage, `doctors/${user.uid}/medical_license`);
+      
+      let profilePhotoUrl = "";
+      // Handle the profile photo upload separately if it exists
+      if (prevData.profilePhoto) {
+          try {
+            const profilePhotoRef = ref(storage, `doctors/${user.uid}/profile_photo`);
+            await uploadBytes(profilePhotoRef, prevData.profilePhoto);
+            profilePhotoUrl = await getDownloadURL(profilePhotoRef);
+          } catch (e) {
+            console.error("Error uploading profile photo", e);
+             // Proceed even if photo fails? Or throw? Let's proceed but log it.
+          }
+      }
 
-      // Upload simultaneously
+      // Upload ID and License
       const uploadTasks = [
         uploadBytes(idRef, idFile!).then(() => getDownloadURL(idRef)),
         uploadBytes(licenseRef, licenseFile!).then(() => getDownloadURL(licenseRef))
@@ -78,12 +91,13 @@ export default function DoctorRegistrationStep4() {
       const [idUrl, licenseUrl] = await Promise.all(uploadTasks);
 
       // 3. Create Doctor Document in Firestore
-      // We exclude password from Firestore
-      const { password: _password, ...doctorProfileData } = prevData;
+      // We exclude password and raw file object from Firestore
+      const { password, profilePhoto, ...doctorProfileData } = prevData;
 
       await setDoc(doc(db, "doctors", user.uid), {
         uid: user.uid,
         ...doctorProfileData,
+        profilePhotoUrl,
         idDocumentUrl: idUrl,
         licenseDocumentUrl: licenseUrl,
         verificationStatus: 'pending',
@@ -96,6 +110,7 @@ export default function DoctorRegistrationStep4() {
     } catch (error: unknown) {
       console.error("Registration error:", error);
       let errorMessage = "Failed to submit registration.";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((error as any).code === 'auth/email-already-in-use') {
         errorMessage = "Email is already in use.";
       }
@@ -109,7 +124,12 @@ export default function DoctorRegistrationStep4() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-['Manrope'] bg-slate-50">
       {/* Left Panel - Branding & Info */}
-      <div className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6 }}
+        className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden"
+      >
         {/* Background Pattern Overlay */}
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
         
@@ -158,10 +178,15 @@ export default function DoctorRegistrationStep4() {
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Right Panel - Registration Form */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto"
+      >
         <div className="w-full max-w-lg bg-white p-8 lg:p-10 rounded-3xl shadow-xl border border-slate-100">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
@@ -305,7 +330,7 @@ export default function DoctorRegistrationStep4() {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

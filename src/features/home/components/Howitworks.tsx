@@ -1,5 +1,3 @@
-import React from 'react';
-
 const steps = [
     {
         number: "01",
@@ -35,9 +33,9 @@ const HowItWorks = () => {
                         <div className="relative">
                             <div className="absolute -left-4 -top-4 w-24 h-24 border-t-2 border-l-2 border-primary/20"></div>
                             <img 
-                                src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=2080&auto=format&fit=crop" 
-                                alt="Doctor Consultation" 
-                                className="w-full h-auto shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 ease-in-out"
+                                src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=1470&auto=format&fit=crop" 
+                                alt="Mobile Healthcare App" 
+                                className="w-full h-auto shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 ease-in-out rounded-xl"
                             />
                             <div className="absolute -right-4 -bottom-4 w-24 h-24 border-b-2 border-r-2 border-primary/20"></div>
                         </div>

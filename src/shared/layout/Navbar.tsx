@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 // Update with correct path based on folder structure
@@ -28,8 +28,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center space-x-8">
             <a href="#services" className="text-primary hover:text-accent transition-colors font-sans text-sm font-medium">Services</a>
             <a href="#how-it-works" className="text-primary hover:text-accent transition-colors font-sans text-sm font-medium">How It Works</a>
-            <Link to="/choose-path" className="text-primary hover:text-accent transition-colors font-sans text-sm font-medium">Log In</Link>
-            <Link to="/register" className="btn-accent text-sm rounded-none">Book Consultation</Link>
+            <Link to="/choose-path" className="btn-accent text-sm rounded-none">Book Consultation</Link>
         </div>
 
         {/* Mobile Join Now Button */}

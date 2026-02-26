@@ -6,11 +6,9 @@ import { db } from "../../lib/firebase";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { 
-  FaUserInjured, 
   FaCalendarCheck, 
   FaClock, 
   FaEllipsisH,
-  FaCheckCircle,
   FaArrowRight
 } from "react-icons/fa";
 import { toast } from "sonner";
@@ -20,16 +18,9 @@ export default function DoctorDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [doctorName, setDoctorName] = useState("Doctor");
 
-  // Mock Data - Removed
-  const [stats, setStats] = useState([
-    { label: "Total Patients", value: "0", change: "0%", icon: FaUserInjured, color: "bg-blue-500" },
-    { label: "Appointments Today", value: "0", change: "0 pending", icon: FaCalendarCheck, color: "bg-green-500" },
-    { label: "Pending Requests", value: "0", change: "0 from yesterday", icon: FaClock, color: "bg-orange-500" },
-  ]);
-
-  const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
-
-  const [patientQueue, setPatientQueue] = useState<any[]>([]);
+  // Mock data placeholders
+  const upcomingAppointments : any[] = [];
+  const stats: any[] = [];
 
   useEffect(() => {
      const fetchDoctorData = async () => {

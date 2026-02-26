@@ -32,14 +32,12 @@ export default function DoctorSchedule() {
   };
 
   // Mock Appointments Data - initialized to empty
-  const [appointments, setAppointments] = useState<any[]>([]);
-
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const appointments : any[] = [];
+  const availableSlots : string[] = [];
 
   useEffect(() => {
     // Simulate fetching schedule
     toast.info("Loading schedule...");
-    // setAvailableSlots(["08:00 AM", ...]);
   }, []);
 
   const handleAddAvailability = () => {

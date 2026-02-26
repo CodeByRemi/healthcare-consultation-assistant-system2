@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
   FaUser as User, 
   FaEnvelope as Mail, 
@@ -79,7 +80,12 @@ export default function DoctorRegistration() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-['Manrope'] bg-slate-50">
       {/* Left Panel - Branding & Info */}
-      <div className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6 }}
+        className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden"
+      >
         {/* Background Pattern Overlay */}
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=2864&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
         
@@ -129,10 +135,15 @@ export default function DoctorRegistration() {
             <a href="#" className="hover:text-white transition-colors">Terms</a>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Right Panel - Registration Form */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto"
+      >
         <div className="w-full max-w-lg bg-white p-8 lg:p-10 rounded-3xl shadow-xl border border-slate-100">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-slate-900 mb-2 font-['Newsreader']">Create Doctor Account</h2>
@@ -277,7 +288,7 @@ export default function DoctorRegistration() {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

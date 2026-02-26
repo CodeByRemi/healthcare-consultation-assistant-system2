@@ -10,7 +10,7 @@ export default function PatientAppointments() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   // Appointments state initialized to empty
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const appointments : any[] = [];
 
   useEffect(() => {
     toast.info("No upcoming appointments found.");

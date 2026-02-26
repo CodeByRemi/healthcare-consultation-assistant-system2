@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
     FaArrowRight, 
@@ -55,7 +56,12 @@ export default function DoctorRegistrationStep3() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-['Manrope'] bg-slate-50">
       {/* Left Panel - Branding & Info */}
-      <div className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6 }}
+        className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden"
+      >
         {/* Background Pattern Overlay */}
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?q=80&w=2091&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
         
@@ -104,10 +110,15 @@ export default function DoctorRegistrationStep3() {
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Right Panel - Schedule Form */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto"
+      >
         <div className="w-full max-w-lg bg-white p-8 lg:p-10 rounded-3xl shadow-xl border border-slate-100">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
@@ -189,7 +200,7 @@ export default function DoctorRegistrationStep3() {
             </div>
 
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

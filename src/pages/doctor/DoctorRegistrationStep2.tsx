@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
   FaHospital as Hospital, 
   FaUniversity as University, 
@@ -6,7 +7,9 @@ import {
   FaArrowRight as ArrowRight, 
   FaArrowLeft as ArrowLeft,
   FaCheckCircle as CheckCircle2,
-  FaBriefcaseMedical as Briefcase
+  FaBriefcaseMedical as Briefcase,
+  FaUserCircle as UserIcon,
+  FaCamera as Camera
 } from 'react-icons/fa';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import logo from "../../assets/patientreg.png";
@@ -22,6 +25,8 @@ export default function DoctorRegistrationStep2() {
     certifications: '',
     honors: ''
   });
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -36,6 +41,14 @@ export default function DoctorRegistrationStep2() {
         ...errors,
         [name]: ''
       });
+    }
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setProfilePhoto(file);
+      setPhotoPreview(URL.createObjectURL(file));
     }
   };
 
@@ -56,16 +69,25 @@ export default function DoctorRegistrationStep2() {
 
   const handleNextStep = () => {
     if (validateForm()) {
-      navigate('/doctor/step-3', { state: { prevData: { ...location.state?.prevData, ...formData } } });
+      // Pass file along or handle upload here? Ideally upload here or pass to final step.
+      // Passing File object in state might not work if it's large or serializable issues? No, state is fine in React Router.
+      navigate('/doctor/step-3', { state: { prevData: { ...location.state?.prevData, ...formData, profilePhoto } } });
     } else {
       toast.error("Please fill in all required fields correctly.");
     }
   };
 
+
+
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-['Manrope'] bg-slate-50">
       {/* Left Panel - Branding & Info */}
-      <div className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6 }}
+        className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden"
+      >
         {/* Background Pattern Overlay */}
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1581056771107-24ca5f033842?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
         
@@ -114,10 +136,15 @@ export default function DoctorRegistrationStep2() {
             <a href="#" className="hover:text-white transition-colors">Help Center</a>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Right Panel - Registration Form */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto"
+      >
         <div className="w-full max-w-lg bg-white p-8 lg:p-10 rounded-3xl shadow-xl border border-slate-100">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
@@ -132,6 +159,30 @@ export default function DoctorRegistrationStep2() {
           </div>
 
           <form className="space-y-5">
+            {/* Profile Photo Upload */}
+            <div className="flex flex-col items-center mb-6">
+                <div className="relative group cursor-pointer">
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-slate-200 group-hover:border-[#0da540] transition-colors bg-slate-50 flex items-center justify-center">
+                        {photoPreview ? (
+                            <img src={photoPreview} alt="Profile Preview" className="w-full h-full object-cover" />
+                        ) : (
+                            <UserIcon className="w-12 h-12 text-slate-300" />
+                        )}
+                    </div>
+                    <label htmlFor="photo-upload" className="absolute bottom-0 right-0 w-8 h-8 bg-[#0da540] text-white rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:bg-[#098734] transition-colors">
+                        <Camera size={14} />
+                    </label>
+                    <input 
+                        type="file" 
+                        id="photo-upload" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handlePhotoChange} 
+                    />
+                </div>
+                <p className="text-sm text-slate-500 mt-2 font-medium">Upload Profile Photo</p>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                 <Hospital className="w-4 h-4 text-[#0da540]" />
@@ -240,7 +291,7 @@ export default function DoctorRegistrationStep2() {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

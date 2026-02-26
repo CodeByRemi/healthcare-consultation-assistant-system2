@@ -7,6 +7,7 @@ import { auth } from "../../../lib/firebase";
 
 export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -78,7 +79,7 @@ export default function LoginForm() {
             </div>
             <div className="relative">
               <input
-              type={formData.showPassword ? "text" : "password"}
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
@@ -88,10 +89,10 @@ export default function LoginForm() {
               />
               <button
               type="button"
-              onClick={() => setFormData({ ...formData, showPassword: !formData.showPassword })}
+              onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
               >
-              {formData.showPassword ? "Hide" : "Show"}
+              {showPassword ? "Hide" : "Show"}
               </button>
             </div>
             </div>

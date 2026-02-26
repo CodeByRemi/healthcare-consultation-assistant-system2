@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import landingpage from "../../../../public/landingpage.png"
 
@@ -24,7 +23,7 @@ const Hero = () => {
                         Experience a new standard of medical consultation. Personalized care from world-class specialists, available at your convenience.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                        <Link to="/register" className="btn-primary text-center">
+                        <Link to="/choose-path" className="btn-primary text-center">
                             Start Your Journey
                         </Link>
                         <a href="#how-it-works" className="px-8 py-3 border border-primary text-primary hover:bg-primary hover:text-white transition-colors text-center font-medium font-sans">

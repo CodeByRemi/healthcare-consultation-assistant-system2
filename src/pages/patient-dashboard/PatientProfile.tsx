@@ -22,12 +22,13 @@ export default function PatientProfile() {
     bloodGroup: "",
     gender: "",
     dob: "",
+    bloodType: "", // Added missing field
+    height: "", // Added missing field
+    weight: "", // Added missing field
     allergies: "",
     conditions: "",
     medications: ""
   });
-
-  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch Data
   useEffect(() => {
@@ -41,8 +42,6 @@ export default function PatientProfile() {
           }
         } catch (error) {
           console.error("Error fetching profile:", error);
-        } finally {
-          setIsLoading(false);
         }
       }
     };

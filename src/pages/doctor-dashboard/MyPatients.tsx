@@ -14,7 +14,7 @@ export default function MyPatients() {
   const [requests, setRequests] = useState<any[]>([]);
 
   // Mock Patients Data - Initialized to empty
-  const [patients, setPatients] = useState<any[]>([]);
+  const patients : any[] = [];
 
   useEffect(() => {
     toast.info("Loading patient list...");

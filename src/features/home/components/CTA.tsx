@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
 const CTA = () => {
@@ -13,7 +12,7 @@ const CTA = () => {
                         <p className="text-white/60 text-lg font-light">Join thousands of users who trust Medicare for their healthcare needs. Sign up today for free.</p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-4 flex-shrink-0">
-                        <Link to="/register" className="px-8 py-4 bg-white text-[#2C2926] font-medium uppercase tracking-wider text-sm rounded-lg hover:bg-accent hover:text-white transition-colors shadow-lg text-center">
+                        <Link to="/choose-path" className="px-8 py-4 bg-white text-[#2C2926] font-medium uppercase tracking-wider text-sm rounded-lg hover:bg-accent hover:text-white transition-colors shadow-lg text-center">
                             Get Started
                         </Link>
                         
