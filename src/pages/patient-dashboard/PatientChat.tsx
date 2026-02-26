@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-import { FaPaperPlane, FaRobot, FaUser, FaPlus, FaHistory } from "react-icons/fa";
-import { model } from "../../lib/firebase";
+import { Link, useNavigate } from "react-router-dom";
+import { FaPaperPlane, FaRobot, FaUser, FaPlus, FaHistory, FaArrowRight } from "react-icons/fa";
+import { model, db } from "../../lib/firebase";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
@@ -219,11 +220,39 @@ export default function PatientChat() {
                                         : "bg-white text-slate-800 border border-slate-100 rounded-tl-none"
                                     }`}>
                                         <div className="prose prose-sm max-w-none dark:prose-invert">
-                                            <ReactMarkdown>{msg.text}</ReactMarkdown>
+                                            <ReactMarkdown
+                                                components={{
+                                                    a: ({node, href, children, ...props}) => {
+                                                        const isAction = typeof children === 'string' && children.startsWith('ACTION:');
+                                                        if (isAction && href) {
+                                                            const label = (children as string).replace('ACTION:', '').trim();
+                                                            return (
+                                                                <Link 
+                                                                    to={href}
+                                                                    className="inline-flex items-center gap-2 px-4 py-2 mt-2 bg-[#0A6ED1] text-white rounded-lg text-sm font-medium hover:bg-[#095bb0] transition-colors no-underline"
+                                                                >
+                                                                    {label} <FaArrowRight className="text-xs" />
+                                                                </Link>
+                                                            );
+                                                        }
+                                                        return <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#0A6ED1] hover:underline" {...props}>{children}</a>;
+                                                    },
+                                                    ul: ({node, ...props}) => <ul className="list-disc pl-4 my-2 text-slate-700" {...props} />,
+                                                    ol: ({node, ...props}) => <ol className="list-decimal pl-4 my-2 text-slate-700" {...props} />,
+                                                    li: ({node, ...props}) => <li className="my-1" {...props} />,
+                                                    p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                                                    strong: ({node, ...props}) => <strong className="font-semibold text-slate-900" {...props} />,
+                                                }}
+                                            >
+                                                {msg.text}
+                                            </ReactMarkdown>
                                         </div>
                                     </div>
                                     <span className="text-[10px] text-slate-400 mt-1 px-1">
-                                        {msg.timestamp}
+                                        {msg.id === "initial" || typeof msg.timestamp === 'string' 
+                                            ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                            : msg.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                        }
                                     </span>
                                 </div>
                             </motion.div>

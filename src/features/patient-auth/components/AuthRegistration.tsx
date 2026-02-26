@@ -40,8 +40,14 @@ export default function RegisterForm() {
       );
       const user = userCredential.user;
 
+      // Generate a unique patient ID (e.g., PAT-2024-1234)
+      const year = new Date().getFullYear();
+      const randomId = Math.floor(1000 + Math.random() * 9000);
+      const patientId = `PAT-${year}-${randomId}`;
+
       await setDoc(doc(db, "patients", user.uid), {
         uid: user.uid,
+        patientId: patientId,
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone,

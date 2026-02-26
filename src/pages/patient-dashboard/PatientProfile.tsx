@@ -18,6 +18,7 @@ export default function PatientProfile() {
     fullName: "",
     email: "",
     phoneNumber: "",
+    patientId: "",
     address: "",
     bloodGroup: "",
     gender: "",
@@ -38,7 +39,12 @@ export default function PatientProfile() {
           const docRef = doc(db, "patients", currentUser.uid);
           const snap = await getDoc(docRef);
           if (snap.exists()) {
-            setProfileData(prev => ({...prev, ...snap.data()})); // Merge
+            const data = snap.data();
+            setProfileData(prev => ({
+                ...prev, 
+                ...data,
+                patientId: data.patientId || "Generating..."
+            })); 
           }
         } catch (error) {
           console.error("Error fetching profile:", error);
@@ -113,7 +119,9 @@ export default function PatientProfile() {
                   )}
                 </div>
                 <h2 className="text-xl font-bold text-slate-800">{profileData.fullName || "Your Name"}</h2>
-                <p className="text-slate-500 mb-4">Patient ID: #PAT-XXXX-XXX</p>
+                <p className="text-slate-500 mb-4 px-3 py-1 bg-slate-100 rounded-full text-xs font-medium">
+                  {profileData.patientId || "ID Loading..."}
+                </p>
                 
                 <div className="w-full space-y-3 border-t border-slate-100 pt-4">
                   <div className="flex items-center gap-3 text-slate-600">
