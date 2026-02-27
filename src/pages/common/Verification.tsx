@@ -57,13 +57,17 @@ export default function VerificationStatus() {
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center mt-6">
           <button
-            onClick={() => navigate("/")} // <-- navigate home
+            onClick={() => navigate("/")} 
             className="w-full sm:w-auto px-8 py-3 bg-green-500 hover:bg-green-600 text-black font-bold rounded-lg transition-shadow shadow-lg"
           >
             Go Home
           </button>
-          <button className="w-full sm:w-auto px-8 py-3 border border-green-500 hover:bg-green-700 hover:text-black font-bold rounded-lg transition">
-            Contact Support
+          
+          <button 
+            onClick={() => navigate("/doctor/dashboard")}
+            className="w-full sm:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-shadow shadow-lg animate-pulse"
+          >
+            Bypass Verification (Dev)
           </button>
         </div>
       </div>

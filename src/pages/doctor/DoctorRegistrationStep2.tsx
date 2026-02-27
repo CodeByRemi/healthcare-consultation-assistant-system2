@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 export default function DoctorRegistrationStep2() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({  
     hospital: '',
     experience: '',
     school: '',
@@ -76,6 +76,13 @@ export default function DoctorRegistrationStep2() {
       toast.error("Please fill in all required fields correctly.");
     }
   };
+
+  const hiddenFileInput = document.getElementById("photo-upload");
+  if(hiddenFileInput){
+      hiddenFileInput.addEventListener("change", (e:any) => {
+        handlePhotoChange(e);
+      })
+  }
 
 
 

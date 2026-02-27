@@ -3,16 +3,18 @@ import ReactMarkdown from "react-markdown";
 import { Link, useNavigate } from "react-router-dom";
 import { FaPaperPlane, FaRobot, FaUser, FaPlus, FaHistory, FaArrowRight } from "react-icons/fa";
 import { model, db } from "../../lib/firebase";
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, getDoc, doc } from "firebase/firestore";
+import { useAuth } from "../../context/AuthContext";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
-  id: number;
+  id: string;
   text: string;
   sender: "user" | "ai";
-  timestamp: string;
+  timestamp: any;
 }
 
 interface ChatSession {
@@ -23,15 +25,10 @@ interface ChatSession {
 }
 
 export default function PatientChat() {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      text: "Hello! I'm your AI health assistant. How can I help you today?",
-      sender: "ai",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -40,65 +37,91 @@ export default function PatientChat() {
   const [showHistory, setShowHistory] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
 
-  // Handle sidebar toggling
-  useEffect(() => {
-    if (showHistory) {
-      setIsSidebarOpen(false);
-    }
-  }, [showHistory]);
-
   const toggleHistory = () => {
-    if (!showHistory) {
-        setIsSidebarOpen(false); // Close main sidebar when opening history
-    }
     setShowHistory(!showHistory);
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Load chat history
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, "patients", currentUser.uid, "chats"), 
+      orderBy("timestamp", "asc")
+    );
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const msgs: Message[] = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+      } as Message));
+      
+      if (msgs.length === 0) {
+         try {
+             const userDoc = await getDoc(doc(db, "patients", currentUser.uid));
+             const userData = userDoc.data();
+             const firstName = userData?.fullName?.split(' ')[0] || "there";
+             
+             // Initial Welcome (Not saved to DB automatically to avoid empty chats, but shown locally)
+             setMessages([{
+                 id: "welcome",
+                 text: `Hello ${firstName}! I'm Medi, your personal AI health assistant. I'm here to listen and help you with any health questions or symptoms. How are you feeling today?`,
+                 sender: "ai",
+                 timestamp: new Date()
+             }]);
+         } catch (error) {
+             console.error("Error creating welcome message:", error);
+         }
+      } else {
+        setMessages(msgs);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !currentUser) return;
 
-    const userMessage: Message = {
-      id: Date.now(),
-      text: input,
-      sender: "user",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const userText = input;
     setInput("");
     setIsTyping(true);
 
     try {
-      const result = await model.generateContent(input);
-      const response = result.response;
-      const text = response.text();
+      // Save User Message
+      await addDoc(collection(db, "patients", currentUser.uid, "chats"), {
+        text: userText,
+        sender: "user",
+        timestamp: serverTimestamp()
+      });
+
+      // Generate AI Response
+      const result = await model.generateContent(userText);
+      const response = await result.response;
+      let text = response.text();
+
+      // Format Buttons
+      text = text.replace(
+        /\[BUTTON: (.*?) \| (.*?)\]/g, 
+        (_, label, path) => `[ACTION:${label}](${path})`
+      );
       
-      const aiMessage: Message = {
-        id: Date.now() + 1,
+      // Save AI Response
+      await addDoc(collection(db, "patients", currentUser.uid, "chats"), {
         text: text,
         sender: "ai",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      
-      setMessages(prev => [...prev, aiMessage]);
+        timestamp: serverTimestamp()
+      });
+
     } catch (error) {
       console.error("AI Error:", error);
-      const errorMessage: Message = {
-        id: Date.now() + 1,
-        text: "I apologize, but I'm having trouble connecting right now. Please try again later.",
+      const errorMessage = "I apologize, but I'm having trouble connecting right now.";
+       await addDoc(collection(db, "patients", currentUser.uid, "chats"), {
+        text: errorMessage,
         sender: "ai",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, errorMessage]);
+        timestamp: serverTimestamp()
+      });
     } finally {
       setIsTyping(false);
     }
@@ -119,7 +142,7 @@ export default function PatientChat() {
     
     setMessages([
       {
-        id: Date.now(),
+        id: Date.now().toString(),
         text: "Hello! I'm your AI health assistant. How can I help you today?",
         sender: "ai",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -249,10 +272,19 @@ export default function PatientChat() {
                                         </div>
                                     </div>
                                     <span className="text-[10px] text-slate-400 mt-1 px-1">
-                                        {msg.id === "initial" || typeof msg.timestamp === 'string' 
-                                            ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                            : msg.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                        }
+                                        {(() => {
+                                            if (!msg.timestamp) return "Sending...";
+                                            if (typeof msg.timestamp === 'string') return msg.timestamp;
+                                            // Handle Firestore Timestamp
+                                            if (typeof msg.timestamp?.toDate === 'function') {
+                                                return msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                            }
+                                            // Handle JS Date object
+                                            if (msg.timestamp instanceof Date) {
+                                                return msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                            }
+                                            return "";
+                                        })()}
                                     </span>
                                 </div>
                             </motion.div>

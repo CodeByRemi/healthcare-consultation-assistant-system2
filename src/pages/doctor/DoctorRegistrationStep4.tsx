@@ -98,6 +98,7 @@ export default function DoctorRegistrationStep4() {
       await setDoc(doc(db, "doctors", user.uid), {
         uid: user.uid,
         ...doctorProfileData,
+        email: user.email,
         profilePhotoUrl,
         idDocumentUrl: idUrl,
         licenseDocumentUrl: licenseUrl,

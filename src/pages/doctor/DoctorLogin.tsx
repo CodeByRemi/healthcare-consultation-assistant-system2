@@ -36,7 +36,14 @@ export default function DoctorLogin() {
       navigate('/doctor/dashboard');
     } catch (error: unknown) {
       console.error("Login error:", error);
-      toast.error("Invalid credentials.");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorCode = (error as any).code;
+      let errorMessage = "Invalid credentials.";
+      
+      if (errorCode === 'auth/user-not-found') errorMessage = "No account found with this email.";
+      if (errorCode === 'auth/wrong-password') errorMessage = "Incorrect password.";
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

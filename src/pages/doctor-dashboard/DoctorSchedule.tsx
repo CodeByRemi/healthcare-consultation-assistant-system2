@@ -7,7 +7,7 @@ import DoctorAvailabilityModal from "./components/DoctorAvailabilityModal";
 
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 interface Appointment {
   id: string;
@@ -66,8 +66,30 @@ export default function DoctorSchedule() {
                 setScheduleData([]);
             }
 
-            // 2. Get Appointments for this date (Placeholder)
-            setAppointments([]); 
+            // 2. Get Appointments for this date
+            const q = query(
+                collection(db, "appointments"),
+                where("doctorId", "==", user.uid),
+                where("date", "==", dateId)
+            );
+            
+            const querySnapshot = await getDocs(q);
+            const appts: Appointment[] = [];
+            
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                appts.push({
+                    id: doc.id,
+                    time: data.time || "00:00",
+                    patient: data.patientName || "Unknown Patient",
+                    status: (data.status === 'confirmed' ? 'Confirmed' : data.status === 'pending' ? 'Pending' : 'Cancelled') as 'Confirmed' | 'Pending' | 'Cancelled',
+                    type: data.type || "General Consultation",
+                    duration: "30 min",
+                    notes: data.notes
+                });
+            });
+            
+            setAppointments(appts); 
 
         } catch (error) {
             console.error("Error loading schedule:", error);

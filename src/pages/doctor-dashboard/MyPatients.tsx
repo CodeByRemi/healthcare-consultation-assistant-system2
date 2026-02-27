@@ -2,34 +2,120 @@ import { useState, useEffect } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { Link } from "react-router-dom";
-import { FaSearch, FaCheck, FaTimes, FaClock, FaEllipsisH } from "react-icons/fa";
+import { FaSearch, FaCheck, FaTimes, FaClock, FaEllipsisH, FaUserInjured } from "react-icons/fa";
 import { toast } from "sonner";
+import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { useAuth } from "../../context/AuthContext";
 
 export default function MyPatients() {
+  const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("requests");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock Request Data - Initialized to empty
+  // Real Data
   const [requests, setRequests] = useState<any[]>([]);
-
-  // Mock Patients Data - Initialized to empty
-  const patients : any[] = [];
+  const [patients, setPatients] = useState<any[]>([]);
 
   useEffect(() => {
-    toast.info("Loading patient list...");
-    // Fetch data here
-  }, []);
+    const fetchData = async () => {
+      if (!currentUser) return;
+      setIsLoading(true);
+      try {
+        const q = query(
+             collection(db, "appointments"),
+             where("doctorId", "==", currentUser.uid)
+        );
+        
+        const snapshot = await getDocs(q);
+        const pending: any[] = [];
+        const uniquePatients = new Map();
 
-  const handleAccept = (id: number) => {
-    // const patient = requests.find(r => r.id === id);
-    setRequests(requests.filter(r => r.id !== id));
-    toast.success("Patient request accepted");
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const appointment = { 
+                id: docSnap.id, 
+                ...data,
+                name: data.patientName || "Unknown Patient",
+                time: data.time || "00:00",
+                type: data.type || "General",
+                age: data.patientAge || "N/A", // Map potentially missing fields
+                reason: data.notes || data.reason || "No reason provided",
+                image: data.patientImage || null,
+                date: data.date || ""
+            };
+
+            if (data.status === 'pending') {
+                pending.push(appointment);
+            } else if (data.status === 'confirmed' || data.status === 'completed') {
+                if (!uniquePatients.has(data.patientId)) {
+                    uniquePatients.set(data.patientId, {
+                        ...appointment,
+                        lastVisit: data.date,
+                        condition: appointment.reason,
+                        status: "Active"
+                    });
+                } else {
+                     // Update last visit if newer
+                     const existing = uniquePatients.get(data.patientId);
+                     if (new Date(data.date) > new Date(existing.lastVisit)) {
+                         existing.lastVisit = data.date;
+                         // Keep most recent appointment details
+                         uniquePatients.set(data.patientId, {
+                            ...existing,
+                            lastVisit: data.date,
+                            condition: appointment.reason
+                         });
+                     }
+                }
+            }
+        });
+
+        setRequests(pending);
+        setPatients(Array.from(uniquePatients.values()));
+
+      } catch (error) {
+        console.error("Error fetching patients:", error);
+        toast.error("Failed to load patient data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [currentUser]);
+
+  const handleAccept = async (id: string) => {
+      try {
+          await updateDoc(doc(db, "appointments", id), { status: 'confirmed' });
+          toast.success("Appointment confirmed");
+          // Update local state
+          const accepted = requests.find(r => r.id === id);
+          if (accepted) {
+              setRequests(prev => prev.filter(r => r.id !== id));
+              setPatients(prev => {
+                  // Check if patient already exists
+                  if (prev.some(p => p.patientId === accepted.patientId)) return prev;
+                  return [...prev, { ...accepted, status: 'Active', lastVisit: accepted.date, condition: accepted.reason }];
+              });
+          }
+      } catch (error) {
+          console.error("Error accepting appointment:", error);
+          toast.error("Failed to confirm appointment");
+      }
   };
 
-  const handleReject = (id: number) => {
-    setRequests(requests.filter(r => r.id !== id));
-    toast.success("Patient request rejected");
+  const handleDecline = async (id: string) => {
+      try {
+          await updateDoc(doc(db, "appointments", id), { status: 'cancelled' });
+          toast.success("Appointment declined");
+          setRequests(prev => prev.filter(r => r.id !== id));
+      } catch (error) {
+          console.error("Error declining appointment:", error);
+          toast.error("Failed to decline appointment");
+      }
   };
 
   return (
@@ -55,7 +141,7 @@ export default function MyPatients() {
                   onClick={() => setActiveTab("requests")}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'requests' ? 'bg-[#0A6ED1] text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                  Requests <span className="ml-2 bg-white/20 px-1.5 py-0.5 rounded text-xs">{requests.length}</span>
+                  Requests {requests.length > 0 && <span className="ml-2 bg-white/20 px-1.5 py-0.5 rounded text-xs">{requests.length}</span>}
                 </button>
                 <button 
                    onClick={() => setActiveTab("all")}
@@ -78,7 +164,11 @@ export default function MyPatients() {
                />
             </div>
 
-            {activeTab === "requests" ? (
+            {isLoading ? (
+                <div className="flex justify-center py-20">
+                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#0A6ED1]"></div>
+                </div>
+            ) : activeTab === "requests" ? (
               <div className="grid gap-4">
                 {requests.length === 0 ? (
                   <div className="text-center py-20 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
@@ -88,12 +178,18 @@ export default function MyPatients() {
                   requests.map((req) => (
                     <div key={req.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6 hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-4 w-full md:w-auto">
-                        <img src={req.image} alt={req.name} className="w-16 h-16 rounded-full object-cover bg-slate-100" />
+                        {req.image ? (
+                             <img src={req.image} alt={req.name} className="w-16 h-16 rounded-full object-cover bg-slate-100" />
+                        ) : (
+                             <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-2xl">
+                                 <FaUserInjured />
+                             </div>
+                        )}
                         <div>
-                          <h3 className="text-lg font-bold text-slate-900">{req.name}</h3>
+                          <h3 className="lg:text-lg font-bold text-slate-900">{req.name}</h3>
                           <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
                             <span className="bg-blue-50 text-[#0A6ED1] px-2 py-0.5 rounded text-xs font-semibold">{req.type}</span>
-                            <span>• {req.age} yrs</span>
+                            <span>• {req.date}</span>
                             <span>• {req.reason}</span>
                           </div>
                         </div>
@@ -108,13 +204,10 @@ export default function MyPatients() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <Link to={`/doctor/patients/${req.id}`} className="px-4 py-2 border border-slate-200 rounded-lg text-slate-600 font-semibold text-sm hover:bg-slate-50">
-                                Review Details
-                            </Link>
                             <button onClick={() => handleAccept(req.id)} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Accept">
                                 <FaCheck />
                             </button>
-                             <button onClick={() => handleReject(req.id)} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Decline">
+                             <button onClick={() => handleDecline(req.id)} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Decline">
                                 <FaTimes />
                             </button>
                         </div>
@@ -140,10 +233,16 @@ export default function MyPatients() {
                       .map((patient) => (
                       <tr key={patient.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-6 py-4 flex items-center gap-3">
-                          <img src={patient.image} alt={patient.name} className="w-10 h-10 rounded-full object-cover" />
+                             {patient.image ? (
+                                  <img src={patient.image} alt={patient.name} className="w-10 h-10 rounded-full object-cover" />
+                             ) : (
+                                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                     <FaUserInjured />
+                                  </div>
+                             )}
                           <div>
                             <div className="font-bold text-slate-900">{patient.name}</div>
-                            <div className="text-xs text-slate-400">ID: #{patient.id + 2000}</div>
+                            {/* <div className="text-xs text-slate-400">ID: #{patient.id}</div> */}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600">{patient.condition}</td>
