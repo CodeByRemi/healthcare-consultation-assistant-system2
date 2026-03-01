@@ -4,10 +4,12 @@ import { FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
 import { toast } from "sonner";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
+import PatientDetailsModal from "./PatientDetailsModal";
 
 export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -28,11 +30,8 @@ export default function LoginForm() {
       console.log("Sign in successful!");
       toast.success("Welcome back!");
       
-      // Delay navigation slightly to ensure state updates
-      setTimeout(() => {
-        console.log("Navigating to dashboard...");
-        navigate("/patient/dashboard", { replace: true }); 
-      }, 100);
+      // Show the details modal first
+      setShowModal(true);
       
     } catch (error) {
       console.error("Login error:", error);
@@ -40,6 +39,15 @@ export default function LoginForm() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    // Delay navigation slightly to ensure modal closes
+    setTimeout(() => {
+      console.log("Navigating to dashboard...");
+      navigate("/patient/dashboard", { replace: true }); 
+    }, 300);
   };
 
   return (
@@ -135,6 +143,12 @@ export default function LoginForm() {
           </div>
         </div>
       </div>
+
+      {/* Patient Details Modal */}
+      <PatientDetailsModal 
+        isOpen={showModal} 
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }

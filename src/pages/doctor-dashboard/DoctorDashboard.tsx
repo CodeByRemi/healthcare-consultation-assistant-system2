@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { doc, getDoc, collection, query, where, orderBy, onSnapshot, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
@@ -12,8 +12,7 @@ import {
   FaArrowRight,
   FaUserInjured,
   FaClipboardList,
-  FaStar,
-  FaVideo
+  FaStar
 } from "react-icons/fa";
 import { toast } from "sonner";
 
@@ -32,12 +31,12 @@ interface Appointment {
 export default function DoctorDashboard() {
   const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [doctorName, setDoctorName] = useState("Doctor");
+  const [doctorName, setDoctorName] = useState("");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [stats, setStats] = useState([
-    { label: "Total Patients", value: "0", change: "+0%", icon: FaUserInjured, color: "bg-blue-50 text-blue-600" },
-    { label: "Appointments", value: "0", change: "+0%", icon: FaCalendarCheck, color: "bg-purple-50 text-purple-600" },
-    { label: "Consultations", value: "0", change: "+0%", icon: FaVideo, color: "bg-emerald-50 text-emerald-600" },
+    { label: "Total Patients", value: "0", change: "0%", icon: FaUserInjured, color: "bg-blue-50 text-blue-600" },
+    { label: "Today's Appts", value: "0", change: "Active", icon: FaCalendarCheck, color: "bg-purple-50 text-purple-600" },
+    { label: "Completed", value: "0", change: "Total", icon: FaClipboardList, color: "bg-emerald-50 text-emerald-600" },
     { label: "Rating", value: "0.0", change: "+0.0", icon: FaStar, color: "bg-yellow-50 text-yellow-600" },
   ]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,7 +70,6 @@ export default function DoctorDashboard() {
 
            const unsubscribe = onSnapshot(q, (snapshot) => {
              const appts: Appointment[] = [];
-             let totalAppts = 0;
              let completedAppts = 0;
              const uniquePatients = new Set();
              
@@ -82,7 +80,6 @@ export default function DoctorDashboard() {
                     appts.push({ id: doc.id, ...data } as Appointment);
                 }
                 
-                totalAppts++;
                 if (data.status === 'completed') completedAppts++;
                 if (data.patientId) uniquePatients.add(data.patientId);
              });
@@ -136,7 +133,13 @@ export default function DoctorDashboard() {
             <header className="flex justify-between items-end">
                 <div>
                    <h1 className="text-3xl md:text-4xl font-['Newsreader'] font-medium mb-1 text-slate-900">
-                     Good morning, <span className="text-[#0A6ED1]">Dr. {doctorName.split(' ').pop()}</span>
+                     Good morning, <span className="text-[#0A6ED1]">
+                       {isLoading ? (
+                         <span className="animate-pulse">Loading...</span>
+                       ) : (
+                         `Dr. ${doctorName.split(' ').pop()}`
+                       )}
+                     </span>
                    </h1>
                    <p className="text-slate-500">Here's what's happening in your clinic today.</p>
                 </div>

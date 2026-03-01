@@ -4,7 +4,6 @@ import {
   Calendar, 
   MessageSquare, 
   ArrowRight, 
-  ChevronRight,
   Stethoscope,
   Activity,
   User 
@@ -21,11 +20,12 @@ import { db } from "../../lib/firebase";
 export default function PatientDashboard() {
   const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [firstName, setFirstName] = useState("Patient");
+  const [firstName, setFirstName] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [personalInfo, setPersonalInfo] = useState({
-    weight: "70 kg", 
-    height: "175 cm",
-    bloodType: "O+"
+    weight: "—", 
+    height: "—",
+    bloodType: "—"
   });
 
   const containerVariants = {
@@ -49,6 +49,7 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     const fetchUserData = async () => {
+      setIsLoading(true);
       if (currentUser) {
         try {
           const userDoc = await getDoc(doc(db, "patients", currentUser.uid));
@@ -65,6 +66,7 @@ export default function PatientDashboard() {
           console.error("Error fetching user data:", error);
         }
       }
+      setIsLoading(false);
     };
 
     fetchUserData();
@@ -90,7 +92,13 @@ export default function PatientDashboard() {
                 className="mb-8"
               >
                 <h1 className="text-3xl md:text-4xl font-display font-medium text-slate-900">
-                  Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 18 ? "Afternoon" : "Evening"}, <span className="text-primary italic">{firstName}</span>
+                  Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 18 ? "Afternoon" : "Evening"}, <span className="text-primary italic">
+                    {isLoading ? (
+                      <span className="animate-pulse">Loading...</span>
+                    ) : (
+                      firstName || "Patient"
+                    )}
+                  </span>
                 </h1>
                 <p className="text-slate-500 mt-2 text-lg">
                   Here's your personal health overview.
@@ -107,7 +115,7 @@ export default function PatientDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                     {[
                         { label: "Upcoming Appointments", value: "0", icon: Calendar, color: "text-blue-600", bg: "bg-blue-50" },
-                        { label: "Unread Messages", value: "1", icon: MessageSquare, color: "text-amber-600", bg: "bg-amber-50" }
+                        { label: "Unread Messages", value: "0", icon: MessageSquare, color: "text-amber-600", bg: "bg-amber-50" }
                     ].map((stat, idx) => (
                         <motion.div 
                             key={idx}
@@ -160,21 +168,9 @@ export default function PatientDashboard() {
                                 <button className="text-primary text-sm font-medium hover:underline">View All</button>
                             </div>
                             <div className="divide-y divide-slate-50">
-                                {[
-                                    { title: "Profile updated", time: "Just now", icon: User, bg: "bg-blue-100", color: "text-blue-600" },
-                                    { title: "Welcome to Healthcare Assistant", time: "Today", icon: MessageSquare, bg: "bg-green-100", color: "text-green-600" }
-                                ].map((item, i) => (
-                                    <div key={i} className="p-4 hover:bg-slate-50 transition-colors flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-full ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
-                                            <item.icon size={18} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-slate-800 font-medium text-sm">{item.title}</p>
-                                            <p className="text-slate-400 text-xs">{item.time}</p>
-                                        </div>
-                                        <ChevronRight size={16} className="text-slate-300" />
-                                    </div>
-                                ))}
+                                <div className="p-8 text-center text-slate-400 text-sm">
+                                    No activity yet.
+                                </div>
                             </div>
                         </motion.div>
                     </div>

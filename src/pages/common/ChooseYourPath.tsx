@@ -14,7 +14,7 @@ export default function ChooseYourPath() {
             onClick={() => navigate("/")}
             className="flex items-center gap-3 group"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-[#0A6ED1] to-[#0da540] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+            <div className="w-10 h-10 bg-linear-to-br from-[#0A6ED1] to-[#0da540] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
               <img
                 src={patientimg}
                 alt="Medicare Logo"

@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { FaPaperPlane, FaRobot, FaUser, FaPlus, FaHistory, FaArrowRight } from "react-icons/fa";
 import { model, db } from "../../lib/firebase";
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, getDoc, doc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, getDoc, doc, getDocs, writeBatch, limit } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
@@ -14,7 +14,7 @@ interface Message {
   id: string;
   text: string;
   sender: "user" | "ai";
-  timestamp: any;
+  timestamp: string | Date;
 }
 
 interface ChatSession {
@@ -22,11 +22,11 @@ interface ChatSession {
   title: string;
   date: string;
   preview: string;
+  updatedAt: string | Date;
 }
 
 export default function PatientChat() {
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -36,49 +36,145 @@ export default function PatientChat() {
   // Chat History Sidebar State
   const [showHistory, setShowHistory] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const toggleHistory = () => {
     setShowHistory(!showHistory);
   };
 
-  // Load chat history
+  // 1. Load chat sessions list + Migration Logic
   useEffect(() => {
     if (!currentUser) return;
 
     const q = query(
-      collection(db, "patients", currentUser.uid, "chats"), 
-      orderBy("timestamp", "asc")
+      collection(db, "patients", currentUser.uid, "chatSessions"), 
+      orderBy("updatedAt", "desc")
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const msgs: Message[] = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-      } as Message));
+      const sessions = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            title: data.title || "New Consultation",
+            date: data.updatedAt?.toDate().toLocaleDateString() || "Just now",
+            preview: data.lastMessage || "No messages yet",
+            updatedAt: data.updatedAt
+          } as ChatSession;
+      });
       
-      if (msgs.length === 0) {
-         try {
-             const userDoc = await getDoc(doc(db, "patients", currentUser.uid));
-             const userData = userDoc.data();
-             const firstName = userData?.fullName?.split(' ')[0] || "there";
-             
-             // Initial Welcome (Not saved to DB automatically to avoid empty chats, but shown locally)
-             setMessages([{
-                 id: "welcome",
-                 text: `Hello ${firstName}! I'm Medi, your personal AI health assistant. I'm here to listen and help you with any health questions or symptoms. How are you feeling today?`,
-                 sender: "ai",
-                 timestamp: new Date()
-             }]);
-         } catch (error) {
-             console.error("Error creating welcome message:", error);
-         }
-      } else {
-        setMessages(msgs);
+      setChatHistory(sessions);
+      
+      // MIGRATION CHECK:
+      if (sessions.length === 0) {
+          const oldChatsRef = collection(db, "patients", currentUser.uid, "chats");
+          const oldChatsSnap = await getDocs(query(oldChatsRef, limit(1)));
+          
+          if (!oldChatsSnap.empty) {
+             await migrateOldChats(currentUser.uid);
+          }
       }
     });
 
     return () => unsubscribe();
   }, [currentUser]);
+
+  const migrateOldChats = async (uid: string) => {
+      console.log("Migrating old chats...");
+      try {
+        // Fetch all old messages
+        const oldChatsRef = collection(db, "patients", uid, "chats");
+        const allOldChatsSnap = await getDocs(query(oldChatsRef, orderBy("timestamp", "asc")));
+        
+        if (allOldChatsSnap.empty) return;
+
+        const messages = allOldChatsSnap.docs.map(d => d.data());
+        const lastMsg = messages[messages.length - 1];
+        const preview = lastMsg.text?.slice(0, 40) + "..." || "Legacy chat";
+        
+        // Create new session
+        const sessionRef = await addDoc(collection(db, "patients", uid, "chatSessions"), {
+            title: "Previous Consultation",
+            lastMessage: preview,
+            createdAt: serverTimestamp(),
+            updatedAt: lastMsg.timestamp || serverTimestamp()
+        });
+
+        let operationCount = 0;
+        let currentBatch = writeBatch(db);
+
+        for (const oldDoc of allOldChatsSnap.docs) {
+            const newMsgRef = doc(collection(db, "patients", uid, "chatSessions", sessionRef.id, "messages"));
+            currentBatch.set(newMsgRef, oldDoc.data());
+            
+            operationCount++;
+            if (operationCount >= 450) {
+                await currentBatch.commit();
+                currentBatch = writeBatch(db);
+                operationCount = 0;
+            }
+        }
+        
+        await currentBatch.commit();
+        console.log("Migration complete");
+        
+        // Select the migrated session
+        setActiveSessionId(sessionRef.id);
+      } catch (e) {
+          console.error("Migration failed", e);
+      }
+  };
+
+  const loadWelcomeMessage = useCallback(async () => {
+     if (!currentUser) return;
+     try {
+         const userDoc = await getDoc(doc(db, "patients", currentUser.uid));
+         const userData = userDoc.data();
+         const firstName = userData?.fullName?.split(' ')[0] || "there";
+         
+         setMessages([{
+             id: "welcome",
+             text: `Hello ${firstName}! I'm Medi, your personal AI health assistant. I'm here to listen and help you with any health questions or symptoms. How are you feeling today?`,
+             sender: "ai",
+             timestamp: new Date().toISOString()
+         }]);
+     } catch (error) {
+         console.error("Error creating welcome message:", error);
+     }
+  }, [currentUser]);
+
+  // 2. Load messages for Active Session
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    // If no active session, show Welcome logic?
+    if (!activeSessionId) {
+       loadWelcomeMessage();
+       return;
+    }
+
+    const q = query(
+      collection(db, "patients", currentUser.uid, "chatSessions", activeSessionId, "messages"),
+      orderBy("timestamp", "asc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const msgs: Message[] = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Message));
+        setMessages(msgs);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, activeSessionId, loadWelcomeMessage]);
+
+  
+  // Scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,10 +183,24 @@ export default function PatientChat() {
     const userText = input;
     setInput("");
     setIsTyping(true);
+    
+    let currentSessionId = activeSessionId;
 
     try {
+      // If no session, create one
+      if (!currentSessionId) {
+          const sessionRef = await addDoc(collection(db, "patients", currentUser.uid, "chatSessions"), {
+              title: userText.length > 30 ? userText.slice(0, 30) + "..." : userText,
+              lastMessage: userText,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+          });
+          currentSessionId = sessionRef.id;
+          setActiveSessionId(currentSessionId);
+      }
+
       // Save User Message
-      await addDoc(collection(db, "patients", currentUser.uid, "chats"), {
+      await addDoc(collection(db, "patients", currentUser.uid, "chatSessions", currentSessionId, "messages"), {
         text: userText,
         sender: "user",
         timestamp: serverTimestamp()
@@ -108,7 +218,7 @@ export default function PatientChat() {
       );
       
       // Save AI Response
-      await addDoc(collection(db, "patients", currentUser.uid, "chats"), {
+      await addDoc(collection(db, "patients", currentUser.uid, "chatSessions", currentSessionId, "messages"), {
         text: text,
         sender: "ai",
         timestamp: serverTimestamp()
@@ -117,38 +227,26 @@ export default function PatientChat() {
     } catch (error) {
       console.error("AI Error:", error);
       const errorMessage = "I apologize, but I'm having trouble connecting right now.";
-       await addDoc(collection(db, "patients", currentUser.uid, "chats"), {
-        text: errorMessage,
-        sender: "ai",
-        timestamp: serverTimestamp()
-      });
+       if (currentSessionId) {
+        await addDoc(collection(db, "patients", currentUser.uid, "chatSessions", currentSessionId, "messages"), {
+            text: errorMessage,
+            sender: "ai",
+            timestamp: serverTimestamp()
+        });
+       }
     } finally {
       setIsTyping(false);
     }
   };
 
   const startNewChat = () => {
-    if (messages.length > 1) {
-       // Save current chat to history before resetting
-       const titleText = messages[1]?.text || "New Consultation";
-       const newSession: ChatSession = {
-           id: Date.now().toString(),
-           title: titleText.length > 30 ? titleText.slice(0, 30) + "..." : titleText,
-           date: "Just now",
-           preview: messages[messages.length - 1].text.length > 40 ? messages[messages.length - 1].text.slice(0, 40) + "..." : messages[messages.length - 1].text
-       };
-       setChatHistory(prev => [newSession, ...prev]);
-    }
-    
-    setMessages([
-      {
-        id: Date.now().toString(),
-        text: "Hello! I'm your AI health assistant. How can I help you today?",
-        sender: "ai",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }
-    ]);
-    setShowHistory(false); // On mobile, close history
+    setActiveSessionId(null);
+    setShowHistory(false);
+  };
+
+  const selectSession = (sessionId: string) => {
+      setActiveSessionId(sessionId);
+      setShowHistory(false);
   };
 
   return (
@@ -163,8 +261,8 @@ export default function PatientChat() {
         <div className="flex-1 flex overflow-hidden relative">
             {/* History Sidebar */}
             <div className={`
-                z-30 h-full bg-white border-r border-slate-100 transition-all duration-300 ease-in-out flex flex-col shadow-xl
-                ${showHistory ? 'w-80 translate-x-0' : 'w-0 -translate-x-full overflow-hidden opacity-0'}
+                z-30 h-full bg-white border-r border-slate-100 transition-all duration-300 ease-in-out flex flex-col shadow-xl absolute md:relative
+                ${showHistory ? 'w-80 translate-x-0' : 'w-0 -translate-x-full overflow-hidden opacity-0 md:w-0 md:opacity-0'}
             `}>
                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                     <h2 className="font-semibold text-slate-800 flex items-center gap-2">
@@ -189,11 +287,24 @@ export default function PatientChat() {
                     </button>
 
                     <div className="space-y-3">
-                        <p className="px-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Recent Consultations</p>
+                        <p className="px-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Previous Consultations</p>
+                        {chatHistory.length === 0 && (
+                            <p className="text-xs text-slate-400 px-2 italic">No previous consultations found.</p>
+                        )}
                         {chatHistory.map(chat => (
-                            <button key={chat.id} className="w-full text-left p-4 rounded-xl border border-slate-100 hover:border-[#0A6ED1]/30 hover:bg-slate-50 transition-all group relative bg-white shadow-sm">
+                            <button 
+                                key={chat.id} 
+                                onClick={() => selectSession(chat.id)}
+                                className={`w-full text-left p-4 rounded-xl border transition-all group relative shadow-sm ${
+                                    activeSessionId === chat.id 
+                                    ? "bg-blue-50 border-blue-200 ring-1 ring-blue-100" 
+                                    : "bg-white border-slate-100 hover:border-[#0A6ED1]/30 hover:bg-slate-50"
+                                }`}
+                            >
                                 <div className="flex justify-between items-start mb-1">
-                                    <h3 className="font-semibold text-slate-700 text-sm truncate flex-1 pr-2 group-hover:text-[#0A6ED1] transition-colors">{chat.title}</h3>
+                                    <h3 className={`font-semibold text-sm truncate flex-1 pr-2 transition-colors ${
+                                        activeSessionId === chat.id ? "text-[#0A6ED1]" : "text-slate-700 group-hover:text-[#0A6ED1]"
+                                    }`}>{chat.title}</h3>
                                     <span className="text-[10px] text-slate-400 whitespace-nowrap bg-slate-100 px-2 py-0.5 rounded-full">{chat.date}</span>
                                 </div>
                                 <p className="text-xs text-slate-500 truncate mt-1 leading-relaxed opacity-80">{chat.preview}</p>
@@ -229,7 +340,7 @@ export default function PatientChat() {
                                 className={`flex gap-4 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}
                             >
                                 {/* Avatar */}
-                                <div className={`flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-sm ${
+                                <div className={`shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-sm ${
                                     msg.sender === "user" ? "bg-[#0A6ED1]" : "bg-emerald-500"
                                 }`}>
                                     {msg.sender === "user" ? <FaUser className="text-white text-sm" /> : <FaRobot className="text-white text-lg" />}
@@ -245,7 +356,7 @@ export default function PatientChat() {
                                         <div className="prose prose-sm max-w-none dark:prose-invert">
                                             <ReactMarkdown
                                                 components={{
-                                                    a: ({node, href, children, ...props}) => {
+                                                    a: ({href, children, ...props}) => {
                                                         const isAction = typeof children === 'string' && children.startsWith('ACTION:');
                                                         if (isAction && href) {
                                                             const label = (children as string).replace('ACTION:', '').trim();
@@ -260,11 +371,11 @@ export default function PatientChat() {
                                                         }
                                                         return <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#0A6ED1] hover:underline" {...props}>{children}</a>;
                                                     },
-                                                    ul: ({node, ...props}) => <ul className="list-disc pl-4 my-2 text-slate-700" {...props} />,
-                                                    ol: ({node, ...props}) => <ol className="list-decimal pl-4 my-2 text-slate-700" {...props} />,
-                                                    li: ({node, ...props}) => <li className="my-1" {...props} />,
-                                                    p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
-                                                    strong: ({node, ...props}) => <strong className="font-semibold text-slate-900" {...props} />,
+                                                    ul: ({...props}) => <ul className="list-disc pl-4 my-2 text-slate-700" {...props} />,
+                                                    ol: ({...props}) => <ol className="list-decimal pl-4 my-2 text-slate-700" {...props} />,
+                                                    li: ({...props}) => <li className="my-1" {...props} />,
+                                                    p: ({...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                                                    strong: ({...props}) => <strong className="font-semibold text-slate-900" {...props} />,
                                                 }}
                                             >
                                                 {msg.text}
@@ -274,12 +385,9 @@ export default function PatientChat() {
                                     <span className="text-[10px] text-slate-400 mt-1 px-1">
                                         {(() => {
                                             if (!msg.timestamp) return "Sending...";
-                                            if (typeof msg.timestamp === 'string') return msg.timestamp;
-                                            // Handle Firestore Timestamp
-                                            if (typeof msg.timestamp?.toDate === 'function') {
-                                                return msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                            if (typeof msg.timestamp === 'string') {
+                                                return new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                             }
-                                            // Handle JS Date object
                                             if (msg.timestamp instanceof Date) {
                                                 return msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                             }
@@ -327,7 +435,7 @@ export default function PatientChat() {
                                 disabled={!input.trim() || isTyping}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-[#0A6ED1] text-white rounded-xl hover:bg-[#095bb0] disabled:opacity-50 disabled:hover:bg-[#0A6ED1] transition-all shadow-md shadow-blue-200 hover:shadow-lg disabled:shadow-none"
                             >
-                                <FaPaperPlane className="w-4 h-4 translate-x-[-1px] translate-y-[1px]" />
+                                <FaPaperPlane className="w-4 h-4 -translate-x-px translate-y-px" />
                             </button>
                         </div>
                     </form>

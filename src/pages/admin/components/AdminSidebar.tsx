@@ -40,7 +40,7 @@ export default function AdminSidebar({
     <>
       {/* Mobile Overlay */}
       <div 
-        className={`fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity ${
+        className={`fixed inset-0 bg-black/30 z-40 md:hidden transition-opacity ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={toggleSidebar}
@@ -48,14 +48,14 @@ export default function AdminSidebar({
 
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50
-        w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out
+        w-64 bg-white text-gray-900 border-r border-gray-200 transform transition-transform duration-200 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="h-16 flex items-center px-6 border-b border-slate-800">
-            <Activity className="text-emerald-500 mr-3" />
-            <h1 className="text-xl font-bold font-display tracking-tight">Admin</h1>
+          <div className="h-16 flex items-center px-6 border-b border-gray-200">
+            <Activity className="text-blue-600 mr-3" />
+            <h1 className="text-xl font-bold font-display tracking-tight text-gray-900">Admin</h1>
           </div>
 
           {/* Navigation */}
@@ -73,8 +73,8 @@ export default function AdminSidebar({
                   }}
                   className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 group ${
                     isActive 
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-blue-600'
                   }`}
                 >
                   <Icon size={20} className={`mr-3 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-105'}`} />
@@ -82,7 +82,7 @@ export default function AdminSidebar({
                   {isActive && (
                     <motion.div 
                       layoutId="activeIndicator"
-                      className="absolute right-4 w-1.5 h-1.5 rounded-full bg-white"
+                      className="absolute right-4 w-1.5 h-1.5 rounded-full bg-blue-600"
                     />
                   )}
                 </button>
@@ -91,10 +91,10 @@ export default function AdminSidebar({
           </nav>
 
           {/* User Profile & Logout */}
-          <div className="p-4 border-t border-slate-800">
+          <div className="p-4 border-t border-gray-200">
             <button 
               onClick={handleLogout}
-              className="w-full flex items-center px-4 py-3 rounded-xl text-slate-400 hover:bg-rose-500/10 hover:text-rose-500 transition-colors group"
+              className="w-full flex items-center px-4 py-3 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors group"
             >
               <LogOut size={20} className="mr-3 group-hover:-translate-x-1 transition-transform" />
               <span className="font-medium">Sign Out</span>
