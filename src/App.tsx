@@ -11,13 +11,16 @@ import PatientVerification from "./pages/patient/Verification";
 import DoctorLogin from './pages/doctor/DoctorLogin';
 import ForgotPassword from "./pages/doctor/forgot-password/ForgotPassword";
 import DoctorDashboard from "./pages/doctor-dashboard/DoctorDashboard";
+import DoctorCreatePassword from "./pages/doctor-dashboard/CreatePassword";
 import DoctorUpdatePassword from "./pages/doctor-dashboard/UpdatePassword";
+import PasswordSuccess from "./pages/doctor-dashboard/PasswordSuccess";
 import DoctorSettings from "./pages/doctor-dashboard/Settings";
 import PatientOnboarding from "./pages/patient/onboarding/PatientOnboarding";
 import PatientAppointments from "./pages/patient-dashboard/PatientAppointments";
 import BookAppointment from "./pages/patient-dashboard/BookAppointment";
 import PatientChat from "./pages/patient-dashboard/PatientChat";
 import AIChat from "./pages/patient-dashboard/AIChat";
+import AIChatHistory from "./pages/patient-dashboard/AIChatHistory";
 import PatientProfile from "./pages/patient-dashboard/PatientProfile";
 import PatientSettings from "./pages/patient-dashboard/PatientSettings";
 import { Toaster } from 'sonner';
@@ -31,6 +34,10 @@ import DoctorSchedule from "./pages/doctor-dashboard/DoctorSchedule";
 import DoctorNotifications from "./pages/doctor-dashboard/DoctorNotifications";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUpdatePassword from "./pages/admin/UpdatePassword";
+import DoctorCredentials from "./pages/admin/DoctorCredentials";
+import AppointmentDetails from "./pages/admin/AppointmentDetails";
+import AdminSettings from "./pages/admin/AdminSettings";
+import DoctorAvailability from "./pages/doctor-dashboard/DoctorAvailability";
 
 // In your Routes
 
@@ -41,6 +48,9 @@ function App() {
       <Routes>
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/update-password" element={<AdminUpdatePassword />} />
+        <Route path="/admin/doctor-credentials" element={<DoctorCredentials />} />
+        <Route path="/admin/appointment-details" element={<AppointmentDetails />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
         <Route path="/" element={<Home />} />
         <Route path="/choose-path" element={<ChooseYourPath />} />
         <Route path="/patient-reg" element={<PatientReg />} />
@@ -54,6 +64,7 @@ function App() {
         <Route path="/patient/book-appointment" element={<BookAppointment />} />
         <Route path="/patient/chat" element={<PatientChat />} />
         <Route path="/patient/ai-chat" element={<AIChat />} />
+        <Route path="/patient/ai-chat/history" element={<AIChatHistory />} />
         <Route path="/patient/profile" element={<PatientProfile />} />
         <Route path="/patient/settings" element={<PatientSettings />} />
         <Route path="/patient/notifications" element={<PatientNotifications />} />
@@ -61,9 +72,12 @@ function App() {
         <Route path="/doctor/settings" element={<DoctorSettings />} />
         <Route path="/doctor/notifications" element={<DoctorNotifications />} />
         <Route path="/doctor/schedule" element={<DoctorSchedule />} />
+        <Route path="/doctor/availability" element={<DoctorAvailability />} />
         <Route path="/doctor/patients" element={<MyPatients />} />
         <Route path="/doctor/patients/:id" element={<PatientDetails />} />
+        <Route path="/doctor/create-password" element={<DoctorCreatePassword />} />
         <Route path="/doctor/update-password" element={<DoctorUpdatePassword />} />
+        <Route path="/doctor/password-success" element={<PasswordSuccess />} />
         <Route path="/verification" element={<Verification />} />
         <Route path="/doctor/login" element={<DoctorLogin />} />
         <Route path="/doctor/dashboard" element={<DoctorDashboard />} />

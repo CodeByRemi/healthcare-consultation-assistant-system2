@@ -1,51 +1,181 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
-import { FaArrowLeft, FaComments, FaFileMedical, FaRobot, FaPaperPlane } from "react-icons/fa";
+import { 
+  ArrowLeft, 
+  Activity, 
+  Droplets,
+  Ruler,
+  Weight,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  AlertCircle,
+  Bot,
+  Calendar,
+  ChevronDown,
+  Check
+} from "lucide-react";
+
+// Interfaces moved top-level for reuse
+interface Message {
+  id: string;
+  text: string;
+  sender: "user" | "ai";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  timestamp: any; 
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  date: string;
+  preview: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  updatedAt: any;
+}
+
+// MOCK DATA FOR DEMO (Defined outside to avoid re-renders)
+const MOCK_SESSIONS_DATA: ChatSession[] = [
+  {
+    id: "session-1",
+    title: "Initial Consultation check",
+    date: "05/03/2026",
+    preview: "Discussed symptoms of persistent headache and fatigue...",
+    updatedAt: new Date()
+  },
+  {
+    id: "session-2", 
+    title: "Follow-up Check",
+    date: "12/02/2026", 
+    preview: "Reviewing medication outcomes...",
+    updatedAt: new Date(Date.now() - 86400000)
+  }
+];
+
+const MOCK_MESSAGES_DATA: Record<string, Message[]> = {
+  "session-1": [
+      { id: "m1", text: "I've been feeling a persistent headache for the past 3 days.", sender: "user", timestamp: new Date(Date.now() - 10000000) },
+      { id: "m2", text: "I understand. Can you describe the pain? Is it throbbing or constant?", sender: "ai", timestamp: new Date(Date.now() - 9000000) },
+      { id: "m3", text: "It's mostly throbbing, especially in the mornings.", sender: "user", timestamp: new Date(Date.now() - 8000000) },
+      { id: "m4", text: "**Noted.** Based on your symptoms, I recommend monitoring your blood pressure. \n\n*   Drink plenty of water\n*   Rest in a dark room\n\nIf it persists, please consult a specialist.", sender: "ai", timestamp: new Date(Date.now() - 7000000) },
+      { id: "m5", text: "Okay, I will try that. Thank you.", sender: "user", timestamp: new Date(Date.now() - 6000000) }
+  ],
+  "session-2": [
+      { id: "m5", text: "The medication seems to be working.", sender: "user", timestamp: new Date() },
+      { id: "m6", text: "That is great news! Have you experienced any side effects?", sender: "ai", timestamp: new Date() }
+  ]
+};
 
 export default function PatientDetails() { // Dynamic route /doctor/patients/:id
   const { id } = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("profile");
 
-  // Mock Patient Data
+  // Mock Patient Data - PLACEHOLDERS
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const patientsMap: Record<string, any> = {
+    'default': {
+        name: "Patient Name",
+        age: "--",
+        dob: 'YYYY-MM-DD',
+        gender: "Gender",
+        height: "-'-\"",
+        weight: "--- lbs",
+        bmi: "--.-",
+        bloodType: "--",
+        history: ["Medical History Item"],
+        allergies: ['Allergy 1', 'Allergy 2'],
+        medications: ['Medication Name 1', 'Medication Name 2'],
+        insurance: 'Insurance Provider',
+        address: '123 Patient Address, City, State',
+        emergencyContact: { name: 'Contact Name', relation: 'Relation', phone: '(555) 000-0000' },
+        image: 'https://ui-avatars.com/api/?name=Patient+Name&background=0D8ABC&color=fff',
+        lastVitals: { bp: "--/--", heartRate: "-- bpm", temp: "--.-°F", oxygen: "--%" }
+    }
+  };
+
+  const currentPatientData = patientsMap['default'];
+
   const patient = {
-    id: id || "201",
-    name: "David Miller",
-    age: 45,
-    gender: "Male",
-    phone: "+1 (555) 123-4567",
-    email: "david.miller@example.com",
-    reason: "Consistent chest pain and shortness of breath.",
-    symptoms: ["Chest Pain", "Shortness of Breath", "Fatigue"],
-    history: ["Hypertension (2018)", "Family history of heart disease"],
-    image: "https://i.pravatar.cc/150?u=david",
-    lastVitals: { bp: "145/90", heartRate: "88 bpm", temp: "98.6°F", weight: "190 lbs" }
+    id: id || "---",
+    ...currentPatientData,
+    phone: "+1 (555) 000-0000",
+    email: "patient.email@example.com"
   };
 
-  // Mock AI Chat
-  const [chatMessages, setChatMessages] = useState([
-    { role: "system", content: `Analyzing patient data for ${patient.name}... Ready to assist.` },
-    { role: "assistant", content: `Based on ${patient.name}'s reported symptoms (Chest Pain, Shortness of Breath) and history of Hypertension, there is a risk of Angina or CAD. Recommended next steps: EKG and Stress Test.` }
-  ]);
-  const [chatInput, setChatInput] = useState("");
 
-  const handleSendMessage = () => {
-    if (!chatInput.trim()) return;
-    
-    const newMsg = { role: "user", content: chatInput };
-    setChatMessages([...chatMessages, newMsg]);
-    setChatInput("");
 
-    // Simulate AI response
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, { 
-        role: "assistant", 
-        content: "I've noted that. Is there anything specific about the medication history you'd like me to cross-reference with these symptoms?" 
-      }]);
-    }, 1000);
+  
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [isSessionDropdownOpen, setIsSessionDropdownOpen] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sessionDropdownRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sessionDropdownRef.current && !sessionDropdownRef.current.contains(event.target as Node)) {
+        setIsSessionDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (activeSessionId) {
+        scrollToBottom();
+    }
+  }, [messages, activeSessionId]);
+
+  // Load Chat Sessions (Mock + Firebase Fallback Logic)
+  useEffect(() => {
+    if (activeTab === 'ai-assistant') {
+        // Use Mock data primarily for demo visualization if "nothing is showing"
+        // In a real app, this would be the database success callback
+        setLoadingSessions(true);
+        setTimeout(() => {
+            setChatSessions(MOCK_SESSIONS_DATA);
+            if (MOCK_SESSIONS_DATA.length > 0 && !activeSessionId) {
+                setActiveSessionId(MOCK_SESSIONS_DATA[0].id);
+            }
+            setLoadingSessions(false);
+        }, 500);
+    }
+  }, [activeTab]); // activeSessionId omitted to prevent reset on selection
+
+  // Load Messages when Session Changes
+  useEffect(() => {
+    if (activeSessionId) {
+        setLoadingMessages(true);
+        // Simulate fetch delay
+        setTimeout(() => {
+            const sessionMessages = MOCK_MESSAGES_DATA[activeSessionId] || [];
+            setMessages(sessionMessages);
+            setLoadingMessages(false);
+        }, 300);
+    } else {
+        setMessages([]);
+    }
+  }, [activeSessionId]);
+
+
+
+
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-['Manrope']">
@@ -61,7 +191,7 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
           <div className="max-w-6xl mx-auto">
             {/* Back Button */}
             <Link to="/doctor/patients" className="inline-flex items-center gap-2 text-slate-500 hover:text-[#0A6ED1] mb-6 font-medium transition-colors">
-              <FaArrowLeft /> Back to Patient List
+              <ArrowLeft size={20} /> Back to Patient List
             </Link>
 
             {/* Patient Header Card */}
@@ -78,143 +208,299 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
                       <span>ID: #{patient.id}</span>
                     </div>
                   </div>
-                  <div className="flex bg-slate-100 rounded-lg p-1">
-                    <button 
-                      onClick={() => setActiveTab('overview')} 
-                      className={`px-4 py-2 rounded-md font-medium text-sm transition-all ${activeTab === 'overview' ? 'bg-white shadow text-[#0A6ED1]' : 'text-slate-500 hover:text-slate-900'}`}
-                    >
-                      Overview
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('ai-assistant')} 
-                      className={`px-4 py-2 rounded-md font-medium text-sm flex items-center gap-2 transition-all ${activeTab === 'ai-assistant' ? 'bg-[#0A6ED1] text-white shadow' : 'text-slate-500 hover:text-slate-900'}`}
-                    >
-                      <FaRobot /> AI Assistant
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 pt-6">
-                  <div>
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Condition</div>
-                    <div className="font-bold text-slate-900 text-lg">Hypertension</div>
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Blood Pressure</div>
-                    <div className="font-bold text-slate-900 text-lg">{patient.lastVitals.bp}</div>
-                  </div>
-                   <div>
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Heart Rate</div>
-                    <div className="font-bold text-slate-900 text-lg">{patient.lastVitals.heartRate}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Weight</div>
-                    <div className="font-bold text-slate-900 text-lg">{patient.lastVitals.weight}</div>
+                  <div className="flex rounded-lg p-1">
+                    {/* Buttons removed in favor of Underline Tabs below header card */}
                   </div>
                 </div>
               </div>
             </div>
 
+
+            {/* Tabs for Navigation */}
+            <div className="flex items-center gap-8 border-b border-slate-200 mb-6 bg-white px-2 rounded-t-lg">
+                <button
+                    onClick={() => setActiveTab('profile')}
+                    className={`pb-4 px-2 text-sm font-bold transition-all relative ${
+                    activeTab === 'profile' ? 'text-[#0A6ED1]' : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                    Patient Details
+                    {activeTab === 'profile' && (
+                    <motion.div layoutId="underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0A6ED1]" />
+                    )}
+                </button>
+                <button
+                    onClick={() => setActiveTab('ai-assistant')}
+                    className={`pb-4 px-2 text-sm font-bold transition-all relative flex items-center gap-2 ${
+                    activeTab === 'ai-assistant' ? 'text-[#0A6ED1]' : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                >
+                    AI Chat History
+                    {activeTab === 'ai-assistant' && (
+                    <motion.div layoutId="underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0A6ED1]" />
+                    )}
+                </button>
+            </div>
+
             {/* Content Tabs */}
-            {activeTab === 'overview' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <AnimatePresence mode="wait">
+            {activeTab === 'profile' && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+              >
+                {/* Column 1: Personal Info & Contact */}
+                <div className="space-y-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                        <h3 className="font-bold text-lg text-slate-900 mb-6 flex items-center gap-2">
+                            <User className="text-[#0A6ED1]" />
+                            Personal Information
+                        </h3>
+                        <div className="space-y-5">
+                            <div className="flex items-start gap-4">
+                                <Mail className="text-slate-400 mt-1" size={18} />
+                                <div>
+                                    <p className="text-xs text-slate-500 uppercase font-semibold">Email</p>
+                                    <p className="text-slate-900">{patient.email}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-4">
+                                <Phone className="text-slate-400 mt-1" size={18} />
+                                <div>
+                                    <p className="text-xs text-slate-500 uppercase font-semibold">Phone</p>
+                                    <p className="text-slate-900">{patient.phone}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-4">
+                                <MapPin className="text-slate-400 mt-1" size={18} />
+                                <div>
+                                    <p className="text-xs text-slate-500 uppercase font-semibold">Address</p>
+                                    <p className="text-slate-900">{patient.address}</p>
+                                </div>
+                            </div>
+                             <div className="flex items-start gap-4">
+                                <Activity className="text-slate-400 mt-1" size={18} />
+                                <div>
+                                    <p className="text-xs text-slate-500 uppercase font-semibold">Date of Birth</p>
+                                    <p className="text-slate-900">{patient.dob} ({patient.age} yrs)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 border-l-4 border-l-red-500">
+                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-red-600">
+                            <AlertCircle size={20} />
+                            Emergency Contact
+                        </h3>
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-red-500 font-bold text-lg">
+                                {patient.emergencyContact.name.charAt(0)}
+                            </div>
+                            <div>
+                                <p className="font-bold text-slate-900">{patient.emergencyContact.name}</p>
+                                <p className="text-sm text-slate-500">{patient.emergencyContact.relation} • {patient.emergencyContact.phone}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Column 2: Physical Attributes */}
                 <div className="space-y-6">
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <h3 className="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2">
-                      <FaComments className="text-[#0A6ED1]" />
-                      Reason for Visit
+                    <h3 className="font-bold text-lg text-slate-900 mb-6 flex items-center gap-2">
+                      <Activity className="text-[#0A6ED1]" />
+                      Physical Attributes
                     </h3>
-                    <p className="text-slate-700 leading-relaxed bg-blue-50 p-4 rounded-xl border border-blue-100">
-                      "{patient.reason}"
-                    </p>
-                  </div>
-                  
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <h3 className="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2">
-                       <FaFileMedical className="text-[#0A6ED1]" />
-                       Reported Symptoms
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {patient.symptoms.map(s => (
-                        <span key={s} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium">{s}</span>
-                      ))}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
+                            <div className="w-10 h-10 bg-blue-100 text-[#0A6ED1] rounded-full flex items-center justify-center">
+                                <Ruler size={20} />
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500 font-semibold uppercase">Height</p>
+                                <p className="font-bold text-slate-900">{patient.height}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
+                            <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                                <Weight size={20} />
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500 font-semibold uppercase">Weight</p>
+                                <p className="font-bold text-slate-900">{patient.weight}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
+                            <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
+                                <Activity size={20} />
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500 font-semibold uppercase">BMI</p>
+                                <p className="font-bold text-slate-900">{patient.bmi}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
+                            <div className="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
+                                <Droplets size={20} />
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500 font-semibold uppercase">Blood Type</p>
+                                <p className="font-bold text-slate-900">{patient.bloodType}</p>
+                            </div>
+                        </div>
                     </div>
                   </div>
                 </div>
-
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                  <h3 className="font-bold text-lg text-slate-900 mb-4">Medical History</h3>
-                  <ul className="space-y-3">
-                    {patient.history.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                        <div className="w-2 h-2 mt-2 rounded-full bg-orange-400 shrink-0"></div>
-                        <span className="text-slate-700">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <div className="mt-8 pt-6 border-t border-slate-100 flex gap-3">
-                    <button className="flex-1 bg-[#0A6ED1] text-white py-3 rounded-xl font-bold hover:bg-[#095bb0] shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all">
-                      Accept Appointment
-                    </button>
-                     <button className="flex-1 bg-white border border-slate-200 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-50 active:scale-[0.98] transition-all">
-                      Message Patient
-                    </button>
-                  </div>
-                </div>
-              </div>
+              </motion.div>
             )}
 
             {activeTab === 'ai-assistant' && (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 h-150 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#0A6ED1] rounded-full flex items-center justify-center text-white shadow-md">
-                      <FaRobot />
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900">MediAI Assistant</div>
-                      <div className="text-xs text-[#0A6ED1] font-medium">Analyzing {patient.name}'s data</div>
-                    </div>
-                  </div>
-                  <button className="text-xs text-slate-400 hover:text-slate-600 underline">Clear Chat</button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30">
-                  {chatMessages.map((msg, idx) => (
-                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${
-                        msg.role === 'user' 
-                        ? 'bg-[#0A6ED1] text-white rounded-br-none shadow-lg shadow-blue-500/10' 
-                        : 'bg-white border border-slate-100 text-slate-700 rounded-bl-none shadow-sm'
-                      }`}>
-                        {msg.role === 'system' && <span className="text-xs font-bold uppercase tracking-wider opacity-50 block mb-1">System</span>}
-                        {msg.content}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col h-175 overflow-hidden relative"
+              >
+                  <div className="flex flex-1 h-full overflow-hidden flex-col items-center justify-start relative">
+                        {/* Centered Date Header for Session with Dropdown */}
+                        {chatSessions.length > 0 && (
+                            <div className="absolute top-8 left-0 right-0 z-30 flex justify-center w-full pointer-events-none">
+                                <div className="pointer-events-auto relative" ref={sessionDropdownRef}>
+                                    <button 
+                                        onClick={() => setIsSessionDropdownOpen(!isSessionDropdownOpen)}
+                                        className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all rounded-full px-5 py-2 flex items-center gap-3 text-sm font-semibold text-slate-600 group active:scale-95"
+                                    >
+                                        <Calendar size={14} className="text-[#0A6ED1]" />
+                                        <span>
+                                            <span className="text-slate-400 font-medium mr-2">Consultation Session</span>
+                                            <span className="text-slate-800">•</span>
+                                            <span className="ml-2 text-slate-800">
+                                                {chatSessions.find(s => s.id === activeSessionId)?.date || "Select Session"}
+                                            </span>
+                                        </span>
+                                        <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${isSessionDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
 
-                <div className="p-4 border-t border-slate-100 bg-white">
-                  <div className="flex gap-2 relative">
-                    <input 
-                      type="text" 
-                      placeholder="Ask AI about this patient..." 
-                      className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]/20 focus:border-[#0A6ED1] transition-all"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                    />
-                    <button 
-                      onClick={handleSendMessage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#0A6ED1] text-white rounded-lg hover:bg-[#095bb0] transition-colors"
-                    >
-                      <FaPaperPlane className="w-4 h-4" />
-                    </button>
+                                    <AnimatePresence>
+                                        {isSessionDropdownOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 max-h-80 overflow-y-auto bg-white rounded-xl shadow-xl border border-slate-100 p-2 z-50 custom-scrollbar"
+                                            >
+                                                <div className="text-xs font-bold text-slate-400 px-3 py-2 uppercase tracking-wider">History</div>
+                                                {chatSessions.map((session) => (
+                                                    <button
+                                                        key={session.id}
+                                                        onClick={() => {
+                                                            setActiveSessionId(session.id);
+                                                            setIsSessionDropdownOpen(false);
+                                                        }}
+                                                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-between group ${
+                                                            activeSessionId === session.id 
+                                                            ? 'bg-blue-50 text-[#0A6ED1]' 
+                                                            : 'hover:bg-slate-50 text-slate-600'
+                                                        }`}
+                                                    >
+                                                        <div className="flex flex-col overflow-hidden">
+                                                            <span className="font-semibold truncate">{session.title || "Untitled"}</span>
+                                                            <span className="text-[10px] opacity-70">{session.date}</span>
+                                                        </div>
+                                                        {activeSessionId === session.id && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </div>
+                        )}
+                    
+                        {/* Messages Content */}
+                        <div className="w-full max-w-4xl flex-1 overflow-y-auto px-4 md:px-8 pt-24 pb-12 space-y-10 scroll-smooth bg-white custom-scrollbar">
+                            {loadingSessions ? (
+                                <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
+                                    <div className="loading loading-spinner text-[#0A6ED1] loading-lg"></div>
+                                    <p className="text-sm">Loading Chat History...</p>
+                                </div>
+                            ) : !activeSessionId ? (
+                                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 h-full">
+                                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                                            <Bot size={40} className="text-slate-300" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-700 mb-2">No History Selected</h3>
+                                        <p className="max-w-xs text-center text-sm">Please select a consultation session from the dropdown above to view the conversation.</p>
+                                </div>
+                            ) : loadingMessages ? (
+                                <div className="flex justify-center p-12"><span className="loading loading-spinner text-[#0A6ED1] loading-md"></span></div>
+                            ) : (
+                                <AnimatePresence initial={false}>
+                                    {messages.map((msg) => (
+                                        <motion.div 
+                                            key={msg.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className={`w-full flex ${msg.sender === "user" ? "justify-end" : "justify-start"} group/message`}
+                                        >
+                                            <div className={`flex gap-4 max-w-[85%] md:max-w-[80%] items-end ${msg.sender === "user" ? "flex-row" : "flex-row-reverse"}`}>
+                                                
+                                                {/* Content Bubble */}
+                                                <div className="flex flex-col">
+                                                    <div className={`px-6 py-4 text-[15px] leading-relaxed relative shadow-md ${
+                                                        msg.sender === "user" 
+                                                      ? "bg-[#0A6ED1] text-white rounded-3xl rounded-br-sm"
+                                                      : "bg-white border border-slate-100 text-slate-700 rounded-3xl rounded-bl-sm shadow-slate-200/50"
+                                                    }`}>
+                                                        {msg.sender === "user" ? (
+                                                            <p className="whitespace-pre-wrap font-medium">{msg.text}</p>
+                                                        ) : (
+                                                            <div className="prose prose-sm max-w-none dark:prose-invert">
+                                                                <ReactMarkdown components={{
+                                                                    ul: ({...props}) => <ul className="list-disc pl-4 my-2 text-slate-600" {...props} />,
+                                                                    ol: ({...props}) => <ol className="list-decimal pl-4 my-2 text-slate-600" {...props} />,
+                                                                    li: ({...props}) => <li className="my-1" {...props} />,
+                                                                    p: ({...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                                                                    strong: ({...props}) => <strong className="font-semibold text-slate-900" {...props} />,
+                                                                }}>
+                                                                    {msg.text}
+                                                                </ReactMarkdown>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <span className={`text-[11px] text-slate-400 mt-2 font-medium flex items-center gap-1 ${
+                                                        msg.sender === "user" ? "justify-end mr-1" : "justify-start ml-1"
+                                                    }`}>
+                                                        {msg.timestamp instanceof Date 
+                                                            ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                            : "--:--"
+                                                        }
+                                                        {msg.sender === "user" && <span className="text-[#0A6ED1] font-bold text-[10px] ml-1">Sent</span>}
+                                                    </span>
+                                                </div>
+
+                                                {/* Avatar - Outside Bubble */}
+                                                <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center border mb-8 shadow-sm ${
+                                                    msg.sender === "user" 
+                                                    ? "bg-blue-50 border-blue-100 text-[#0A6ED1]" 
+                                                    : "bg-white border-slate-200 text-slate-500"
+                                                }`}>
+                                                    {msg.sender === "user" ? <User size={18} strokeWidth={2} /> : <Bot size={20} strokeWidth={1.5} />}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
                   </div>
-                </div>
-              </div>
+              </motion.div>
             )}
+            </AnimatePresence>
           </div>
         </div>
       </main>

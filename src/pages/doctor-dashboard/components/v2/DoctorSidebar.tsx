@@ -6,6 +6,7 @@ import {
   FaCog, 
   FaSignOutAlt,
   FaBars,
+  FaClock
 } from "react-icons/fa";
 import logo from "../../../../assets/patientreg.png"; // reusing logo
 import { useAuth } from "../../../../context/AuthContext";
@@ -35,6 +36,7 @@ export default function DoctorSidebar({ isOpen, onToggle }: SidebarProps) {
   const menuItems = [
     { icon: FaHome, label: "Overview", path: "/doctor/dashboard" },
     { icon: FaCalendarAlt, label: "Schedule", path: "/doctor/schedule" },
+    { icon: FaClock, label: "Availability", path: "/doctor/availability" },
     { icon: FaUserInjured, label: "My Patients", path: "/doctor/patients" },
     { icon: FaCog, label: "Settings", path: "/doctor/settings" },
   ];

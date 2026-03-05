@@ -3,13 +3,23 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
 import { toast } from "sonner";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../../lib/firebase";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
+import { auth, db } from "../../../lib/firebase";
 import PatientDetailsModal from "./PatientDetailsModal";
 
 export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [patientData, setPatientData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    bloodType: "",
+    joinDate: ""
+  });
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -26,7 +36,47 @@ export default function LoginForm() {
 
     try {
       console.log("Attempting sign in with:", formData.email);
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+
+      const profileSnap = await getDoc(doc(db, "patients", userCredential.user.uid));
+      if (profileSnap.exists()) {
+        const profile = profileSnap.data();
+        const fullName = (profile.fullName || "").trim();
+        const [firstName = "", ...restName] = fullName.split(" ");
+        const lastName = restName.join(" ");
+
+        let memberSince = "";
+        const createdAtValue = profile.createdAt;
+        if (createdAtValue instanceof Timestamp) {
+          memberSince = createdAtValue.toDate().toLocaleDateString();
+        } else if (typeof createdAtValue === "string") {
+          const createdAtDate = new Date(createdAtValue);
+          if (!Number.isNaN(createdAtDate.getTime())) {
+            memberSince = createdAtDate.toLocaleDateString();
+          }
+        }
+
+        setPatientData({
+          firstName,
+          lastName,
+          email: profile.email || userCredential.user.email || "",
+          phone: profile.phoneNumber || "",
+          address: profile.address || "",
+          bloodType: profile.bloodType || "",
+          joinDate: memberSince
+        });
+      } else {
+        setPatientData({
+          firstName: "",
+          lastName: "",
+          email: userCredential.user.email || "",
+          phone: "",
+          address: "",
+          bloodType: "",
+          joinDate: ""
+        });
+      }
+
       console.log("Sign in successful!");
       toast.success("Welcome back!");
       
@@ -148,6 +198,7 @@ export default function LoginForm() {
       <PatientDetailsModal 
         isOpen={showModal} 
         onClose={handleCloseModal}
+        patientData={patientData}
       />
     </div>
   );

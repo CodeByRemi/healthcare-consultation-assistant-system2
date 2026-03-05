@@ -9,6 +9,7 @@ import {
   User 
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
@@ -19,6 +20,7 @@ import { db } from "../../lib/firebase";
 
 export default function PatientDashboard() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -114,12 +116,27 @@ export default function PatientDashboard() {
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                     {[
-                        { label: "Upcoming Appointments", value: "0", icon: Calendar, color: "text-blue-600", bg: "bg-blue-50" },
-                        { label: "Unread Messages", value: "0", icon: MessageSquare, color: "text-amber-600", bg: "bg-amber-50" }
+                        {
+                          label: "Upcoming Appointments",
+                          value: "0",
+                          icon: Calendar,
+                          color: "text-blue-600",
+                          bg: "bg-blue-50",
+                          path: "/patient/appointments"
+                        },
+                        {
+                          label: "Unread Messages",
+                          value: "0",
+                          icon: MessageSquare,
+                          color: "text-amber-600",
+                          bg: "bg-amber-50",
+                          path: "/patient/notifications"
+                        }
                     ].map((stat, idx) => (
                         <motion.div 
                             key={idx}
                             variants={itemVariants}
+                            onClick={() => navigate(stat.path)}
                             className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all cursor-pointer"
                         >
                             <div>

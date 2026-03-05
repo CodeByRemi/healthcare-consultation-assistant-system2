@@ -13,13 +13,11 @@ import { useNavigate } from 'react-router-dom';
 export default function AdminSidebar({ 
   currentTab, 
   setCurrentTab, 
-  isOpen, 
-  toggleSidebar 
+  isOpen
 }: { 
   currentTab: string, 
   setCurrentTab: (tab: string) => void,
-  isOpen: boolean,
-  toggleSidebar: () => void 
+  isOpen: boolean
 }) {
   const navigate = useNavigate();
 
@@ -37,29 +35,22 @@ export default function AdminSidebar({
   };
 
   return (
-    <>
-      {/* Mobile Overlay */}
-      <div 
-        className={`fixed inset-0 bg-black/30 z-40 md:hidden transition-opacity ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={toggleSidebar}
-      />
-
-      <aside className={`
-        fixed md:static inset-y-0 left-0 z-50
-        w-64 bg-white text-gray-900 border-r border-gray-200 transform transition-transform duration-200 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
-        <div className="flex flex-col h-full">
+    <aside
+      className={`hidden md:block bg-white text-gray-900 transition-all duration-200 ease-in-out ${
+        isOpen ? "w-64 border-r border-gray-200" : "w-20 border-r border-gray-200"
+      } overflow-hidden`}
+    >
+      <div
+        className={`flex flex-col h-full transition-all duration-200 ${isOpen ? "w-64" : "w-20"}`}
+      >
           {/* Header */}
-          <div className="h-16 flex items-center px-6 border-b border-gray-200">
-            <Activity className="text-blue-600 mr-3" />
-            <h1 className="text-xl font-bold font-display tracking-tight text-gray-900">Admin</h1>
+          <div className={`h-16 flex items-center border-b border-gray-200 ${isOpen ? "px-6" : "justify-center"}`}>
+            <Activity className={`text-blue-600 ${isOpen ? "mr-3" : ""}`} />
+            {isOpen && <h1 className="text-xl font-bold font-display tracking-tight text-gray-900">Admin</h1>}
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
+          <nav className={`flex-1 py-6 space-y-2 overflow-y-auto ${isOpen ? "px-4" : "px-2"}`}>
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentTab === item.id;
@@ -69,20 +60,22 @@ export default function AdminSidebar({
                   key={item.id}
                   onClick={() => {
                     setCurrentTab(item.id);
-                    if (window.innerWidth < 768) toggleSidebar();
                   }}
-                  className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 group ${
+                  className={`w-full flex items-center rounded-xl transition-all duration-200 group relative ${
+                    isOpen ? "px-4 py-3" : "justify-center px-0 py-3"
+                  } ${
                     isActive 
                       ? 'bg-blue-50 text-blue-600 shadow-sm' 
                       : 'text-gray-600 hover:bg-gray-100 hover:text-blue-600'
                   }`}
+                  title={!isOpen ? item.label : undefined}
                 >
-                  <Icon size={20} className={`mr-3 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-105'}`} />
-                  <span className="font-medium">{item.label}</span>
+                  <Icon size={20} className={`${isOpen ? "mr-3" : ""} transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-105'}`} />
+                  {isOpen && <span className="font-medium">{item.label}</span>}
                   {isActive && (
                     <motion.div 
                       layoutId="activeIndicator"
-                      className="absolute right-4 w-1.5 h-1.5 rounded-full bg-blue-600"
+                      className={`w-1.5 h-1.5 rounded-full bg-blue-600 ${isOpen ? "absolute right-4" : "absolute top-2 right-2"}`}
                     />
                   )}
                 </button>
@@ -91,17 +84,19 @@ export default function AdminSidebar({
           </nav>
 
           {/* User Profile & Logout */}
-          <div className="p-4 border-t border-gray-200">
+          <div className={`border-t border-gray-200 ${isOpen ? "p-4" : "p-2"}`}>
             <button 
               onClick={handleLogout}
-              className="w-full flex items-center px-4 py-3 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors group"
+              className={`w-full flex items-center rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors group ${
+                isOpen ? "px-4 py-3" : "justify-center px-0 py-3"
+              }`}
+              title={!isOpen ? "Sign Out" : undefined}
             >
-              <LogOut size={20} className="mr-3 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium">Sign Out</span>
+              <LogOut size={20} className={`${isOpen ? "mr-3" : ""} group-hover:-translate-x-1 transition-transform`} />
+              {isOpen && <span className="font-medium">Sign Out</span>}
             </button>
           </div>
-        </div>
-      </aside>
-    </>
+      </div>
+    </aside>
   );
 }

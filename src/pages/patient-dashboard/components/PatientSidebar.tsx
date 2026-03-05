@@ -40,7 +40,7 @@ export default function PatientSidebar({ isOpen, onToggle }: SidebarProps) {
     { icon: FaHome, label: "Overview", path: "/patient/dashboard" },
     { icon: FaCalendarAlt, label: "Appointments", path: "/patient/appointments" },
     { icon: FaUserMd, label: "Book Appointment", path: "/patient/book-appointment" },
-    { icon: FaRobot, label: "AI Assistant", path: "/patient/chat" },
+    { icon: FaRobot, label: "AI Assistant", path: "/patient/ai-chat" },
     // { icon: FaFileMedical, label: "Medical Records", path: "/patient/records" },
     // { icon: FaPills, label: "Prescriptions", path: "/patient/prescriptions" },
     // { icon: FaCommentMedical, label: "Messages", path: "/patient/messages" },

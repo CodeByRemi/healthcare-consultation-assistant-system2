@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
-import { FaUserMd, FaMapMarkerAlt, FaEnvelope, FaPhone, FaGraduationCap, FaHospital, FaBriefcase, FaAward, FaEdit, FaSave } from "react-icons/fa";
+import { FaUserMd, FaMapMarkerAlt, FaEnvelope, FaPhone, FaGraduationCap, FaHospital, FaBriefcase, FaAward, FaEdit, FaSave, FaClock, FaCamera } from "react-icons/fa";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../../lib/firebase";
 
 export default function DoctorProfile() {
   const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -24,7 +26,9 @@ export default function DoctorProfile() {
     experience: "",
     languages: "",
     certifications: "",
-    profilePhotoUrl: ""
+    profilePhotoUrl: "",
+    availability: "",
+    availableDays: [] as string[]
   });
 
   useEffect(() => {
@@ -46,7 +50,9 @@ export default function DoctorProfile() {
             experience: data.experience || "",
             languages: data.languages || "",
             certifications: data.certifications || "",
-            profilePhotoUrl: data.profilePhotoUrl || ""
+            profilePhotoUrl: data.profilePhotoUrl || "",
+            availability: data.availability || "",
+            availableDays: data.availableDays || []
           });
         }
       } catch (error) {
@@ -65,6 +71,17 @@ export default function DoctorProfile() {
     setProfileData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAvailableDaysChange = (day: string) => {
+      const days = [...(profileData.availableDays || [])];
+      if (days.includes(day)) {
+          setProfileData({ ...profileData, availableDays: days.filter(d => d !== day) });
+      } else {
+          setProfileData({ ...profileData, availableDays: [...days, day] });
+      }
+  };
+
+  const dayOptions = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
   const handleSave = async () => {
      if (!currentUser) return;
      try {
@@ -78,7 +95,9 @@ export default function DoctorProfile() {
          school: profileData.school,
          experience: profileData.experience,
          languages: profileData.languages,
-         certifications: profileData.certifications
+         certifications: profileData.certifications,
+         availability: profileData.availability,
+         availableDays: profileData.availableDays
        });
        setIsEditing(false);
        toast.success("Profile saved successfully!");
@@ -86,6 +105,51 @@ export default function DoctorProfile() {
        console.error("Error updating profile:", error);
        toast.error("Failed to save changes.");
      }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const storageRef = ref(storage, `doctors/${currentUser.uid}/profile_${Date.now()}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          // You can track progress here if needed
+        },
+        (error) => {
+          console.error("Upload error:", error);
+          toast.error("Failed to upload image");
+          setIsUploading(false);
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          
+          // Update local state immediately
+          setProfileData(prev => ({ ...prev, profilePhotoUrl: downloadURL }));
+          
+          // Update Firestore immediately as well (independent of Save button)
+          const docRef = doc(db, "doctors", currentUser.uid);
+          await updateDoc(docRef, { profilePhotoUrl: downloadURL });
+          
+          setIsUploading(false);
+          toast.success("Profile photo updated!");
+        }
+      );
+    } catch (error) {
+      console.error("Error setting up upload:", error);
+      setIsUploading(false);
+      toast.error("Something went wrong with the upload");
+    }
   };
 
   return (
@@ -136,12 +200,37 @@ export default function DoctorProfile() {
                   <div className="absolute top-0 w-full h-24 bg-blue-50 z-0"></div>
                   
                   <div className="relative z-10 w-32 h-32 mx-auto rounded-full p-1 bg-white shadow-md mb-4 mt-8">
-                     {profileData.profilePhotoUrl ? (
-                        <img src={profileData.profilePhotoUrl} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                     {(profileData.profilePhotoUrl || isUploading) ? (
+                        <>
+                            <img 
+                                src={profileData.profilePhotoUrl || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
+                                alt="Profile" 
+                                className={`w-full h-full rounded-full object-cover ${isUploading ? 'opacity-50' : ''}`} 
+                            />
+                            {isUploading && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0A6ED1]"></div>
+                                </div>
+                            )}
+                        </>
                      ) : (
                         <div className="w-full h-full bg-blue-50 rounded-full flex items-center justify-center text-[#0A6ED1] text-4xl">
                            <FaUserMd />
                         </div>
+                     )}
+
+                     {/* Upload Button Overlay */}
+                     {isEditing && (
+                         <label className="absolute bottom-0 right-0 p-2 bg-[#0A6ED1] text-white rounded-full cursor-pointer hover:bg-[#095bb0] shadow-md transition-all">
+                             <FaCamera className="w-4 h-4" />
+                             <input 
+                                 type="file" 
+                                 className="hidden" 
+                                 accept="image/*"
+                                 onChange={handleImageUpload}
+                                 disabled={isUploading}
+                             />
+                         </label>
                      )}
                   </div>
                   
@@ -242,6 +331,71 @@ export default function DoctorProfile() {
                       <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">
                         {profileData.bio || "No biography provided yet. Click 'Edit Profile' to add details about yourself."}
                       </p>
+                  )}
+                </div>
+
+                {/* Availability Section */}
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+                          <FaClock />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900">Availability</h3>
+                  </div>
+
+                  {isEditing ? (
+                      <div className="space-y-6">
+                          <div>
+                              <label className="text-xs font-bold text-slate-500 uppercase block mb-3">Available Days</label>
+                              <div className="flex flex-wrap gap-2">
+                                  {dayOptions.map(day => (
+                                      <button
+                                          key={day}
+                                          onClick={() => handleAvailableDaysChange(day)}
+                                          className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                                              (profileData.availableDays || []).includes(day)
+                                              ? "bg-[#0A6ED1] text-white border-[#0A6ED1]"
+                                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                          }`}
+                                      >
+                                          {day}
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+
+                          <div>
+                              <label className="text-xs font-bold text-slate-500 uppercase block mb-3">Time Range (e.g., 09:00 AM - 05:00 PM)</label>
+                              <input 
+                                name="availability"
+                                value={profileData.availability}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent outline-none text-slate-700"
+                                placeholder="Enter time range..."
+                              />
+                          </div>
+                      </div>
+                  ) : (
+                      <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                              <span className="text-slate-500 font-medium w-24">Days:</span>
+                              <div className="flex flex-wrap gap-2">
+                                  {profileData.availableDays && profileData.availableDays.length > 0 ? (
+                                      profileData.availableDays.map(day => (
+                                          <span key={day} className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-sm font-medium border border-green-100">
+                                              {day}
+                                          </span>
+                                      ))
+                                  ) : (
+                                      <span className="text-slate-400 italic">No specific days set</span>
+                                  )}
+                              </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                              <span className="text-slate-500 font-medium w-24">Hours:</span>
+                              <span className="text-slate-800 font-bold">{profileData.availability || "Not specified"}</span>
+                          </div>
+                      </div>
                   )}
                 </div>
 

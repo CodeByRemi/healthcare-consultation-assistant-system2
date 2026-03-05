@@ -14,7 +14,7 @@ export default function PatientMobileFooter() {
     { icon: FaHome, path: "/patient/dashboard", label: "Home" },
     { icon: FaCalendarAlt, path: "/patient/appointments", label: "Visits" },
     { icon: FaUserMd, path: "/patient/book-appointment", label: "Book" },
-    { icon: FaRobot, path: "/patient/chat", label: "AI" },
+    { icon: FaRobot, path: "/patient/ai-chat", label: "AI" },
     { icon: FaFileMedical, path: "/patient/records", label: "Records" },
   ];
 

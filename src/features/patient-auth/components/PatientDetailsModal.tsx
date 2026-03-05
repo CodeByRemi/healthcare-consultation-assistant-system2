@@ -18,17 +18,19 @@ interface PatientDetailsModalProps {
 export default function PatientDetailsModal({
   isOpen,
   onClose,
-  patientData = {
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Main Street, New York, NY 10001",
-    bloodType: "O+",
-    joinDate: "January 15, 2024"
-  }
+  patientData
 }: PatientDetailsModalProps) {
   if (!isOpen) return null;
+
+  const details = patientData ?? {
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    bloodType: "",
+    joinDate: ""
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -41,7 +43,7 @@ export default function PatientDetailsModal({
         {/* Header with gradient */}
         <div className="bg-linear-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Welcome Back, {patientData.firstName}!</h2>
+            <h2 className="text-2xl font-bold text-white">Welcome Back, {details.firstName || "Patient"}!</h2>
             <p className="text-blue-100 text-sm mt-1">Your health profile</p>
           </div>
           <button
@@ -61,7 +63,7 @@ export default function PatientDetailsModal({
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                {patientData.firstName} {patientData.lastName}
+                {details.firstName} {details.lastName}
               </h3>
               <p className="text-gray-500 text-sm">Patient Profile</p>
             </div>
@@ -80,7 +82,7 @@ export default function PatientDetailsModal({
                 <Mail className="w-5 h-5 text-blue-600" />
                 <span className="text-xs font-semibold text-gray-500 uppercase">Email</span>
               </div>
-              <p className="text-gray-900 font-medium">{patientData.email}</p>
+              <p className="text-gray-900 font-medium">{details.email}</p>
             </motion.div>
 
             {/* Phone */}
@@ -94,7 +96,7 @@ export default function PatientDetailsModal({
                 <Phone className="w-5 h-5 text-blue-600" />
                 <span className="text-xs font-semibold text-gray-500 uppercase">Phone</span>
               </div>
-              <p className="text-gray-900 font-medium">{patientData.phone}</p>
+              <p className="text-gray-900 font-medium">{details.phone}</p>
             </motion.div>
 
             {/* Address */}
@@ -108,11 +110,11 @@ export default function PatientDetailsModal({
                 <MapPin className="w-5 h-5 text-blue-600" />
                 <span className="text-xs font-semibold text-gray-500 uppercase">Address</span>
               </div>
-              <p className="text-gray-900 font-medium">{patientData.address}</p>
+              <p className="text-gray-900 font-medium">{details.address}</p>
             </motion.div>
 
             {/* Blood Type */}
-            {patientData.bloodType && (
+            {details.bloodType && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -123,7 +125,7 @@ export default function PatientDetailsModal({
                   <Stethoscope className="w-5 h-5 text-blue-600" />
                   <span className="text-xs font-semibold text-gray-500 uppercase">Blood Type</span>
                 </div>
-                <p className="text-gray-900 font-medium">{patientData.bloodType}</p>
+                <p className="text-gray-900 font-medium">{details.bloodType}</p>
               </motion.div>
             )}
 
@@ -138,7 +140,7 @@ export default function PatientDetailsModal({
                 <Calendar className="w-5 h-5 text-blue-600" />
                 <span className="text-xs font-semibold text-gray-500 uppercase">Member Since</span>
               </div>
-              <p className="text-gray-900 font-medium">{patientData.joinDate}</p>
+              <p className="text-gray-900 font-medium">{details.joinDate}</p>
             </motion.div>
           </div>
 

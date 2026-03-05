@@ -195,20 +195,30 @@ export default function DoctorSettings() {
                   </h3>
                 </div>
 
-                <div className="p-6 space-y-4">
-                  <div className="flex items-center justify-between py-4 border-b border-slate-100">
-                    <div>
-                      <p className="font-medium text-slate-900">Change Password</p>
-                      <p className="text-sm text-slate-500">Update your account password</p>
+                <div className="p-6 space-y-5">
+                  <div className="rounded-2xl border border-slate-200 p-5 bg-slate-50/50">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <div>
+                        <p className="font-semibold text-slate-900">Password Management</p>
+                        <p className="text-sm text-slate-500 mt-1">Create or update your doctor account password from one place.</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => navigate("/doctor/create-password")}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                        >
+                          <Lock size={16} />
+                          Create Password
+                        </button>
+                        <button
+                          onClick={() => navigate("/doctor/update-password")}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition-colors"
+                        >
+                          Update Password
+                          <ArrowRight size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => navigate("/doctor/update-password")}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
-                    >
-                      <Lock size={16} />
-                      Update
-                      <ArrowRight size={16} />
-                    </button>
                   </div>
 
                   <div className="flex items-center justify-between py-4 border-b border-slate-100">
