@@ -12,14 +12,20 @@ service cloud.firestore {
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
+    
+    // For development purposes, allow authenticated users to read all documents
+    // In production, restrict this to admin users only
+    function isAdmin() {
+      return isAuthenticated(); // Placeholder: currently allows any authenticated user
+    }
 
     // Rules for the 'users' collection (assuming a shared collection for profiles, or separate collections)
     
     // Patient Profiles
     match /patients/{userId} {
-      allow read: if isAuthenticated() && isOwner(userId);
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(userId); // Users create their own profile on signup
-      allow update: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
       
       // Allow access to chats subcollection
       match /chats/{chatId} {
@@ -29,17 +35,16 @@ service cloud.firestore {
 
     // Doctor Profiles
     match /doctors/{userId} {
-      allow read: if isAuthenticated(); // Maybe public read for basic info (name, specialty)? 
-      // For now, let's restrict write to owner
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAuthenticated() && isOwner(userId);
+      allow read: if isAuthenticated(); // Public read for basic info
+      allow create: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
     }
     
     // Appointments (Example structure)
     match /appointments/{appointmentId} {
-    	allow read: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid);
+    	allow read: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid);
+      allow update: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
     }
 
     // Default deny

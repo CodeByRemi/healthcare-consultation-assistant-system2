@@ -146,44 +146,8 @@ export default function DoctorSchedule() {
                 });
             });
 
-            // Demo Data if empty (to match your request for "redesign" visualization)
             if (appts.length === 0) {
-                 const demoData: Appointment[] = [
-                     // Monday
-                     { id: 'd1', date: formatDateId(displayDays[0]), time: '09:00 AM', patient: 'Clinically Blocked', status: 'Blocked', type: 'Administrative', duration: '60 min' },
-                     // Tuesday - If we are in Day view, shift Demo Data to current day
-                     { id: 'd2', date: formatDateId(displayDays[0]), time: '02:00 PM', patient: 'Robert Vance', status: 'Confirmed', type: 'Follow-up Cardiology', duration: '60 min', notes: 'INITIAL' },
-                 ];
-                 
-                 if (viewType === 'week') {
-                    // Restore full week demo data
-                    const weekMonday = new Date(currentDate); 
-                    const day = weekMonday.getDay();
-                    const diff = weekMonday.getDate() - day + (day === 0 ? -6 : 1); 
-                    weekMonday.setDate(diff);
-
-                    const getD = (offset: number) => {
-                        const d = new Date(weekMonday);
-                        d.setDate(weekMonday.getDate() + offset);
-                        return formatDateId(d);
-                    };
-
-                    const weekDemo: Appointment[] = [
-                        { id: 'w1', date: getD(0), time: '09:00 AM', patient: 'Clinically Blocked', status: 'Blocked', type: 'Administrative', duration: '60 min' },
-                        { id: 'w2', date: getD(1), time: '09:00 AM', patient: 'Robert Vance', status: 'Confirmed', type: 'Follow-up Cardiology', duration: '60 min', notes: 'INITIAL' },
-                        { id: 'w3', date: getD(1), time: '11:00 AM', patient: 'Sarah Jenkins', status: 'Confirmed', type: 'Annual Wellness Exam', duration: '60 min' },
-                        { id: 'w4', date: getD(1), time: '12:00 PM', patient: 'Emily Chen', status: 'Pending', type: 'Vaccination', duration: '60 min' },
-                        { id: 'w5', date: getD(4), time: '10:00 AM', patient: 'Marcus Thorne', status: 'Confirmed', type: 'Post-Op Review', duration: '60 min' },
-                        { id: 'w6', date: getD(3), time: '12:00 PM', patient: 'Conference', status: 'Blocked', type: 'Department Meeting', duration: '60 min' },
-                    ];
-                    appts.push(...weekDemo);
-                 } else {
-                     // Just today's demo
-                     appts.push(...demoData);
-                 }
-                 
-                 blockedCount = 2; // Demo Adjustment
-                 newPatientsCount = 4; // Demo Adjustment
+                 // No appointments found
             }
 
             setAppointments(appts);

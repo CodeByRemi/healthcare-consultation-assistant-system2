@@ -38,6 +38,10 @@ import DoctorCredentials from "./pages/admin/DoctorCredentials";
 import AppointmentDetails from "./pages/admin/AppointmentDetails";
 import AdminSettings from "./pages/admin/AdminSettings";
 import DoctorAvailability from "./pages/doctor-dashboard/DoctorAvailability";
+import DoctorRegistration from "./pages/doctor/DoctorRegistration";
+import DoctorRegistrationStep2 from "./pages/doctor/DoctorRegistrationStep2";
+import DoctorRegistrationStep3 from "./pages/doctor/DoctorRegistrationStep3";
+import DoctorRegistrationStep4 from "./pages/doctor/DoctorRegistrationStep4";
 
 // In your Routes
 
@@ -82,6 +86,10 @@ function App() {
         <Route path="/doctor/login" element={<DoctorLogin />} />
         <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
         <Route path="/doctor/forgot-password" element={<ForgotPassword />} />
+        <Route path="/doctor/register" element={<DoctorRegistration />} />
+        <Route path="/doctor/step-2" element={<DoctorRegistrationStep2 />} />
+        <Route path="/doctor/step-3" element={<DoctorRegistrationStep3 />} />
+        <Route path="/doctor/step-4" element={<DoctorRegistrationStep4 />} />
         <Route path="/admindashboard" element={<AdminDashboard />} />
       </Routes>
     </>

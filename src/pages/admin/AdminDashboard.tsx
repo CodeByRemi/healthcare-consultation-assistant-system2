@@ -1,29 +1,93 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   Search, 
   Bell, 
-  UserPlus,
-  Mail,
-  Lock,
-  User,
-  Phone,
-  MapPin,
-  Stethoscope,
   X
 } from "lucide-react";
+import { collection, getDocs } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { db, auth } from "../../lib/firebase";
 import AdminSidebar from "./components/AdminSidebar";
 import AdminMobileFooter from "./components/AdminMobileFooter";
 import AdminSettings from "./AdminSettings";
 import AdminProfilePage from "./AdminProfilePage";
 import AdminNotifications from "./AdminNotifications";
 
+interface Doctor {
+  id: string;
+  name: string;
+  specialization: string;
+  email: string;
+  phone: string;
+  address: string;
+  status: string;
+  username: string;
+  password?: string;
+  pastAppointments: string;
+  presentAppointments: string;
+  [key: string]: any;
+}
+
+interface Patient {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  patientId: string;
+  address: string;
+  bloodType: string;
+  gender: string;
+  dob: string;
+  height: string;
+  weight: string;
+  allergies: string;
+  conditions: string;
+  medications: string;
+  pastAppointments: string;
+  presentAppointments: string;
+  [key: string]: any;
+}
+
+interface Appointment {
+  id: string;
+  date: string;
+  time: string;
+  patientName: string;
+  doctorName: string;
+  status: string;
+  type: string;
+  notes: string;
+  [key: string]: any; 
+}
+
 export default function AdminDashboard() {
   const [currentTab, setCurrentTab] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showCreateDoctor, setShowCreateDoctor] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoading(false);
+      if (!user) {
+        toast.error("Please login to access the admin dashboard");
+        navigate("/doctor/login"); // Redirect to login
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 relative overflow-hidden">
@@ -85,8 +149,8 @@ export default function AdminDashboard() {
 
         {/* Content */}
         <div className="p-6 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto">
-          {currentTab === 'dashboard' && <DashboardOverview setShowCreateDoctor={setShowCreateDoctor} />}
-          {currentTab === 'doctors' && <DoctorsListView setShowCreateDoctor={setShowCreateDoctor} />}
+          {currentTab === 'dashboard' && <DashboardOverview />}
+          {currentTab === 'doctors' && <DoctorsListView />}
           {currentTab === 'patients' && <PatientsList />}
           {currentTab === 'appointments' && <AppointmentsList />}
           {currentTab === 'settings' && <AdminSettings />}
@@ -98,115 +162,44 @@ export default function AdminDashboard() {
       <AdminMobileFooter currentTab={currentTab} setCurrentTab={setCurrentTab} />
 
       {/* Create Doctor Modal */}
-      {showCreateDoctor && (
-        <CreateDoctorModal onClose={() => setShowCreateDoctor(false)} />
-      )}
     </div>
   );
 }
 
-const stats = [
-  { label: "Total Doctors", value: "0", change: "0", trend: "neutral" },
-  { label: "Total Patients", value: "0", change: "0", trend: "neutral" },
-  { label: "Appointments", value: "0", change: "0", trend: "neutral" }
-];
 
-const doctorPlaceholders = [
-  {
-    id: "doctor-placeholder-1",
-    name: "",
-    specialization: "",
-    email: "",
-    phone: "",
-    address: "",
-    status: "",
-    username: "",
-    password: "",
-    pastAppointments: "",
-    presentAppointments: ""
-  },
-  {
-    id: "doctor-placeholder-2",
-    name: "",
-    specialization: "",
-    email: "",
-    phone: "",
-    address: "",
-    status: "",
-    username: "",
-    password: "",
-    pastAppointments: "",
-    presentAppointments: ""
-  }
-];
 
-const patientPlaceholders = [
-  {
-    id: "patient-placeholder-1",
-    fullName: "",
-    email: "",
-    phoneNumber: "",
-    patientId: "",
-    address: "",
-    bloodType: "",
-    gender: "",
-    dob: "",
-    height: "",
-    weight: "",
-    allergies: "",
-    conditions: "",
-    medications: "",
-    pastAppointments: "",
-    presentAppointments: ""
-  },
-  {
-    id: "patient-placeholder-2",
-    fullName: "",
-    email: "",
-    phoneNumber: "",
-    patientId: "",
-    address: "",
-    bloodType: "",
-    gender: "",
-    dob: "",
-    height: "",
-    weight: "",
-    allergies: "",
-    conditions: "",
-    medications: "",
-    pastAppointments: "",
-    presentAppointments: ""
-  }
-];
 
-const recentAppointments = [
-  {
-    id: "[Appointment ID]",
-    date: "[Appointment Date]",
-    time: "[Appointment Time]",
-    patient: "[Patient Name]",
-    doctor: "[Doctor Name]",
-    status: "[Status]"
-  },
-  {
-    id: "[Appointment ID]",
-    date: "[Appointment Date]",
-    time: "[Appointment Time]",
-    patient: "[Patient Name]",
-    doctor: "[Doctor Name]",
-    status: "[Status]"
-  },
-  {
-    id: "[Appointment ID]",
-    date: "[Appointment Date]",
-    time: "[Appointment Time]",
-    patient: "[Patient Name]",
-    doctor: "[Doctor Name]",
-    status: "[Status]"
-  }
-];
 
-function DashboardOverview({ setShowCreateDoctor }: { setShowCreateDoctor: (show: boolean) => void }) {
+
+
+
+
+function DashboardOverview() {
+  const [stats, setStats] = useState([
+    { label: "Total Doctors", value: "0", change: "0", trend: "neutral" },
+    { label: "Total Patients", value: "0", change: "0", trend: "neutral" },
+    { label: "Appointments", value: "0", change: "0", trend: "neutral" }
+  ]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const doctorsSnapshot = await getDocs(collection(db, "doctors"));
+        const patientsSnapshot = await getDocs(collection(db, "patients"));
+        const appointmentsSnapshot = await getDocs(collection(db, "appointments"));
+
+        setStats([
+          { label: "Total Doctors", value: doctorsSnapshot.size.toString(), change: "+0", trend: "neutral" },
+          { label: "Total Patients", value: patientsSnapshot.size.toString(), change: "+0", trend: "neutral" },
+          { label: "Appointments", value: appointmentsSnapshot.size.toString(), change: "+0", trend: "neutral" }
+        ]);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+    fetchStats();
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
@@ -250,13 +243,6 @@ function DashboardOverview({ setShowCreateDoctor }: { setShowCreateDoctor: (show
         {/* Quick Actions */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
           <h3 className="font-bold text-gray-900 mb-4">Quick Actions</h3>
-          <button 
-            onClick={() => setShowCreateDoctor(true)}
-            className="w-full py-3 px-4 bg-blue-50 text-blue-700 rounded-xl font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
-          >
-            <UserPlus size={18} />
-            Create Doctor Account
-          </button>
           <button className="w-full py-3 px-4 bg-gray-50 text-gray-700 rounded-xl font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
             <Search size={18} />
             View Appointments
@@ -267,33 +253,55 @@ function DashboardOverview({ setShowCreateDoctor }: { setShowCreateDoctor: (show
   );
 }
 
-function DoctorsListView({ setShowCreateDoctor }: { setShowCreateDoctor: (show: boolean) => void }) {
-  const [doctors, setDoctors] = useState(doctorPlaceholders);
+function DoctorsListView() {
+  const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
   const [editingDoctorId, setEditingDoctorId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "doctors"));
+        const doctorList = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          // Ensure fields exist for display or provide defaults
+          name: doc.data().fullName || "Unknown Doctor",
+          specialization: doc.data().specialty || "General",
+          status: doc.data().verificationStatus || "Pending",
+          email: doc.data().email || "",
+          phone: doc.data().phone || "",
+          address: doc.data().address || "",
+          username: doc.data().username || "",
+          password: "", // Don't show password
+          pastAppointments: "0", // Placeholder until connected
+          presentAppointments: "0" // Placeholder until connected
+        }));
+        setDoctors(doctorList);
+      } catch (error) {
+        console.error("Error fetching doctors:", error);
+        toast.error("Failed to load doctors");
+      }
+    };
+    fetchDoctors();
+  }, []);
 
   const selectedDoctor = doctors.find((doctor) => doctor.id === selectedDoctorId) ?? null;
   const editingDoctor = doctors.find((doctor) => doctor.id === editingDoctorId) ?? null;
 
-  const handleSaveDoctorDetails = (updatedDoctor: (typeof doctorPlaceholders)[number]) => {
+  const handleSaveDoctorDetails = async (updatedDoctor: Doctor) => {
+    // In a real app, update Firestore here
     setDoctors((prev) =>
       prev.map((doctor) => (doctor.id === updatedDoctor.id ? updatedDoctor : doctor))
     );
     setEditingDoctorId(null);
-    toast.success("Doctor details saved successfully.");
+    toast.success("Doctor details saved successfully (UI only for now).");
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Doctors Management</h2>
-        <button 
-          onClick={() => setShowCreateDoctor(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <UserPlus size={18} />
-          Add Doctor
-        </button>
       </div>
       
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -355,7 +363,7 @@ function DoctorDetailsModal({
   onEditDetails,
   onClose
 }: {
-  doctor: (typeof doctorPlaceholders)[number];
+  doctor: Doctor;
   onEditDetails: () => void;
   onClose: () => void;
 }) {
@@ -402,7 +410,7 @@ function DoctorDetailsModal({
             <InfoField label="Address" value={doctor.address} />
             <InfoField label="Status" value={doctor.status} />
             <InfoField label="Username" value={doctor.username} />
-            <InfoField label="Password" value={doctor.password} />
+            <InfoField label="Password" value={doctor.password || "********"} />
             <InfoField label="Past Appointments" value={doctor.pastAppointments} />
             <InfoField label="Present Appointments" value={doctor.presentAppointments} />
           </div>
@@ -434,12 +442,12 @@ function EditDoctorDetailsModal({
   onSave,
   onClose
 }: {
-  doctor: (typeof doctorPlaceholders)[number];
-  onSave: (doctor: (typeof doctorPlaceholders)[number]) => void;
+  doctor: Doctor;
+  onSave: (doctor: Doctor) => void;
   onClose: () => void;
 }) {
-  const [formData, setFormData] = useState(doctor);
-  const [confirmPassword, setConfirmPassword] = useState(doctor.password);
+  const [formData, setFormData] = useState<Doctor>(doctor);
+  const [confirmPassword, setConfirmPassword] = useState(doctor.password || "");
   const [error, setError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -635,9 +643,42 @@ function InfoField({ label, value }: { label: string; value: string }) {
 }
 
 function PatientsList() {
+  const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const selectedPatient =
-    patientPlaceholders.find((patient) => patient.id === selectedPatientId) ?? null;
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "patients"));
+        const patientData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          // Ensure fields
+          fullName: doc.data().fullName || "",
+          email: doc.data().email || "",
+          phoneNumber: doc.data().phone || "",
+          patientId: doc.data().patientId || doc.id,
+          address: doc.data().address || "",
+          dob: doc.data().dob || "",
+          gender: doc.data().gender || "",
+          bloodType: doc.data().bloodType || "",
+          height: doc.data().height || "",
+          weight: doc.data().weight || "",
+          allergies: doc.data().allergies || "",
+          conditions: doc.data().conditions || "",
+          medications: doc.data().medications || "",
+          pastAppointments: "0", 
+          presentAppointments: "0" 
+        }));
+        setPatients(patientData);
+      } catch (error) {
+        console.error("Error fetching patients:", error);
+      }
+    };
+    fetchPatients();
+  }, []);
+
+  const selectedPatient = patients.find((patient) => patient.id === selectedPatientId) ?? null;
 
   return (
     <div className="space-y-6">
@@ -648,17 +689,17 @@ function PatientsList() {
             <p className="text-sm text-gray-500 mt-1">Click a patient card to view profile information</p>
           </div>
           <span className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
-            {patientPlaceholders.length} Patients
+            {patients.length} Patients
           </span>
         </div>
 
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {patientPlaceholders.map((patient) => (
+          {patients.map((patient) => (
             <button
               key={patient.id}
               type="button"
               onClick={() => setSelectedPatientId(patient.id)}
-              className="text-left rounded-xl border border-gray-200 bg-white p-4 hover:border-blue-300 hover:shadow-md transition-all"
+              className="text-left rounded-xl b order border-gray-200 bg-white p-4 hover:border-blue-300 hover:shadow-md transition-all"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold">
@@ -690,7 +731,7 @@ function PatientDetailsModal({
   patient,
   onClose
 }: {
-  patient: (typeof patientPlaceholders)[number];
+  patient: Patient;
   onClose: () => void;
 }) {
   const navigate = useNavigate();
@@ -750,17 +791,45 @@ function PatientDetailsModal({
 }
 
 function AppointmentsList() {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "appointments"));
+        const aptData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          date: doc.data().date || "N/A",
+          time: doc.data().time || "N/A",
+          patientName: doc.data().patientName || "Unknown",
+          doctorName: doc.data().doctorName || "Unknown",
+          status: doc.data().status || "Scheduled",
+          type: doc.data().title || "Check-up",
+          notes: doc.data().description || "",
+          ...doc.data()
+        })) as Appointment[];
+        setAppointments(aptData);
+      } catch (error) {
+        console.error("Error fetching appointments:", error);
+      }
+    };
+    fetchAppointments();
+  }, []);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-gray-100">
+      <div className="p-6 border-b border-gray-100 flex items-center justify-between">
         <h3 className="font-bold text-gray-900 text-lg">Recent Appointments</h3>
+         <span className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
+            {appointments.length} Total
+          </span>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Appointment ID</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Appointment Date</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">ID</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Date</th>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Time</th>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Patient</th>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Doctor</th>
@@ -768,20 +837,31 @@ function AppointmentsList() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-            {recentAppointments.map((appointment) => (
+             {appointments.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-400 italic">
+                    No appointments found
+                  </td>
+                </tr>
+              ) : (
+            appointments.map((appointment) => (
               <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 text-sm text-gray-700">{appointment.id}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{appointment.id.substring(0, 8)}...</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{appointment.date}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{appointment.time}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{appointment.patient}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{appointment.doctor}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{appointment.patientName}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{appointment.doctorName}</td>
                 <td className="px-6 py-4 text-sm">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium 
+                    ${appointment.status === 'Completed' ? 'bg-green-50 text-green-700' : 
+                      appointment.status === 'Cancelled' ? 'bg-red-50 text-red-700' : 
+                      'bg-blue-50 text-blue-700'}`}>
                     {appointment.status}
                   </span>
                 </td>
               </tr>
-            ))}
+            ))
+            )}
           </tbody>
         </table>
       </div>
@@ -789,241 +869,4 @@ function AppointmentsList() {
   );
 }
 
-function CreateDoctorModal({ onClose }: { onClose: () => void }) {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    address: "",
-    specialization: "",
-    password: "",
-    confirmPassword: ""
-  });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const generateUsername = (firstName: string, lastName: string) => {
-    const first = firstName.trim().toLowerCase().replace(/[^a-z0-9]/g, "") || "doctor";
-    const last = lastName.trim().toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
-    return `${first}.${last}${randomSuffix}`;
-  };
-
-  const generatePassword = () => {
-    const randomPart = Math.random().toString(36).slice(-8);
-    return `Dr@${randomPart}`;
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    const generatedUsername = generateUsername(formData.firstName, formData.lastName);
-    const generatedPassword = generatePassword();
-    const doctorName = `${formData.firstName} ${formData.lastName}`.trim();
-
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onClose();
-      navigate("/admin/doctor-credentials", {
-        state: {
-          doctorEmail: formData.email,
-          doctorName,
-          username: generatedUsername,
-          password: generatedPassword
-        }
-      });
-    }, 1500);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-      >
-        {/* Modal Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Create Doctor Account</h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          {/* Name Fields */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  placeholder="John"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  placeholder="Doe"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Email & Phone */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="john@example.com"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="+1 (555) 000-0000"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Address & Specialization */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="123 Main St, City"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
-              <div className="relative">
-                <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <select
-                  name="specialization"
-                  value={formData.specialization}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  required
-                >
-                  <option value="">Select Specialization</option>
-                  <option value="cardiology">Cardiology</option>
-                  <option value="neurology">Neurology</option>
-                  <option value="pediatrics">Pediatrics</option>
-                  <option value="dermatology">Dermatology</option>
-                  <option value="orthopedics">Orthopedics</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Password Fields */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-4 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-70 transition-colors"
-            >
-              {isSubmitting ? "Creating..." : "Create Doctor Account"}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
-  );
-}
