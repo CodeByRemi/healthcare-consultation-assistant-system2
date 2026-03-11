@@ -1,7 +1,7 @@
 export default function Navbar() {
   return (
     <nav className="fixed w-full top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
         
         {/* Logo */}
         <div className="flex items-center gap-2">
@@ -9,13 +9,13 @@ export default function Navbar() {
             className="w-4 h-4 rounded-sm bg-[#2D8CFF]"
             aria-hidden="true"
           />
-          <span className="text-sm font-bold tracking-widest uppercase text-gray-900">
+          <span className="text-xs sm:text-sm font-bold tracking-widest uppercase text-gray-900">
             Medicare
           </span>
         </div>
 
         <button
-          className="md:hidden px-4 py-2 rounded-md bg-primary text-white text-xs font-semibold uppercase tracking-wide hover:bg-black transition-colors"
+          className="md:hidden min-h-11 px-4 py-2 rounded-md bg-primary text-white text-xs font-semibold uppercase tracking-wide hover:bg-black transition-colors"
           onClick={() => window.location.href = "/patient-login"}
         >
           Join Now

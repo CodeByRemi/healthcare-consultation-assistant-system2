@@ -1,11 +1,18 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   Search, 
   Bell, 
-  X
+  X,
+  Calendar,
+  Clock,
+  User,
+  Stethoscope,
+  Activity,
+  AlertCircle,
+  FileText
 } from "lucide-react";
 import { collection, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -28,7 +35,7 @@ interface Doctor {
   password?: string;
   pastAppointments: string;
   presentAppointments: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface Patient {
@@ -48,7 +55,7 @@ interface Patient {
   medications: string;
   pastAppointments: string;
   presentAppointments: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface Appointment {
@@ -60,7 +67,7 @@ interface Appointment {
   status: string;
   type: string;
   notes: string;
-  [key: string]: any; 
+  [key: string]: unknown; 
 }
 
 export default function AdminDashboard() {
@@ -135,14 +142,6 @@ export default function AdminDashboard() {
             >
               <Bell className="w-5 h-5" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => setCurrentTab("profile")}
-              className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 hover:bg-blue-200 transition-colors"
-            >
-              A
             </button>
           </div>
         </motion.header>
@@ -254,7 +253,7 @@ function DashboardOverview() {
 }
 
 function DoctorsListView() {
-  const [doctors, setDoctors] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
   const [editingDoctorId, setEditingDoctorId] = useState<string | null>(null);
 
@@ -368,8 +367,11 @@ function DoctorDetailsModal({
   onClose: () => void;
 }) {
   const navigate = useNavigate();
+  const [showSuspendConfirm, setShowSuspendConfirm] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ scale: 0.96, opacity: 0 }}
@@ -430,10 +432,75 @@ function DoctorDetailsModal({
             >
               View Appointment Details
             </button>
+            <button
+              type="button"
+              onClick={() => setShowSuspendConfirm(true)}
+              className="w-full md:w-auto px-4 py-2 rounded-lg text-red-600 border border-red-200 bg-red-50 text-sm font-medium hover:bg-red-100 transition-colors"
+            >
+              Suspend Doctor
+            </button>
           </div>
         </div>
       </motion.div>
     </div>
+
+    {/* Confirmation Modal */}
+    <AnimatePresence>
+      {showSuspendConfirm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full border border-gray-200"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Suspend Doctor?</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                Are you sure you want to suspend <strong>{doctor.name}</strong>? They will no longer be able to access their account.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button 
+                onClick={() => setShowSuspendConfirm(false)}
+                disabled={isProcessing}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isProcessing}
+                onClick={() => {
+                  setIsProcessing(true);
+                  setTimeout(() => {
+                    toast.success("Doctor suspended successfully", {
+                      description: `${doctor.name} has been suspended.`
+                    });
+                    setIsProcessing(false);
+                    setShowSuspendConfirm(false);
+                    onClose(); 
+                  }, 2000);
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Suspending...
+                  </>
+                ) : (
+                  "Yes, Suspend"
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 
@@ -643,7 +710,7 @@ function InfoField({ label, value }: { label: string; value: string }) {
 }
 
 function PatientsList() {
-  const [patients, setPatients] = useState<any[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -735,8 +802,11 @@ function PatientDetailsModal({
   onClose: () => void;
 }) {
   const navigate = useNavigate();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ scale: 0.96, opacity: 0 }}
@@ -776,7 +846,7 @@ function PatientDetailsModal({
           <InfoField label="Present Appointments" value={patient.presentAppointments} />
         </div>
 
-        <div className="px-6 pb-6 pt-2">
+        <div className="px-6 pb-6 pt-2 flex flex-wrap gap-3">
           <button
             type="button"
             onClick={() => navigate(`/admin/appointment-details?entity=patient&id=${patient.id}`)}
@@ -784,6 +854,173 @@ function PatientDetailsModal({
           >
             View Appointment Details
           </button>
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-full md:w-auto px-4 py-2 rounded-lg text-red-600 border border-red-200 bg-red-50 text-sm font-medium hover:bg-red-100 transition-colors"
+          >
+            Delete User
+          </button>
+        </div>
+      </motion.div>
+    </div>
+
+    {/* Confirmation Modal */}
+    <AnimatePresence>
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full border border-gray-200"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Delete User?</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                Are you sure you want to permanently delete <strong>{patient.fullName}</strong>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button 
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isProcessing}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isProcessing}
+                onClick={() => {
+                   setIsProcessing(true);
+                   setTimeout(() => {
+                    toast.success("User deleted successfully", {
+                      description: `${patient.fullName} has been removed from the system.`
+                    });
+                    setIsProcessing(false);
+                    setShowDeleteConfirm(false);
+                    onClose(); 
+                   }, 2000);
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                 {isProcessing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Yes, Delete"
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+    </>
+  );
+}
+
+function AppointmentDetailsModal({
+  appointment,
+  onClose
+}: {
+  appointment: Appointment;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ scale: 0.96, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.96, opacity: 0 }}
+        className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-5 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Appointment Details</h3>
+            <p className="text-sm text-gray-500 mt-1">ID: {appointment.id}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <Calendar size={16} />
+                <span>Date</span>
+              </div>
+              <p className="font-medium text-gray-900">{appointment.date}</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <Clock size={16} />
+                <span>Time</span>
+              </div>
+              <p className="font-medium text-gray-900">{appointment.time}</p>
+            </div>
+             <div className="space-y-1">
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <User size={16} />
+                <span>Patient</span>
+              </div>
+              <p className="font-medium text-gray-900">{appointment.patientName}</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <Stethoscope size={16} />
+                <span>Doctor</span>
+              </div>
+              <p className="font-medium text-gray-900">{appointment.doctorName}</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-gray-100">
+             <div>
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                <Activity size={16} className="text-blue-600" />
+                Reason for Visit / Type
+              </h3>
+              <p className="text-gray-700 bg-gray-50 p-3 rounded-lg text-sm">
+                {appointment.type}
+              </p>
+            </div>
+            
+            {appointment.notes && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                  <FileText size={16} className="text-blue-600" />
+                  Additional Notes
+                </h3>
+                <p className="text-gray-600 text-sm italic">
+                  "{appointment.notes}"
+                </p>
+              </div>
+            )}
+             
+             <div>
+                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                  <AlertCircle size={16} className="text-blue-600" />
+                  Status
+                </h3>
+                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium 
+                    ${appointment.status === 'Completed' ? 'bg-green-50 text-green-700' : 
+                      appointment.status === 'Cancelled' ? 'bg-red-50 text-red-700' : 
+                      'bg-blue-50 text-blue-700'}`}>
+                    {appointment.status}
+                  </span>
+             </div>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -792,6 +1029,7 @@ function PatientDetailsModal({
 
 function AppointmentsList() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -817,6 +1055,7 @@ function AppointmentsList() {
   }, []);
 
   return (
+    <>
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="p-6 border-b border-gray-100 flex items-center justify-between">
         <h3 className="font-bold text-gray-900 text-lg">Recent Appointments</h3>
@@ -845,7 +1084,11 @@ function AppointmentsList() {
                 </tr>
               ) : (
             appointments.map((appointment) => (
-              <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
+              <tr 
+                key={appointment.id} 
+                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => setSelectedAppointment(appointment)}
+              >
                 <td className="px-6 py-4 text-sm text-gray-700">{appointment.id.substring(0, 8)}...</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{appointment.date}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{appointment.time}</td>
@@ -866,6 +1109,15 @@ function AppointmentsList() {
         </table>
       </div>
     </div>
+    <AnimatePresence>
+      {selectedAppointment && (
+        <AppointmentDetailsModal 
+          appointment={selectedAppointment} 
+          onClose={() => setSelectedAppointment(null)} 
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 

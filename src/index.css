@@ -37,11 +37,49 @@
 }
 
 /* Base Styles */
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
 body {
   font-family: var(--font-sans);
   color: var(--color-text);
   background-color: #ffffff;
   overflow-x: hidden;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+html.dark #root {
+  background-color: #0f172a;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 h1,
@@ -60,6 +98,44 @@ h6 {
   margin-right: auto;
   padding-left: 1.5rem;
   padding-right: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .const-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 7vw, 2.25rem);
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: clamp(1.4rem, 6vw, 1.9rem);
+    line-height: 1.25;
+  }
+
+  h3 {
+    font-size: clamp(1.15rem, 4.5vw, 1.45rem);
+  }
+
+  p {
+    line-height: 1.55;
+  }
+
+  button,
+  [role="button"],
+  a.btn-primary,
+  a.btn-accent {
+    min-height: 44px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 .btn-primary {

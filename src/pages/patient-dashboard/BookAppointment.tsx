@@ -134,6 +134,7 @@ export default function BookAppointment() {
   
   // Selected Doctor for Modal
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+    const [selectedDoctorMobileId, setSelectedDoctorMobileId] = useState("");
   const [hoveredSpecialty, setHoveredSpecialty] = useState<string | null>(null);
   const [confirmationModal, setConfirmationModal] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
@@ -301,6 +302,7 @@ export default function BookAppointment() {
   };
 
   const currentSlots = getAvailableTimeSlots(bookingDate);
+    const selectedDoctorMobile = filteredDoctors.find((doc) => doc.id === selectedDoctorMobileId) || null;
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -392,7 +394,37 @@ export default function BookAppointment() {
                 </div>
 
                 {/* Doctors Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="md:hidden bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 space-y-3">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Choose Doctor</label>
+                    <div className="relative">
+                        <FaUserMd className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <select
+                            value={selectedDoctorMobileId}
+                            onChange={(e) => setSelectedDoctorMobileId(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]/20 focus:border-[#0A6ED1] appearance-none"
+                        >
+                            <option value="">Select a doctor</option>
+                            {filteredDoctors.map((doc) => (
+                                <option key={doc.id} value={doc.id}>
+                                    {(doc.fullName || doc.name || "Doctor")} - {doc.specialty || "General"}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {selectedDoctorMobile && (
+                        <button
+                            type="button"
+                            onClick={() => setSelectedDoctor({ ...selectedDoctorMobile })}
+                            className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-left hover:border-[#0A6ED1] hover:bg-blue-50 transition-colors"
+                        >
+                            <p className="text-sm font-semibold text-slate-900 truncate">{selectedDoctorMobile.fullName || selectedDoctorMobile.name || "Doctor"}</p>
+                            <p className="text-xs text-[#0A6ED1] mt-1">{selectedDoctorMobile.specialty || "General"} • Tap to view details</p>
+                        </button>
+                    )}
+                </div>
+
+                <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredDoctors.map((doc, idx) => (
                         <motion.div 
                             key={doc.id}
@@ -459,6 +491,13 @@ export default function BookAppointment() {
                         </div>
                     )}
                 </div>
+
+                {filteredDoctors.length === 0 && (
+                    <div className="md:hidden text-center py-10 text-slate-400 bg-white rounded-2xl border border-slate-100">
+                        <FaUserMd className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p className="text-sm">No doctors found matching your criteria.</p>
+                    </div>
+                )}
             </div>
             
             <PatientMobileFooter />
@@ -691,7 +730,7 @@ export default function BookAppointment() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4"
                         onClick={() => setShowConsentModal(false)}
                     >
                         <motion.div 

@@ -42,6 +42,7 @@ import DoctorRegistration from "./pages/doctor/DoctorRegistration";
 import DoctorRegistrationStep2 from "./pages/doctor/DoctorRegistrationStep2";
 import DoctorRegistrationStep3 from "./pages/doctor/DoctorRegistrationStep3";
 import DoctorRegistrationStep4 from "./pages/doctor/DoctorRegistrationStep4";
+import AdminLogin from "./pages/admin/AdminLogin";
 
 // In your Routes
 
@@ -50,6 +51,7 @@ function App() {
     <>
       <Toaster position="top-center" richColors />
       <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/update-password" element={<AdminUpdatePassword />} />
         <Route path="/admin/doctor-credentials" element={<DoctorCredentials />} />

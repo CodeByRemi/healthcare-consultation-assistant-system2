@@ -16,12 +16,12 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'}`}>
+    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-4 md:py-6'}`}>
       <div className="const-container flex justify-between items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-           <img src={logo} alt="Medicare" className="h-10 w-auto" />
-           <span className={`text-xl font-display font-bold ${scrolled ? 'text-primary' : 'text-primary'}`}>Medicare</span>
+           <img src={logo} alt="Medicare" className="h-8 md:h-10 w-auto" />
+           <span className={`text-lg md:text-xl font-display font-bold ${scrolled ? 'text-primary' : 'text-primary'}`}>Medicare</span>
         </Link>
         
         {/* Desktop Menu */}
@@ -32,7 +32,7 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Join Now Button */}
-        <Link to="/choose-path" className="md:hidden btn-accent text-sm px-4 py-2 rounded-none">
+        <Link to="/choose-path" className="md:hidden btn-accent text-sm px-4 py-2 rounded-md">
             Join Now
         </Link>
       </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { 
   Send, 
   Plus, 
@@ -14,8 +14,9 @@ import {
 } from 'lucide-react';
 import PatientSidebar from './components/PatientSidebar';
 import PatientDashboardHeader from './components/PatientDashboardHeader';
+import PatientMobileFooter from './components/PatientMobileFooter';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { db, model } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
 
 interface Message {
@@ -34,8 +35,32 @@ interface ChatHistory {
   isPinned: boolean;
 }
 
+const PLACEHOLDER_CHAT_ID = 'placeholder-prev-chat';
+
+const AI_HISTORY_PLACEHOLDER = {
+  title: 'Previous AI Conversation',
+  when: 'Last discussed: headache and self-care',
+  cta: 'Open conversation'
+};
+
+const PLACEHOLDER_MESSAGES: Message[] = [
+  {
+    id: 'placeholder-msg-1',
+    role: 'user',
+    content: 'I have had a headache since yesterday. What should I do first?',
+    timestamp: new Date()
+  },
+  {
+    id: 'placeholder-msg-2',
+    role: 'assistant',
+    content: 'I understand. Start with hydration, rest, and avoid screen strain. If the headache is severe, persistent, or comes with warning signs like vision changes, please seek urgent medical care.',
+    timestamp: new Date()
+  }
+];
+
 export default function AIChat() {
   const { currentUser } = useAuth();
+  const [searchParams] = useSearchParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   const [chatSidebarOpen, setChatSidebarOpen] = useState(true);
@@ -44,9 +69,26 @@ export default function AIChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasAppliedQueryChatRef = useRef(false);
+  const currentChatIdRef = useRef<string | null>(null);
+
+  const requestedChatId = searchParams.get('chatId');
+
+  useEffect(() => {
+    currentChatIdRef.current = currentChatId;
+  }, [currentChatId]);
+
+  // Preselect chat from history page navigation so conversation layout opens immediately.
+  useEffect(() => {
+    if (requestedChatId) {
+      setCurrentChatId(requestedChatId);
+      hasAppliedQueryChatRef.current = true;
+    }
+  }, [requestedChatId]);
 
   // Load Chat History Sessions
   useEffect(() => {
@@ -67,23 +109,46 @@ export default function AIChat() {
         }));
         
         setChatHistory(history);
+
+      if (!hasAppliedQueryChatRef.current && requestedChatId) {
+        const chatExists = history.some((chat) => chat.id === requestedChatId);
+        if (chatExists || requestedChatId === PLACEHOLDER_CHAT_ID) {
+          setCurrentChatId(requestedChatId);
+          hasAppliedQueryChatRef.current = true;
+          return;
+        }
+      }
         
-        // If no active chat and history exists, select first one
-        if (!currentChatId && history.length > 0) {
+        // If no active chat and no explicit requested chat, select first existing conversation.
+        if (!requestedChatId && !currentChatIdRef.current && history.length > 0) {
             setCurrentChatId(history[0].id);
         }
     });
     
     return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser]); 
+  }, [currentUser, requestedChatId]); 
 
   // Load Messages for Current Chat
   useEffect(() => {
-      if (!currentUser || !currentChatId) {
+      if (!currentChatId) {
           setMessages([]);
+          setIsMessagesLoading(false);
           return;
       }
+
+      if (currentChatId === PLACEHOLDER_CHAT_ID) {
+        setMessages(PLACEHOLDER_MESSAGES);
+        setIsMessagesLoading(false);
+        return;
+      }
+
+      if (!currentUser) {
+        setMessages([]);
+        setIsMessagesLoading(false);
+        return;
+      }
+
+      setIsMessagesLoading(true);
       
       const q = query(
           collection(db, "patients", currentUser.uid, "aiConversations", currentChatId, "messages"),
@@ -98,6 +163,7 @@ export default function AIChat() {
               timestamp: doc.data().timestamp
           }));
           setMessages(msgs);
+            setIsMessagesLoading(false);
       });
       
       return () => unsubscribe();
@@ -114,24 +180,6 @@ export default function AIChat() {
       setIsSidebarOpen(false);
     }
   }, [chatSidebarOpen]);
-
-  const generateAIResponse = (userInput: string): string => {
-    const responses: { [key: string]: string } = {
-      'health': 'Good health comes from a combination of proper diet, exercise, sleep, and stress management. Would you like more specific advice?',
-      'diet': 'A balanced diet should include vegetables, fruits, lean proteins, whole grains, and healthy fats. Consider consulting with a nutritionist for personalized recommendations.',
-      'exercise': 'Regular physical activity is crucial. Aim for 150 minutes of moderate exercise per week. Mix cardio, strength training, and flexibility exercises.',
-      'sleep': 'Quality sleep is essential for health. Maintain a consistent sleep schedule, avoid screens before bed, and create a dark, cool sleeping environment.',
-    };
-
-    const lowerInput = userInput.toLowerCase();
-    for (const [key, response] of Object.entries(responses)) {
-      if (lowerInput.includes(key)) {
-        return response;
-      }
-    }
-
-    return 'Thank you for your question. I\'d be happy to help with health-related information. Could you provide more details about what you\'d like to know?';
-  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,11 +199,12 @@ export default function AIChat() {
 
     setIsLoading(true);
 
+    let chatId = currentChatId;
+
     try {
-        let chatId = currentChatId;
         
         // Create new chat if none selected
-        if (!chatId) {
+        if (!chatId || chatId === PLACEHOLDER_CHAT_ID) {
             const docRef = await addDoc(collection(db, "patients", currentUser.uid, "aiConversations"), {
                 title: messageText.substring(0, 30) + "...",
                 lastUpdated: serverTimestamp(),
@@ -178,22 +227,52 @@ export default function AIChat() {
             timestamp: serverTimestamp()
         });
 
-        // Simulate AI Response
-        setTimeout(async () => {
-             const response = generateAIResponse(messageText);
-             
-             await addDoc(collection(db, "patients", currentUser.uid, "aiConversations", chatId!, "messages"), {
-                 role: 'assistant',
-                 content: response, // Use the generated response
-                 timestamp: serverTimestamp()
-             });
-             
-             setIsLoading(false);
-        }, 1000);
+        const result = await model.generateContent(messageText);
+        const aiResponse = await result.response;
+        let responseText = aiResponse.text();
+
+        responseText = responseText.replace(
+          /\[BUTTON: (.*?) \| (.*?)\]/g,
+          (_, label, path) => `[ACTION:${label}](${path})`
+        );
+
+        await addDoc(collection(db, "patients", currentUser.uid, "aiConversations", chatId, "messages"), {
+          role: 'assistant',
+          content: responseText,
+          timestamp: serverTimestamp()
+        });
 
     } catch (error) {
         console.error("Error sending message:", error);
-        setIsLoading(false);
+        const visibleErrorMessage = "I apologize, but I'm having trouble connecting right now. Please try again in a moment.";
+
+        // Ensure users always see a response in the thread if AI generation fails.
+        if (chatId && currentUser) {
+          try {
+            await addDoc(collection(db, "patients", currentUser.uid, "aiConversations", chatId, "messages"), {
+              role: 'assistant',
+              content: visibleErrorMessage,
+              timestamp: serverTimestamp()
+            });
+          } catch (writeError) {
+            console.error("Error writing fallback assistant message:", writeError);
+            setMessages(prev => [...prev, {
+              id: `error-${Date.now()}`,
+              role: 'assistant',
+              content: visibleErrorMessage,
+              timestamp: new Date()
+            }]);
+          }
+        } else {
+          setMessages(prev => [...prev, {
+            id: `error-${Date.now()}`,
+            role: 'assistant',
+            content: visibleErrorMessage,
+            timestamp: new Date()
+          }]);
+        }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -281,9 +360,9 @@ export default function AIChat() {
                     <Plus size={20} className="group-active:scale-90 transition-transform" />
                 </button>
                 <Link
-                    to="/patient/ai-chat/history"
-                    className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center shadow-sm"
-                    title="View History"
+                  to="/patient/ai-chat/history"
+                  className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center shadow-sm"
+                  title="View History"
                 >
                     <MessageCircle size={20} />
                 </Link>
@@ -410,9 +489,27 @@ export default function AIChat() {
                   )}
 
                   {chatHistory.length === 0 && (
-                    <div className="p-6 text-center">
-                      <MessageCircle size={32} className="mx-auto text-slate-300 mb-2" />
-                      <p className="text-sm text-slate-500">No chat history yet</p>
+                    <div className="p-3 space-y-2">
+                      <h3 className="text-xs font-semibold text-slate-400 uppercase px-2 py-1 tracking-wide">AI History</h3>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentChatId(PLACEHOLDER_CHAT_ID)}
+                        className="w-full text-left p-3 rounded-xl border border-blue-100 bg-linear-to-br from-blue-50 to-white hover:from-blue-100 hover:to-blue-50 transition-all shadow-sm hover:shadow"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{AI_HISTORY_PLACEHOLDER.title}</p>
+                            <p className="text-xs text-slate-500 mt-1 truncate">{AI_HISTORY_PLACEHOLDER.when}</p>
+                            <p className="text-xs text-[#0A6ED1] font-medium mt-2 inline-flex items-center gap-1">
+                              {AI_HISTORY_PLACEHOLDER.cta}
+                              <ChevronRight size={13} />
+                            </p>
+                          </div>
+                          <div className="w-9 h-9 rounded-lg bg-white border border-blue-100 text-[#0A6ED1] flex items-center justify-center shrink-0">
+                            <MessageCircle size={16} />
+                          </div>
+                        </div>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -428,13 +525,6 @@ export default function AIChat() {
                 <h1 className="text-xl font-bold text-slate-900">Healthcare AI Assistant</h1>
                 <p className="text-sm text-slate-500">Ask me anything about your health</p>
               </div>
-
-              <Link
-                to="/patient/ai-chat/history"
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                View History
-              </Link>
             </header>
 
 
@@ -442,7 +532,7 @@ export default function AIChat() {
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto bg-slate-50/50 scroll-smooth">
-              {messages.length === 0 && !isLoading ? (
+              {!currentChatId && messages.length === 0 && !isLoading ? (
                 // Centered Welcome State
                 <div className="min-h-full flex flex-col items-center justify-center p-4">
                   <motion.div
@@ -514,7 +604,11 @@ export default function AIChat() {
                 </div>
               ) : (
                 // Active Chat Messages
-                <div className="p-4 md:p-6 pb-24 max-w-4xl mx-auto w-full space-y-6">
+                <div className="p-4 md:p-6 pb-28 md:pb-24 max-w-4xl mx-auto w-full space-y-6">
+                  {isMessagesLoading && (
+                    <div className="text-sm text-slate-500">Loading conversation...</div>
+                  )}
+
                   {messages.map((message) => (
                     <motion.div
                       key={message.id}
@@ -570,12 +664,12 @@ export default function AIChat() {
 
             {/* Fixed Input Area (Only visible when chat has started) */}
             <AnimatePresence>
-                {messages.length > 0 && (
+                {(messages.length > 0 || currentChatId !== null) && (
                     <motion.div 
                         initial={{ y: 100 }}
                         animate={{ y: 0 }}
                         exit={{ y: 100 }}
-                        className="bg-white border-t border-slate-200 p-4 md:p-6 z-20"
+                        className="bg-white border-t border-slate-200 p-4 md:p-6 z-20 mb-18 md:mb-0"
                     >
                     <div className="max-w-4xl mx-auto relative">
                         <form onSubmit={handleSendMessage} className="relative flex items-center gap-2">
@@ -606,10 +700,9 @@ export default function AIChat() {
             </AnimatePresence>
           </div>
         </div>
+
+        <PatientMobileFooter />
       </main>
-      
-      {/* Footer removed for cleaner chat experience */}
-      {/* <PatientMobileFooter /> */}
     </div>
   );
 }
