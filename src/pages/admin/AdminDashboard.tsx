@@ -12,9 +12,10 @@ import {
   Stethoscope,
   Activity,
   AlertCircle,
-  FileText
+  FileText,
+  CheckCircle,
 } from "lucide-react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../../lib/firebase";
 import AdminSidebar from "./components/AdminSidebar";
@@ -22,6 +23,7 @@ import AdminMobileFooter from "./components/AdminMobileFooter";
 import AdminSettings from "./AdminSettings";
 import AdminProfilePage from "./AdminProfilePage";
 import AdminNotifications from "./AdminNotifications";
+import CreateDoctorModal from "./components/CreateDoctorModal";
 
 interface Doctor {
   id: string;
@@ -256,32 +258,35 @@ function DoctorsListView() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
   const [editingDoctorId, setEditingDoctorId] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Moved fetch logic to a reusable function
+  const fetchDoctors = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "doctors"));
+      const doctorList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        // ...doc.data(), // Spread potentially unsafe data with caution
+        name: doc.data().fullName || "Unknown Doctor",
+        specialization: doc.data().specialization || doc.data().specialty || "General",
+        status: doc.data().verificationStatus || "Pending",
+        email: doc.data().email || "",
+        phone: doc.data().phone || "",
+        address: doc.data().address || "",
+        username: doc.data().username || "",
+        password: "", 
+        pastAppointments: "0",
+        presentAppointments: "0",
+        ...doc.data() // Include all other fields
+      })) as Doctor[];
+      setDoctors(doctorList);
+    } catch (error) {
+      console.error("Error fetching doctors:", error);
+      toast.error("Failed to load doctors");
+    }
+  };
 
   useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "doctors"));
-        const doctorList = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          // Ensure fields exist for display or provide defaults
-          name: doc.data().fullName || "Unknown Doctor",
-          specialization: doc.data().specialty || "General",
-          status: doc.data().verificationStatus || "Pending",
-          email: doc.data().email || "",
-          phone: doc.data().phone || "",
-          address: doc.data().address || "",
-          username: doc.data().username || "",
-          password: "", // Don't show password
-          pastAppointments: "0", // Placeholder until connected
-          presentAppointments: "0" // Placeholder until connected
-        }));
-        setDoctors(doctorList);
-      } catch (error) {
-        console.error("Error fetching doctors:", error);
-        toast.error("Failed to load doctors");
-      }
-    };
     fetchDoctors();
   }, []);
 
@@ -297,10 +302,39 @@ function DoctorsListView() {
     toast.success("Doctor details saved successfully (UI only for now).");
   };
 
+  const handleSuspendDoctor = async (doctorId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "Suspended" ? "Verified" : "Suspended";
+    const action = currentStatus === "Suspended" ? "unsuspended" : "suspended";
+    
+    try {
+      const doctorRef = doc(db, "doctors", doctorId);
+      await updateDoc(doctorRef, {
+        verificationStatus: newStatus
+      });
+      
+      setDoctors((prev) =>
+        prev.map((doc) => 
+          doc.id === doctorId ? { ...doc, status: newStatus } : doc
+        )
+      );
+      toast.success(`Doctor has been ${action}.`);
+    } catch (error) {
+      console.error(`Error ${action} doctor:`, error);
+      toast.error(`Failed to ${action} doctor.`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Doctors Management</h2>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+        >
+          <User size={18} />
+          Add New Doctor
+        </button>
       </div>
       
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -343,6 +377,7 @@ function DoctorsListView() {
           doctor={selectedDoctor}
           onEditDetails={() => setEditingDoctorId(selectedDoctor.id)}
           onClose={() => setSelectedDoctorId(null)}
+          onSuspend={() => handleSuspendDoctor(selectedDoctor.id, selectedDoctor.status)}
         />
       )}
 
@@ -353,6 +388,12 @@ function DoctorsListView() {
           onSave={handleSaveDoctorDetails}
         />
       )}
+
+      <CreateDoctorModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => fetchDoctors()}
+      />
     </div>
   );
 }
@@ -360,15 +401,20 @@ function DoctorsListView() {
 function DoctorDetailsModal({
   doctor,
   onEditDetails,
-  onClose
+  onClose,
+  onSuspend
 }: {
   doctor: Doctor;
   onEditDetails: () => void;
   onClose: () => void;
+  onSuspend: () => void;
 }) {
   const navigate = useNavigate();
   const [showSuspendConfirm, setShowSuspendConfirm] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Determine if doctor is suspended
+  const isSuspended = doctor.status === "Suspended";
 
   return (
     <>
@@ -435,9 +481,13 @@ function DoctorDetailsModal({
             <button
               type="button"
               onClick={() => setShowSuspendConfirm(true)}
-              className="w-full md:w-auto px-4 py-2 rounded-lg text-red-600 border border-red-200 bg-red-50 text-sm font-medium hover:bg-red-100 transition-colors"
+              className={`w-full md:w-auto px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                isSuspended 
+                  ? "text-green-600 border-green-200 bg-green-50 hover:bg-green-100" 
+                  : "text-red-600 border-red-200 bg-red-50 hover:bg-red-100"
+              }`}
             >
-              Suspend Doctor
+              {isSuspended ? "Activate Doctor" : "Suspend Doctor"}
             </button>
           </div>
         </div>
@@ -455,12 +505,23 @@ function DoctorDetailsModal({
             className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full border border-gray-200"
           >
             <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                <AlertCircle className="w-6 h-6 text-red-600" />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
+                isSuspended ? "bg-green-100" : "bg-red-100"
+              }`}>
+                {isSuspended ? (
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                 ) : (
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                 )}
               </div>
-              <h3 className="text-lg font-bold text-gray-900">Suspend Doctor?</h3>
+              <h3 className="text-lg font-bold text-gray-900">
+                {isSuspended ? "Activate Doctor?" : "Suspend Doctor?"}
+              </h3>
               <p className="text-sm text-gray-500 mt-2">
-                Are you sure you want to suspend <strong>{doctor.name}</strong>? They will no longer be able to access their account.
+                {isSuspended 
+                  ? `Are you sure you want to re-activate ${doctor.name}? They will regain access to their account.`
+                  : `Are you sure you want to suspend ${doctor.name}? They will no longer be able to access their account.`
+                }
               </p>
             </div>
             <div className="flex gap-3 mt-6">
@@ -473,26 +534,30 @@ function DoctorDetailsModal({
               </button>
               <button
                 disabled={isProcessing}
-                onClick={() => {
+                onClick={async () => {
                   setIsProcessing(true);
-                  setTimeout(() => {
-                    toast.success("Doctor suspended successfully", {
-                      description: `${doctor.name} has been suspended.`
-                    });
-                    setIsProcessing(false);
+                  try {
+                    await onSuspend();
                     setShowSuspendConfirm(false);
-                    onClose(); 
-                  }, 2000);
+                    onClose();
+                  } catch (error) {
+                    console.error("Failed to update status", error);
+                    setIsProcessing(false);
+                  }
                 }}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
+                className={`flex-1 px-4 py-2 text-white rounded-lg text-sm font-medium shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 transition-colors ${
+                  isSuspended 
+                    ? "bg-green-600 hover:bg-green-700" 
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
               >
                 {isProcessing ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Suspending...
+                    Processing...
                   </>
                 ) : (
-                  "Yes, Suspend"
+                  isSuspended ? "Yes, Activate" : "Yes, Suspend"
                 )}
               </button>
             </div>

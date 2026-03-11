@@ -8,8 +8,9 @@ import {
 } from 'react-icons/fa';
 import logo from "../../assets/patientreg.png";
 import { toast } from 'sonner';
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../lib/firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { auth, db } from "../../lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function DoctorLogin() {
   const navigate = useNavigate();
@@ -31,7 +32,25 @@ export default function DoctorLogin() {
     setIsLoading(true);
     
     try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      // Check if suspended
+      const doctorDocRef = doc(db, "doctors", user.uid);
+      const doctorDoc = await getDoc(doctorDocRef);
+
+      if (doctorDoc.exists()) {
+        const doctorData = doctorDoc.data();
+        if (doctorData.verificationStatus === "Suspended") {
+          await signOut(auth);
+          toast.error("Account Suspended", {
+            description: "Your account effectively has been suspended by the administrator. Please contact support."
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       toast.success('Welcome back, Doctor!');
       navigate('/doctor/dashboard');
     } catch (error: unknown) {

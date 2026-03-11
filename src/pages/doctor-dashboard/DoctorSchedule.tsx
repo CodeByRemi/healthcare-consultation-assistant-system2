@@ -47,6 +47,8 @@ export default function DoctorSchedule() {
     capacityUsed: 0,
     blockedHours: 0
   });
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Helper to get days to display based on view type
   const displayDays = useMemo(() => {
@@ -207,6 +209,51 @@ export default function DoctorSchedule() {
       return appointments.find(a => a.date === dateStr && a.time === time);
   };
 
+  const isSameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+
+  // Helpers for time formatting and ranges
+  const to24h = (t: string) => {
+    const [time, period] = t.split(' ');
+    const [hhStr, mmStr] = time.split(':');
+    let hh = Number(hhStr);
+    const mm = Number(mmStr);
+    if (period?.toUpperCase() === 'PM' && hh < 12) hh += 12;
+    if (period?.toUpperCase() === 'AM' && hh === 12) hh = 0;
+    return { hh, mm };
+  };
+  const format12h = (hh: number, mm: number) => {
+    const period = hh >= 12 ? 'PM' : 'AM';
+    const h12 = hh % 12 === 0 ? 12 : hh % 12;
+    const mmStr = String(mm).padStart(2, '0');
+    return `${String(h12).padStart(2, '0')}:${mmStr} ${period}`;
+  };
+  const addMinutesToTime = (t: string, minutes: number) => {
+    try {
+      const { hh, mm } = to24h(t);
+      const total = hh * 60 + mm + minutes;
+      const endH = Math.floor(((total % (24 * 60)) + (24 * 60)) % (24 * 60) / 60);
+      const endM = ((total % 60) + 60) % 60;
+      return format12h(endH, endM);
+    } catch {
+      return t;
+    }
+  };
+  const parseDurationMinutes = (d?: string) => {
+    if (!d) return null;
+    const m = d.match(/(\d+)/);
+    return m ? Number(m[1]) : null;
+  };
+  const timeRange = (start: string, duration?: string) => {
+    const mins = parseDurationMinutes(duration);
+    if (!mins) return start;
+    return `${start} – ${addMinutesToTime(start, mins)}`;
+  };
+
+  const openDetails = (appt: Appointment) => {
+    setSelectedAppointment(appt);
+    setIsDetailsOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col md:flex-row font-sans text-slate-900">
       <DoctorSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -217,25 +264,27 @@ export default function DoctorSchedule() {
           isSidebarOpen={isSidebarOpen}
         />
         
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scroll-smooth">
           <div className="max-w-7xl mx-auto space-y-6">
             
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            {/* 1. Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-serif font-bold text-slate-900 mb-1">Schedule</h1>
-                <p className="text-slate-500 font-medium">Review and manage your clinical availability for the week.</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Schedule</h1>
+                <p className="text-slate-500 mt-1">Manage your clinical availability and appointments.</p>
               </div>
-              <div className="flex gap-3">
-                  <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-sm">
-                      <FaBan className="text-slate-400" /> Block Time
-                  </button>
-                  <button 
-                    onClick={handleNewAvailability}
-                    className="px-5 py-2.5 bg-[#0A6ED1] hover:bg-[#0958a8] text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 flex items-center gap-2 transition-all active:scale-95"
-                  >
-                      <FaPlus /> New Availability
-                  </button>
+              <div className="flex items-center gap-3">
+                 <button className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 focus:ring-2 focus:ring-slate-200 focus:outline-none transition-all flex items-center gap-2 shadow-sm text-sm">
+                    <FaBan className="text-slate-400" /> 
+                    <span>Block Time</span>
+                </button>
+                <button 
+                  onClick={handleNewAvailability}
+                  className="px-4 py-2.5 bg-[#0A6ED1] hover:bg-[#0958a8] text-white font-semibold rounded-lg shadow-md shadow-blue-500/20 active:scale-95 focus:ring-2 focus:ring-offset-2 focus:ring-[#0A6ED1] focus:outline-none transition-all flex items-center gap-2 text-sm"
+                >
+                    <FaPlus /> 
+                    <span>New Availability</span>
+                </button>
               </div>
             </div>
 
@@ -339,19 +388,33 @@ export default function DoctorSchedule() {
                                     </div>
                                     
                                     <div className="space-y-1">
-                                        {dayAppts.slice(0, 3).map(appt => (
-                                            <div key={appt.id} className={`text-[10px] truncate px-1.5 py-0.5 rounded border ${
-                                                appt.status === 'Confirmed' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                appt.status === 'Blocked' ? 'bg-slate-100 text-slate-500 border-slate-200' :
-                                                'bg-orange-50 text-orange-700 border-orange-100'
-                                            }`}>
-                                                {appt.time.split(' ')[0]} {appt.patient}
-                                            </div>
-                                        ))}
-                                        {dayAppts.length > 3 && (
-                                            <div className="text-[10px] text-slate-400 pl-1 font-medium">
-                                                + {dayAppts.length - 3} more
-                                            </div>
+                                        {dayAppts.length === 0 ? (
+                                            appointments.length === 0 && isCurrentMonth && isSameDay(day, displayDays[0]) ? (
+                                                <button onClick={(e) => { e.stopPropagation(); openDetails({ id: 'preview-1', date: dateStr, time: '09:00 AM', patient: 'Appointment (Preview)', status: 'Confirmed', type: 'General Consultation', duration: '60 min' }); }} className="w-full text-left text-[10px] truncate px-1.5 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-100 hover:opacity-90">
+                                                    09:00 AM • Appointment (Preview)
+                                                </button>
+                                            ) : (
+                                                <div className="text-[10px] text-slate-400 pl-1 font-medium">
+                                                    No availability set
+                                                </div>
+                                            )
+                                        ) : (
+                                            <>
+                                                {dayAppts.slice(0, 3).map(appt => (
+                                                    <button onClick={(e) => { e.stopPropagation(); openDetails(appt); }} key={appt.id} className={`w-full text-left text-[10px] truncate px-1.5 py-0.5 rounded border transition-colors hover:opacity-90 ${
+                                                        appt.status === 'Confirmed' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                        appt.status === 'Blocked' ? 'bg-slate-100 text-slate-500 border-slate-200' :
+                                                        'bg-orange-50 text-orange-700 border-orange-100'
+                                                    }`}>
+                                                        {appt.time} • {appt.patient}
+                                                    </button>
+                                                ))}
+                                                {dayAppts.length > 3 && (
+                                                    <div className="text-[10px] text-slate-400 pl-1 font-medium">
+                                                        + {dayAppts.length - 3} more
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
 
@@ -413,16 +476,39 @@ export default function DoctorSchedule() {
                                         }`}
                                     >
                                         {!appt ? (
-                                            <div 
-                                                onClick={() => handleCellClick()}
-                                                className="w-full h-full border-2 border-dashed border-transparent hover:border-slate-200 rounded-xl flex items-center justify-center cursor-pointer group"
-                                            >
-                                                <span className="text-xs font-semibold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                                                    <FaPlus /> Availability
-                                                </span>
-                                            </div>
+                                            appointments.length === 0 && dateStr === formatDateId(displayDays[0]) && (time === '09:00 AM' || time === '11:00 AM') ? (
+                                                <div onClick={() => openDetails({ id: `preview-${time}`, date: dateStr, time, patient: time === '11:00 AM' ? 'Blocked (Preview)' : 'Appointment (Preview)', status: time === '11:00 AM' ? 'Blocked' : 'Confirmed', type: time === '11:00 AM' ? '—' : 'General Consultation', duration: '60 min' })} role="button" className={`w-full h-full rounded-xl p-3 flex flex-col justify-between shadow-sm border ${
+                                                    time === '11:00 AM' 
+                                                        ? 'bg-slate-100 border-slate-200 text-slate-500' 
+                                                        : 'bg-white border-slate-200'
+                                                } ${time !== '11:00 AM' ? 'border-l-4 border-l-[#0A6ED1]' : ''}`}>
+                                                    <div>
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <span className={`text-sm font-bold ${time === '11:00 AM' ? 'text-slate-500' : 'text-slate-900'}`}>
+                                                                {time === '11:00 AM' ? 'Blocked (Preview)' : 'Appointment (Preview)'}
+                                                            </span>
+                                                            {time !== '11:00 AM' && (
+                                                                <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase">INIT</span>
+                                                            )}
+                                                        </div>
+                                                        <p className={`text-xs ${time === '11:00 AM' ? 'text-slate-400' : 'text-slate-500'}`}>{time === '11:00 AM' ? 'No bookings in this slot' : 'General Consultation'}</p>
+                                                    </div>
+                                                    {time !== '11:00 AM' && (
+                                                        <div className="mt-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">60 min</div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div 
+                                                    onClick={() => handleCellClick()}
+                                                    className="w-full h-full border-2 border-dashed border-transparent hover:border-slate-200 rounded-xl flex items-center justify-center cursor-pointer group"
+                                                >
+                                                    <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                                                        <FaPlus /> Add availability
+                                                    </span>
+                                                </div>
+                                            )
                                         ) : (
-                                            <div className={`w-full h-full rounded-xl p-3 flex flex-col justify-between shadow-sm border ${
+                                            <div onClick={() => openDetails(appt)} role="button" className={`w-full h-full rounded-xl p-3 flex flex-col justify-between shadow-sm border ${
                                                 isBlocked || isConference
                                                     ? 'bg-slate-100 border-slate-200 text-slate-500' // Blocked/Conference style
                                                     : 'bg-white border-slate-200 hover:shadow-md cursor-pointer' // Regular Appt style
@@ -431,20 +517,27 @@ export default function DoctorSchedule() {
                                                 {/* Card Content */}
                                                 <div>
                                                     <div className="flex justify-between items-start mb-1">
-                                                        <span className={`text-sm font-bold ${
-                                                            isBlocked ? 'text-slate-500' : 'text-slate-900'
-                                                        }`}>
-                                                            {appt.patient}
-                                                        </span>
-                                                        {(appt.notes?.includes('INITIAL') || appt.notes?.includes('Initial')) && (
-                                                            <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase">
-                                                                INIT
-                                                            </span>
-                                                        )}
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-sm font-bold ${isBlocked ? 'text-slate-500' : 'text-slate-900'}`}>{appt.patient}</span>
+                                                            {appt.isNewPatient && (
+                                                                <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">NEW</span>
+                                                            )}
+                                                            {(appt.notes?.includes('INITIAL') || appt.notes?.includes('Initial')) && (
+                                                                <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase">INIT</span>
+                                                            )}
+                                                        </div>
+                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                                                            appt.status === 'Confirmed' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                            appt.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                                            appt.status === 'Cancelled' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                                                            'bg-slate-100 text-slate-600 border-slate-200'
+                                                        }`}>{appt.status}</span>
                                                     </div>
-                                                    <p className={`text-xs ${isBlocked ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                        {appt.type}
-                                                    </p>
+                                                    <div className={`text-xs ${isBlocked ? 'text-slate-400' : 'text-slate-600'} mb-0.5`}>{timeRange(appt.time, appt.duration)}</div>
+                                                    <div className={`text-xs ${isBlocked ? 'text-slate-400' : 'text-slate-500'} flex items-center gap-2`}>
+                                                        <span>{appt.type}</span>
+                                                        {appt.notes && <span className="w-1.5 h-1.5 rounded-full bg-slate-300" title="Has notes"></span>}
+                                                    </div>
                                                 </div>
 
                                                 {/* Footer of Card (if not blocked) */}
@@ -516,6 +609,137 @@ export default function DoctorSchedule() {
 
           </div>
         </div>
+
+        {/* Appointment Details Modal */}
+        {isDetailsOpen && selectedAppointment && (
+          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+            <div className="absolute inset-0 bg-black/30" onClick={() => setIsDetailsOpen(false)}></div>
+            <div className="relative bg-white w-full md:max-w-xl rounded-t-2xl md:rounded-2xl shadow-xl border border-slate-200 p-0 overflow-hidden">
+              {/* Header Bar */}
+              <div className="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-xl font-serif font-bold text-slate-900 truncate">{selectedAppointment.patient}</h3>
+                    {selectedAppointment.isNewPatient && (
+                      <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">NEW</span>
+                    )}
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${
+                      selectedAppointment.status === 'Confirmed' ? 'bg-green-50 text-green-700 border-green-100' :
+                      selectedAppointment.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                      selectedAppointment.status === 'Cancelled' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                      'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}>{selectedAppointment.status}</span>
+                  </div>
+                  <div className="text-sm text-slate-600 truncate">
+                    <span>{selectedAppointment.date}</span>
+                    <span className="mx-2">•</span>
+                    <span>{timeRange(selectedAppointment.time, selectedAppointment.duration)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsDetailsOpen(false)}
+                  aria-label="Close"
+                  className="shrink-0 h-9 px-3 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="px-6 py-5 space-y-5">
+                {/* Quick badges parsed from notes (Reason/Prep) */}
+                {selectedAppointment.notes && (
+                  <div className="flex flex-wrap gap-2 text-[11px]">
+                    {(/Reason\s*:\s*([^\n]+)/i.exec(selectedAppointment.notes)?.[1]) && (
+                      <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">Reason: {(/Reason\s*:\s*([^\n]+)/i.exec(selectedAppointment.notes) as RegExpExecArray)[1]}</span>
+                    )}
+                    {(/Prep\s*:\s*([^\n]+)/i.exec(selectedAppointment.notes)?.[1]) && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">Prep: {(/Prep\s*:\s*([^\n]+)/i.exec(selectedAppointment.notes) as RegExpExecArray)[1]}</span>
+                    )}
+                    {(/Instructions?\s*:\s*([^\n]+)/i.exec(selectedAppointment.notes)?.[1]) && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">Instructions: {(/Instructions?\s*:\s*([^\n]+)/i.exec(selectedAppointment.notes) as RegExpExecArray)[1]}</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Metadata grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">Type</span>
+                    <span className="font-medium text-slate-800 text-right">{selectedAppointment.type}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">Duration</span>
+                    <span className="font-medium text-slate-800 text-right">{selectedAppointment.duration}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">Status</span>
+                    <span className="font-medium text-slate-800 text-right">{selectedAppointment.status}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">Reference</span>
+                    <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{selectedAppointment.id}</span>
+                  </div>
+
+                  {/* Optional Mode/Location if present */}
+                  {('mode' in selectedAppointment as any) && (
+                    <div className="flex items-start justify-between gap-3 sm:col-span-2">
+                      <span className="text-slate-500">Mode</span>
+                      <span className="font-medium text-slate-800 text-right">{(selectedAppointment as any).mode || '—'}</span>
+                    </div>
+                  )}
+
+                  {/* Optional patient contact if present */}
+                  {('patientPhone' in selectedAppointment as any) && (
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-slate-500">Patient Phone</span>
+                      <span className="font-medium text-slate-800 text-right">{(selectedAppointment as any).patientPhone || '—'}</span>
+                    </div>
+                  )}
+                  {('patientEmail' in selectedAppointment as any) && (
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-slate-500">Patient Email</span>
+                      <span className="font-medium text-slate-800 text-right truncate max-w-[220px]">{(selectedAppointment as any).patientEmail || '—'}</span>
+                    </div>
+                  )}
+
+                  {/* Optional timestamps if present */}
+                  {('createdAt' in selectedAppointment as any) && (
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-slate-500">Created</span>
+                      <span className="font-medium text-slate-800 text-right">{String((selectedAppointment as any).createdAt)}</span>
+                    </div>
+                  )}
+                  {('updatedAt' in selectedAppointment as any) && (
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-slate-500">Updated</span>
+                      <span className="font-medium text-slate-800 text-right">{String((selectedAppointment as any).updatedAt)}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {selectedAppointment.notes && (
+                  <div>
+                    <div className="text-sm font-semibold text-slate-700 mb-2">Notes</div>
+                    <div className="text-sm text-slate-800 leading-relaxed bg-slate-50 border border-slate-100 rounded-xl p-3 whitespace-pre-wrap">
+                      {selectedAppointment.notes}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row gap-3 items-stretch sm:items-center">
+                <button onClick={() => setIsDetailsOpen(false)} className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-colors">Close</button>
+                <div className="flex-1" />
+                <button className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-colors">Cancel Appointment</button>
+                <button className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-colors">Reschedule</button>
+                <button className="px-4 py-2.5 bg-[#0A6ED1] hover:bg-[#0958a8] text-white font-semibold rounded-lg shadow-md">View Details</button>
+              </div>
+            </div>
+          </div>
+        )}
         
       </main>
     </div>

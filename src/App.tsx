@@ -45,7 +45,7 @@ import DoctorRegistrationStep4 from "./pages/doctor/DoctorRegistrationStep4";
 import AdminLogin from "./pages/admin/AdminLogin";
 
 // In your Routes
-
+  
 function App() {
   return (
     <>

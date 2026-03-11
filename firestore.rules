@@ -47,6 +47,11 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
     }
 
+    // Admin Profiles (For initial setup)
+    match /admins/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

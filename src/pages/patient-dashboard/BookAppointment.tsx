@@ -78,6 +78,7 @@ interface Doctor {
   patients?: string;
   successRate?: string;
   availableDays?: string[];
+  verificationStatus?: string;
 }
 
 const DOCTOR_IMAGE_PLACEHOLDER = "https://placehold.co/160x160?text=Doctor";
@@ -178,10 +179,11 @@ export default function BookAppointment() {
                         specialization: toText(docData.specialization),
                         location: toText(docData.location),
                         experience: toText(docData.experience),
+                        verificationStatus: toText(docData.verificationStatus),
                         availability: toText(docData.availability) || "Mon - Fri, 09:00 AM - 05:00 PM",
                         availableDays: toArrayOfText(docData.availableDays).length > 0 ? toArrayOfText(docData.availableDays) : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
           } as Doctor;
-        });
+        }).filter(doctor => doctor.verificationStatus !== "Suspended");
         setDoctorList(docs);
       } catch (error) {
         console.error("Error fetching doctors:", error);
