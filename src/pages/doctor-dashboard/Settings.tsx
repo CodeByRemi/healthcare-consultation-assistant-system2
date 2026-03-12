@@ -18,11 +18,11 @@ export default function DoctorSettings() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [doctorData, setDoctorData] = useState({
-    fullName: "Dr. John Doe",
-    email: "doctor@healthcare.com",
-    phone: "+1 (555) 123-4567",
-    address: "Medical Center, City",
-    specialization: "Cardiology"
+    fullName: "Full Name",
+    email: "Email Address",
+    phone: "Phone Number",
+    address: "Address",
+    specialization: "Specialization"
   });
 
   const [editMode, setEditMode] = useState(false);

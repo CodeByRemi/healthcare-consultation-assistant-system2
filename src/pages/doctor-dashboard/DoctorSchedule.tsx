@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
@@ -8,7 +8,12 @@ import {
   FaAngleRight, 
   FaBan, 
   FaCheckCircle, 
-  FaChartLine, 
+  FaChartLine,
+  FaChevronDown,
+  FaChevronUp,
+  FaUser,
+  FaPhone,
+  FaEnvelope,
 } from "react-icons/fa";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
@@ -24,6 +29,21 @@ interface Appointment {
   duration: string;
   notes?: string;
   isNewPatient?: boolean;
+  doctorId?: string;
+  doctorName?: string;
+  patientId?: string;
+  patientPhone?: string;
+  patientEmail?: string;
+  specialty?: string;
+  shareAIChat?: boolean;
+  mode?: string;
+  location?: string;
+  meetingLink?: string;
+  reason?: string;
+  symptoms?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  additionalDetails?: Record<string, string>;
 }
 
 // Time slots for the grid rows (8 AM to 5 PM)
@@ -49,6 +69,7 @@ export default function DoctorSchedule() {
   });
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [expandedAppointmentId, setExpandedAppointmentId] = useState<string | null>(null);
 
   // Helper to get days to display based on view type
   const displayDays = useMemo(() => {
@@ -99,6 +120,28 @@ export default function DoctorSchedule() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
+  const stringifyFieldValue = useCallback((value: unknown): string => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      return String(value);
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => stringifyFieldValue(item)).filter(Boolean).join(", ");
+    }
+    if (typeof value === "object") {
+      if ("toDate" in (value as Record<string, unknown>) && typeof (value as { toDate?: unknown }).toDate === "function") {
+        try {
+          const asDate = (value as { toDate: () => Date }).toDate();
+          return asDate.toLocaleString();
+        } catch {
+          return "";
+        }
+      }
+      return JSON.stringify(value);
+    }
+    return "";
+  }, []);
+
   useEffect(() => {
     const fetchWeekSchedule = async () => {
         if (!user) return;
@@ -136,6 +179,40 @@ export default function DoctorSchedule() {
                 if (status === 'Blocked') blockedCount++;
                 if (data.isNewPatient) newPatientsCount++;
 
+                const additionalDetails: Record<string, string> = {};
+                const handledKeys = new Set([
+                  'date',
+                  'time',
+                  'status',
+                  'patientName',
+                  'type',
+                  'duration',
+                  'notes',
+                  'isNewPatient',
+                  'doctorId',
+                  'doctorName',
+                  'patientId',
+                  'patientPhone',
+                  'patientEmail',
+                  'specialty',
+                  'shareAIChat',
+                  'mode',
+                  'location',
+                  'meetingLink',
+                  'reason',
+                  'symptoms',
+                  'createdAt',
+                  'updatedAt'
+                ]);
+
+                Object.entries(data).forEach(([key, value]) => {
+                  if (handledKeys.has(key)) return;
+                  const text = stringifyFieldValue(value);
+                  if (text) {
+                    additionalDetails[key] = text;
+                  }
+                });
+
                 appts.push({
                     id: doc.id,
                     date: data.date,
@@ -143,8 +220,24 @@ export default function DoctorSchedule() {
                     patient: data.patientName || "Unknown Patient",
                     status: status,
                     type: data.type || "General Consultation",
-                    duration: "60 min", // Default to hour slots for grid simplicity unless specified
-                    notes: data.notes
+                    duration: data.duration || "60 min", // Default to hour slots for grid simplicity unless specified
+                    notes: data.notes,
+                    isNewPatient: data.isNewPatient,
+                    doctorId: data.doctorId,
+                    doctorName: data.doctorName,
+                    patientId: data.patientId,
+                    patientPhone: data.patientPhone,
+                    patientEmail: data.patientEmail,
+                    specialty: data.specialty,
+                    shareAIChat: data.shareAIChat,
+                    mode: data.mode,
+                    location: data.location,
+                    meetingLink: data.meetingLink,
+                    reason: data.reason,
+                    symptoms: Array.isArray(data.symptoms) ? data.symptoms : undefined,
+                    createdAt: stringifyFieldValue(data.createdAt),
+                    updatedAt: stringifyFieldValue(data.updatedAt),
+                    additionalDetails
                 });
             });
 
@@ -170,7 +263,7 @@ export default function DoctorSchedule() {
     };
     
     fetchWeekSchedule();
-  }, [user, displayDays, viewType, currentDate]); // Added viewType and currentDate dependency
+  }, [user, displayDays, viewType, currentDate, stringifyFieldValue]); // Added viewType and currentDate dependency
 
 
   const handlePrev = () => {
@@ -195,6 +288,10 @@ export default function DoctorSchedule() {
 
   const handleNewAvailability = () => {
     navigate('/doctor/availability');
+  };
+
+  const handleBlockedBooking = () => {
+    navigate('/doctor/blocked-booking');
   };
 
   const handleCellClick = () => {
@@ -254,6 +351,56 @@ export default function DoctorSchedule() {
     setIsDetailsOpen(true);
   };
 
+  const getPatientInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "PT";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  };
+
+  const isPreviewAppointment = (appt: Appointment | null | undefined) => Boolean(appt?.id.startsWith("preview-"));
+
+  const extractNotesField = (notesValue: string | undefined, fieldLabel: string) => {
+    if (!notesValue) return undefined;
+    const result = new RegExp(`${fieldLabel}\\s*:\\s*([^\\n]+)`, "i").exec(notesValue);
+    return result?.[1]?.trim();
+  };
+
+
+  const sortedAppointments = useMemo(() => {
+    const toMinutes = (timeValue: string) => {
+      const parsed = to24h(timeValue);
+      return parsed.hh * 60 + parsed.mm;
+    };
+
+    return [...appointments].sort((a, b) => {
+      const dateCompare = a.date.localeCompare(b.date);
+      if (dateCompare !== 0) return dateCompare;
+      return toMinutes(a.time) - toMinutes(b.time);
+    });
+  }, [appointments]);
+
+  const formatDisplayDate = (dateStr: string) => {
+    const parsed = new Date(`${dateStr}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return dateStr;
+    return parsed.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  const recentAppointments = useMemo(() => {
+    return [...sortedAppointments].slice(-4).reverse();
+  }, [sortedAppointments]);
+
+  const statusPillClass = (status: Appointment['status']) => {
+    if (status === 'Confirmed') return 'bg-green-50 text-green-700 border-green-100';
+    if (status === 'Pending') return 'bg-amber-50 text-amber-700 border-amber-100';
+    if (status === 'Cancelled') return 'bg-rose-50 text-rose-700 border-rose-100';
+    return 'bg-slate-100 text-slate-600 border-slate-200';
+  };
+
+  const toggleExpandedAppointment = (appointmentId: string) => {
+    setExpandedAppointmentId((current) => (current === appointmentId ? null : appointmentId));
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col md:flex-row font-sans text-slate-900">
       <DoctorSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -274,7 +421,7 @@ export default function DoctorSchedule() {
                 <p className="text-slate-500 mt-1">Manage your clinical availability and appointments.</p>
               </div>
               <div className="flex items-center gap-3">
-                 <button className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 focus:ring-2 focus:ring-slate-200 focus:outline-none transition-all flex items-center gap-2 shadow-sm text-sm">
+                 <button onClick={handleBlockedBooking} className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 focus:ring-2 focus:ring-slate-200 focus:outline-none transition-all flex items-center gap-2 shadow-sm text-sm">
                     <FaBan className="text-slate-400" /> 
                     <span>Block Time</span>
                 </button>
@@ -390,8 +537,8 @@ export default function DoctorSchedule() {
                                     <div className="space-y-1">
                                         {dayAppts.length === 0 ? (
                                             appointments.length === 0 && isCurrentMonth && isSameDay(day, displayDays[0]) ? (
-                                                <button onClick={(e) => { e.stopPropagation(); openDetails({ id: 'preview-1', date: dateStr, time: '09:00 AM', patient: 'Appointment (Preview)', status: 'Confirmed', type: 'General Consultation', duration: '60 min' }); }} className="w-full text-left text-[10px] truncate px-1.5 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-100 hover:opacity-90">
-                                                    09:00 AM • Appointment (Preview)
+                                                <button onClick={(e) => { e.stopPropagation(); openDetails({ id: 'preview-1', date: dateStr, time: '09:00 AM', patient: 'Appointment Placeholder', status: 'Confirmed', type: 'General Consultation', duration: '60 min' }); }} className="w-full text-left text-[10px] truncate px-1.5 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-100 hover:opacity-90">
+                                                  Time • Appointment Placeholder
                                                 </button>
                                             ) : (
                                                 <div className="text-[10px] text-slate-400 pl-1 font-medium">
@@ -477,24 +624,26 @@ export default function DoctorSchedule() {
                                     >
                                         {!appt ? (
                                             appointments.length === 0 && dateStr === formatDateId(displayDays[0]) && (time === '09:00 AM' || time === '11:00 AM') ? (
-                                                <div onClick={() => openDetails({ id: `preview-${time}`, date: dateStr, time, patient: time === '11:00 AM' ? 'Blocked (Preview)' : 'Appointment (Preview)', status: time === '11:00 AM' ? 'Blocked' : 'Confirmed', type: time === '11:00 AM' ? '—' : 'General Consultation', duration: '60 min' })} role="button" className={`w-full h-full rounded-xl p-3 flex flex-col justify-between shadow-sm border ${
+                                              <div onClick={() => openDetails({ id: `preview-${time}`, date: dateStr, time, patient: time === '11:00 AM' ? 'Blocked Slot' : 'Appointment Placeholder', status: time === '11:00 AM' ? 'Blocked' : 'Confirmed', type: time === '11:00 AM' ? '—' : 'General Consultation', duration: '60 min' })} role="button" className={`w-full h-full rounded-xl p-3 flex flex-col justify-between shadow-sm border ${
                                                     time === '11:00 AM' 
                                                         ? 'bg-slate-100 border-slate-200 text-slate-500' 
-                                                        : 'bg-white border-slate-200'
+                                                  : 'bg-linear-to-br from-white via-blue-50/30 to-white border-blue-100 hover:shadow-md cursor-pointer'
                                                 } ${time !== '11:00 AM' ? 'border-l-4 border-l-[#0A6ED1]' : ''}`}>
                                                     <div>
-                                                        <div className="flex justify-between items-start mb-1">
-                                                            <span className={`text-sm font-bold ${time === '11:00 AM' ? 'text-slate-500' : 'text-slate-900'}`}>
-                                                                {time === '11:00 AM' ? 'Blocked (Preview)' : 'Appointment (Preview)'}
+                                                  <div className="flex justify-between items-start mb-1.5">
+                                                    <span className={`text-sm font-bold ${time === '11:00 AM' ? 'text-slate-500' : 'text-slate-900'}`}>
+                                                      {time === '11:00 AM' ? 'Blocked Placeholder' : 'Appointment Placeholder'}
                                                             </span>
                                                             {time !== '11:00 AM' && (
-                                                                <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase">INIT</span>
+                                                      <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wide">Placeholder</span>
                                                             )}
                                                         </div>
-                                                        <p className={`text-xs ${time === '11:00 AM' ? 'text-slate-400' : 'text-slate-500'}`}>{time === '11:00 AM' ? 'No bookings in this slot' : 'General Consultation'}</p>
+                                                  <p className={`text-xs ${time === '11:00 AM' ? 'text-slate-400' : 'text-slate-600'}`}>{time === '11:00 AM' ? 'Reason' : 'Type'}</p>
                                                     </div>
                                                     {time !== '11:00 AM' && (
-                                                        <div className="mt-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">60 min</div>
+                                                  <div className="mt-2 flex items-center justify-end text-[10px] font-semibold uppercase tracking-wide">
+                                                    <span className="text-blue-600">Time</span>
+                                                  </div>
                                                     )}
                                                 </div>
                                             ) : (
@@ -511,14 +660,19 @@ export default function DoctorSchedule() {
                                             <div onClick={() => openDetails(appt)} role="button" className={`w-full h-full rounded-xl p-3 flex flex-col justify-between shadow-sm border ${
                                                 isBlocked || isConference
                                                     ? 'bg-slate-100 border-slate-200 text-slate-500' // Blocked/Conference style
-                                                    : 'bg-white border-slate-200 hover:shadow-md cursor-pointer' // Regular Appt style
+                                              : 'bg-linear-to-br from-white via-blue-50/25 to-white border-slate-200 hover:shadow-md cursor-pointer' // Regular Appt style
                                             } ${!isBlocked && !isConference ? 'border-l-4 border-l-[#0A6ED1]' : ''}`}>
                                                 
                                                 {/* Card Content */}
                                                 <div>
                                                     <div className="flex justify-between items-start mb-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={`text-sm font-bold ${isBlocked ? 'text-slate-500' : 'text-slate-900'}`}>{appt.patient}</span>
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                  <span className={`w-7 h-7 shrink-0 rounded-full border flex items-center justify-center text-[10px] font-bold ${
+                                                    isBlocked ? 'bg-slate-200 border-slate-300 text-slate-500' : 'bg-blue-50 border-blue-100 text-blue-700'
+                                                  }`}>
+                                                    {getPatientInitials(appt.patient)}
+                                                  </span>
+                                                  <span className={`text-sm font-bold truncate ${isBlocked ? 'text-slate-500' : 'text-slate-900'}`}>{appt.patient}</span>
                                                             {appt.isNewPatient && (
                                                                 <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">NEW</span>
                                                             )}
@@ -538,15 +692,11 @@ export default function DoctorSchedule() {
                                                         <span>{appt.type}</span>
                                                         {appt.notes && <span className="w-1.5 h-1.5 rounded-full bg-slate-300" title="Has notes"></span>}
                                                     </div>
+                                                    {!isBlocked && !isConference && (
+                                                      <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-blue-600">Patient details in modal</div>
+                                                    )}
                                                 </div>
 
-                                                {/* Footer of Card (if not blocked) */}
-                                                {!isBlocked && !isConference && (
-                                                    <div className="mt-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
-                                                        {appt.duration}
-                                                    </div>
-                                                )}
-                                                
                                                 {/* Special Icon/Label for Conference */}
                                                 {isConference && (
                                                      <div className="flex items-center gap-2 mt-2 text-slate-400 text-xs font-semibold uppercase tracking-wider">
@@ -607,6 +757,151 @@ export default function DoctorSchedule() {
                  </div>
             </div>
 
+            {/* Appointments Overview */}
+            <section className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden mb-8">
+              <div className="px-5 md:px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h2 className="text-lg md:text-xl font-bold text-slate-900">Recent Appointments</h2>
+                <p className="text-sm text-slate-500 mt-1">Latest bookings appear first. Expand any record to see full collected details.</p>
+              </div>
+
+              <div className="p-4 md:p-6 space-y-5">
+                {sortedAppointments.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
+                    No appointments in this range yet.
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {recentAppointments.map((appt) => (
+                        <article key={`recent-${appt.id}`} className="rounded-2xl border border-blue-100 bg-linear-to-br from-blue-50 via-white to-indigo-50 p-4 md:p-5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-base font-bold text-slate-900 truncate">{appt.patient}</h3>
+                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${statusPillClass(appt.status)}`}>{appt.status}</span>
+                              </div>
+                              <p className="text-sm text-slate-600 mt-1">{formatDisplayDate(appt.date)} • {timeRange(appt.time, appt.duration)}</p>
+                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                                <span className="px-2 py-0.5 rounded-full bg-white border border-blue-100 text-blue-700">{isPreviewAppointment(appt) ? 'Type' : appt.type}</span>
+                                {(appt.reason || isPreviewAppointment(appt)) && <span className="px-2 py-0.5 rounded-full bg-white border border-amber-100 text-amber-700">{isPreviewAppointment(appt) ? 'Reason' : appt.reason}</span>}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => openDetails(appt)}
+                              className="shrink-0 px-3 py-2 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
+                            >
+                              Open
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+
+                    <div className="pt-1">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-2">All Appointment Records</h3>
+                    </div>
+
+                    {sortedAppointments.map((appt) => {
+                    const isExpanded = expandedAppointmentId === appt.id;
+                    return (
+                      <article key={appt.id} className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                        <div className="p-4 md:p-5">
+                          <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-4 justify-between">
+                            <div className="min-w-0 space-y-1.5">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-base md:text-lg font-bold text-slate-900 truncate">{appt.patient}</h3>
+                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${statusPillClass(appt.status)}`}>{appt.status}</span>
+                                {appt.isNewPatient && (
+                                  <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100">NEW</span>
+                                )}
+                              </div>
+                              <div className="text-sm text-slate-600">
+                                {formatDisplayDate(appt.date)}
+                                <span className="mx-2">•</span>
+                                {isPreviewAppointment(appt) ? 'Time' : timeRange(appt.time, appt.duration)}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{isPreviewAppointment(appt) ? 'Type' : appt.type}</span>
+                                {appt.specialty && (
+                                  <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">{appt.specialty}</span>
+                                )}
+                                {(appt.reason || isPreviewAppointment(appt)) && (
+                                  <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">Reason: {isPreviewAppointment(appt) ? 'Reason' : appt.reason}</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => toggleExpandedAppointment(appt.id)}
+                              className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
+                              aria-expanded={isExpanded}
+                            >
+                              {isExpanded ? 'Hide details' : 'More details'}
+                              {isExpanded ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="px-4 md:px-5 pb-5 border-t border-slate-100 bg-slate-50/60">
+                            <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Appointment ID</span><span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-700">{appt.id}</span></div>
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Patient ID</span><span className="font-medium text-slate-800 text-right">{appt.patientId || 'N/A'}</span></div>
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Patient Email</span><span className="font-medium text-slate-800 text-right break-all">{appt.patientEmail || 'N/A'}</span></div>
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Patient Phone</span><span className="font-medium text-slate-800 text-right">{appt.patientPhone || 'N/A'}</span></div>
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Mode</span><span className="font-medium text-slate-800 text-right">{appt.mode || 'N/A'}</span></div>
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Location</span><span className="font-medium text-slate-800 text-right">{appt.location || 'N/A'}</span></div>
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Meeting Link</span><span className="font-medium text-slate-800 text-right break-all">{appt.meetingLink || 'N/A'}</span></div>
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Share AI Chat</span><span className="font-medium text-slate-800 text-right">{appt.shareAIChat === undefined ? 'N/A' : appt.shareAIChat ? 'Yes' : 'No'}</span></div>
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Created At</span><span className="font-medium text-slate-800 text-right">{appt.createdAt || 'N/A'}</span></div>
+                              <div className="flex items-start justify-between gap-3"><span className="text-slate-500">Updated At</span><span className="font-medium text-slate-800 text-right">{appt.updatedAt || 'N/A'}</span></div>
+                            </div>
+
+                            {appt.symptoms && appt.symptoms.length > 0 && (
+                              <div className="mt-4">
+                                <div className="text-sm font-semibold text-slate-700 mb-2">Symptoms</div>
+                                <div className="flex flex-wrap gap-2">
+                                  {appt.symptoms.map((symptom) => (
+                                    <span key={`${appt.id}-${symptom}`} className="text-xs px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-100">
+                                      {symptom}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {appt.notes && (
+                              <div className="mt-4">
+                                <div className="text-sm font-semibold text-slate-700 mb-2">Notes</div>
+                                <div className="text-sm text-slate-800 bg-white border border-slate-200 rounded-xl p-3 whitespace-pre-wrap">
+                                  {appt.notes}
+                                </div>
+                              </div>
+                            )}
+
+                            {appt.additionalDetails && Object.keys(appt.additionalDetails).length > 0 && (
+                              <div className="mt-4">
+                                <div className="text-sm font-semibold text-slate-700 mb-2">Additional Collected Data</div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                  {Object.entries(appt.additionalDetails).map(([key, value]) => (
+                                    <div key={`${appt.id}-${key}`} className="flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                                      <span className="text-slate-500">{key}</span>
+                                      <span className="font-medium text-slate-800 text-right break-all">{value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </article>
+                    );
+                    })}
+                  </>
+                )}
+              </div>
+            </section>
+
           </div>
         </div>
 
@@ -631,9 +926,9 @@ export default function DoctorSchedule() {
                     }`}>{selectedAppointment.status}</span>
                   </div>
                   <div className="text-sm text-slate-600 truncate">
-                    <span>{selectedAppointment.date}</span>
+                    <span>{isPreviewAppointment(selectedAppointment) ? 'Date' : selectedAppointment.date}</span>
                     <span className="mx-2">•</span>
-                    <span>{timeRange(selectedAppointment.time, selectedAppointment.duration)}</span>
+                    <span>{isPreviewAppointment(selectedAppointment) ? 'Time' : timeRange(selectedAppointment.time, selectedAppointment.duration)}</span>
                   </div>
                 </div>
                 <button
@@ -647,6 +942,38 @@ export default function DoctorSchedule() {
 
               {/* Body */}
               <div className="px-6 py-5 space-y-5">
+                {selectedAppointment.status === 'Blocked' && (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 space-y-2">
+                    <div className="text-sm font-semibold text-amber-800">Blocked Date Information</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-start justify-between gap-2"><span className="text-amber-700">Date</span><span className="font-medium text-slate-800">{selectedAppointment.date || 'Date'}</span></div>
+                      <div className="flex items-start justify-between gap-2"><span className="text-amber-700">Time</span><span className="font-medium text-slate-800">{timeRange(selectedAppointment.time, selectedAppointment.duration)}</span></div>
+                      <div className="flex items-start justify-between gap-2 sm:col-span-2"><span className="text-amber-700">Reason</span><span className="font-medium text-slate-800 text-right">{selectedAppointment.reason || extractNotesField(selectedAppointment.notes, 'Reason') || 'Reason'}</span></div>
+                      <div className="flex items-start justify-between gap-2 sm:col-span-2"><span className="text-amber-700">Blocked Range</span><span className="font-medium text-slate-800 text-right">{extractNotesField(selectedAppointment.notes, 'Blocked Range') || 'Time Range'}</span></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Patient Profile */}
+                {selectedAppointment.status !== 'Blocked' && (
+                <div className="rounded-2xl border border-slate-200 bg-linear-to-r from-blue-50/50 via-white to-white p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-11 h-11 rounded-full bg-white border border-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                      {getPatientInitials(selectedAppointment.patient)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-slate-500">Patient Details</div>
+                      <div className="text-lg font-bold text-slate-900 truncate">{selectedAppointment.patient}</div>
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-slate-700"><FaUser className="text-slate-400" /><span>{selectedAppointment.patientId || 'Patient ID not available'}</span></div>
+                        <div className="flex items-center gap-2 text-slate-700"><FaPhone className="text-slate-400" /><span>{selectedAppointment.patientPhone || 'Phone not available'}</span></div>
+                        <div className="flex items-center gap-2 text-slate-700 sm:col-span-2"><FaEnvelope className="text-slate-400" /><span className="truncate">{selectedAppointment.patientEmail || 'Email not available'}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                )}
+
                 {/* Quick badges parsed from notes (Reason/Prep) */}
                 {selectedAppointment.notes && (
                   <div className="flex flex-wrap gap-2 text-[11px]">
@@ -666,54 +993,46 @@ export default function DoctorSchedule() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">Type</span>
-                    <span className="font-medium text-slate-800 text-right">{selectedAppointment.type}</span>
-                  </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">Duration</span>
-                    <span className="font-medium text-slate-800 text-right">{selectedAppointment.duration}</span>
+                    <span className="font-medium text-slate-800 text-right">{isPreviewAppointment(selectedAppointment) ? 'Type' : selectedAppointment.type}</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-slate-500">Status</span>
                     <span className="font-medium text-slate-800 text-right">{selectedAppointment.status}</span>
                   </div>
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-slate-500">Reference</span>
-                    <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{selectedAppointment.id}</span>
-                  </div>
 
                   {/* Optional Mode/Location if present */}
-                  {('mode' in selectedAppointment as any) && (
+                  {selectedAppointment.mode !== undefined && (
                     <div className="flex items-start justify-between gap-3 sm:col-span-2">
                       <span className="text-slate-500">Mode</span>
-                      <span className="font-medium text-slate-800 text-right">{(selectedAppointment as any).mode || '—'}</span>
+                      <span className="font-medium text-slate-800 text-right">{selectedAppointment.mode || '—'}</span>
                     </div>
                   )}
 
                   {/* Optional patient contact if present */}
-                  {('patientPhone' in selectedAppointment as any) && (
+                  {selectedAppointment.patientPhone !== undefined && (
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-slate-500">Patient Phone</span>
-                      <span className="font-medium text-slate-800 text-right">{(selectedAppointment as any).patientPhone || '—'}</span>
+                      <span className="font-medium text-slate-800 text-right">{selectedAppointment.patientPhone || '—'}</span>
                     </div>
                   )}
-                  {('patientEmail' in selectedAppointment as any) && (
+                  {selectedAppointment.patientEmail !== undefined && (
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-slate-500">Patient Email</span>
-                      <span className="font-medium text-slate-800 text-right truncate max-w-[220px]">{(selectedAppointment as any).patientEmail || '—'}</span>
+                      <span className="font-medium text-slate-800 text-right truncate max-w-55">{selectedAppointment.patientEmail || '—'}</span>
                     </div>
                   )}
 
                   {/* Optional timestamps if present */}
-                  {('createdAt' in selectedAppointment as any) && (
+                  {selectedAppointment.createdAt !== undefined && (
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-slate-500">Created</span>
-                      <span className="font-medium text-slate-800 text-right">{String((selectedAppointment as any).createdAt)}</span>
+                      <span className="font-medium text-slate-800 text-right">{String(selectedAppointment.createdAt)}</span>
                     </div>
                   )}
-                  {('updatedAt' in selectedAppointment as any) && (
+                  {selectedAppointment.updatedAt !== undefined && (
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-slate-500">Updated</span>
-                      <span className="font-medium text-slate-800 text-right">{String((selectedAppointment as any).updatedAt)}</span>
+                      <span className="font-medium text-slate-800 text-right">{String(selectedAppointment.updatedAt)}</span>
                     </div>
                   )}
                 </div>
@@ -733,9 +1052,6 @@ export default function DoctorSchedule() {
               <div className="px-6 py-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row gap-3 items-stretch sm:items-center">
                 <button onClick={() => setIsDetailsOpen(false)} className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-colors">Close</button>
                 <div className="flex-1" />
-                <button className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-colors">Cancel Appointment</button>
-                <button className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-colors">Reschedule</button>
-                <button className="px-4 py-2.5 bg-[#0A6ED1] hover:bg-[#0958a8] text-white font-semibold rounded-lg shadow-md">View Details</button>
               </div>
             </div>
           </div>

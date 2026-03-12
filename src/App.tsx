@@ -31,6 +31,7 @@ import DoctorProfile from "./pages/doctor-dashboard/DoctorProfile";
 import MyPatients from "./pages/doctor-dashboard/MyPatients";
 import PatientDetails from "./pages/doctor-dashboard/PatientDetails";
 import DoctorSchedule from "./pages/doctor-dashboard/DoctorSchedule";
+import DoctorBlockedBooking from "./pages/doctor-dashboard/DoctorBlockedBooking";
 import DoctorNotifications from "./pages/doctor-dashboard/DoctorNotifications";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUpdatePassword from "./pages/admin/UpdatePassword";
@@ -78,6 +79,7 @@ function App() {
         <Route path="/doctor/settings" element={<DoctorSettings />} />
         <Route path="/doctor/notifications" element={<DoctorNotifications />} />
         <Route path="/doctor/schedule" element={<DoctorSchedule />} />
+        <Route path="/doctor/blocked-booking" element={<DoctorBlockedBooking />} />
         <Route path="/doctor/availability" element={<DoctorAvailability />} />
         <Route path="/doctor/patients" element={<MyPatients />} />
         <Route path="/doctor/patients/:id" element={<PatientDetails />} />

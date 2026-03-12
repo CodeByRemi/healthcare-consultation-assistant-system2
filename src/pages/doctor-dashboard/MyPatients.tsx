@@ -1,52 +1,80 @@
 import { useState, useEffect } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FaSearch, FaCheck, FaTimes, FaClock, FaEllipsisH, FaUserInjured, FaCommentMedical } from "react-icons/fa";
-import { MessageCircle, User, Bot, Send, Calendar, Clock } from "lucide-react";
+import { MessageCircle, User, Bot, Send, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { collection, query, where, getDocs, updateDoc, doc, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
 
-const mockPatientDetails: Record<string, any> = {
-    'default': {
-        age: '--',
-        gender: "Gender",
-        symptoms: ['Symptom 1', 'Symptom 2'],
-        history: ['Medical History'],
-        lastVitals: { bp: "--/--", heartRate: "--", temp: "--", weight: "--" },
-        email: "email@example.com",
-        phone: "+1 (555) 000-0000",
-        height: "175 cm",
-        weight: "70 kg",
-        bloodType: "O+",
-        genotype: "AA",
-        address: "123 Health Ave, Medical District",
-        emergencyContact: {
-            name: "Jane Doe",
-            relation: "Spouse",
-            phone: "+1 (555) 987-6543"
-        }
-    },
-    'placeholder_p': {
-        age: '--',
-        gender: "Gender",
-        symptoms: ['Symptom 1', 'Symptom 2'],
-        history: ['Medical History'],
-        lastVitals: { bp: "--/--", heartRate: "--", temp: "--", weight: "--" },
-        email: "email@example.com",
-        phone: "+1 (555) 000-0000",
-        height: "175 cm",
-        weight: "70 kg",
-        bloodType: "O+",
-        genotype: "AA",
-        address: "123 Health Ave, Medical District",
-        emergencyContact: {
-            name: "Jane Doe",
-            relation: "Spouse",
-            phone: "+1 (555) 987-6543"
-        }
+type PatientDetails = {
+    age: string;
+    gender: string;
+    symptoms: string[];
+    history: string[];
+    lastVitals: {
+        bp: string;
+        heartRate: string;
+        temp: string;
+        weight: string;
+    };
+    email: string;
+    phone: string;
+    height: string;
+    weight: string;
+    bloodType: string;
+    genotype: string;
+    address: string;
+    emergencyContact: {
+        name: string;
+        relation: string;
+        phone: string;
+    };
+};
+
+type PatientRow = {
+    id: string;
+    name: string;
+    patientId?: string;
+    image?: string | null;
+    type?: string;
+    date?: string;
+    time?: string;
+    reason?: string;
+    condition?: string;
+    lastVisit?: string;
+    status?: string;
+    shareAIChat?: boolean;
+    [key: string]: unknown;
+};
+
+type ChatMessage = {
+    role: string;
+    content: string;
+    timestamp: Date | { toDate: () => Date };
+};
+
+type SelectedPatient = PatientRow & PatientDetails;
+
+const defaultPatientDetails: PatientDetails = {
+    age: 'Age',
+    gender: "Gender",
+    symptoms: ['Symptom'],
+    history: ['Medical History'],
+    lastVitals: { bp: "Blood Pressure", heartRate: "Heart Rate", temp: "Temperature", weight: "Weight" },
+    email: "Email",
+    phone: "Phone",
+    height: "Height",
+    weight: "Weight",
+    bloodType: "Blood Type",
+    genotype: "Genotype",
+    address: "Address",
+    emergencyContact: {
+        name: "Contact Name",
+        relation: "Relationship",
+        phone: "Contact Phone"
     }
 };
 
@@ -59,48 +87,47 @@ export default function MyPatients() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Real Data
-  const [requests, setRequests] = useState<any[]>([]);
-  const [patients, setPatients] = useState<any[]>([]);
+    const [requests, setRequests] = useState<PatientRow[]>([]);
+    const [patients, setPatients] = useState<PatientRow[]>([]);
   
   // Chat Modal State
-  const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
+    const [selectedPatient, setSelectedPatient] = useState<SelectedPatient | null>(null);
   const [modalTab, setModalTab] = useState<'details' | 'chat'>('details');
 
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [loadingChat, setLoadingChat] = useState(false);
 
-  const fetchChatHistory = async (patientId: string) => {
+    const fetchChatHistory = async () => {
       setLoadingChat(true);
       setChatMessages([]);
 
       // Simulate network delay for realistic feel
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      // PLACEHOLDERS (Generic Content)
       const placeholderChat = [
           { 
               role: 'system', 
-              content: 'System: Consultation Session Started', 
+              content: 'Session', 
               timestamp: new Date(Date.now() - 86400000) 
           },
           { 
               role: 'user', 
-              content: "This is a placeholder for the patient's message. It represents where the patient describes their symptoms or asks a question.", 
+              content: "Patient Message", 
               timestamp: new Date(Date.now() - 86400000 + 1000 * 60 * 2) 
           },
           { 
               role: 'assistant', 
-              content: "This is a placeholder for the AI assistant's response. It represents the medical advice or follow-up questions generated by the system.", 
+              content: "AI Response", 
               timestamp: new Date(Date.now() - 86400000 + 1000 * 60 * 3) 
           },
           { 
               role: 'user', 
-              content: "Another placeholder for a follow-up message from the patient providing more details.", 
+              content: "Follow-up Message", 
               timestamp: new Date(Date.now() - 86400000 + 1000 * 60 * 5) 
           },
           { 
               role: 'assistant', 
-              content: "This is a placeholder for the AI's subsequent response and recommendations.", 
+              content: "Follow-up Response", 
               timestamp: new Date(Date.now() - 86400000 + 1000 * 60 * 6) 
           }
       ];
@@ -147,12 +174,21 @@ export default function MyPatients() {
       */
   };
 
-  const handlePatientClick = (patient: any) => {
-      const details = mockPatientDetails[patient.patientId] || mockPatientDetails['default'];
-      const merged = { ...details, ...patient };
+  const handlePatientClick = (patient: PatientRow) => {
+    const details = defaultPatientDetails;
+      const merged: SelectedPatient = { ...details, ...patient };
       setSelectedPatient(merged);
       setModalTab('details');
   };
+
+    const toDateValue = (timestamp: ChatMessage["timestamp"] | undefined) => {
+        if (!timestamp) return new Date();
+        if (timestamp instanceof Date) return timestamp;
+        if (typeof timestamp === "object" && "toDate" in timestamp && typeof timestamp.toDate === "function") {
+            return timestamp.toDate();
+        }
+        return new Date();
+    };
 
 
   useEffect(() => {
@@ -171,8 +207,8 @@ export default function MyPatients() {
         );
         
         const snapshot = await getDocs(q);
-        const pending: any[] = [];
-        const uniquePatients = new Map();
+        const pending: PatientRow[] = [];
+        const uniquePatients = new Map<string, PatientRow>();
 
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
@@ -180,12 +216,12 @@ export default function MyPatients() {
                 id: docSnap.id, 
                 ...data,
                 name: data.patientName || "Unknown Patient",
-                time: data.time || "00:00",
-                type: data.type || "General",
-                age: data.patientAge || "N/A", // Map potentially missing fields
-                reason: data.notes || data.reason || "No reason provided",
+                time: data.time || "Time",
+                type: data.type || "Type",
+                age: data.patientAge || "Age",
+                reason: data.notes || data.reason || "Reason",
                 image: data.patientImage || null,
-                date: data.date || ""
+                date: data.date || "Date"
             };
 
             if (data.status === 'pending') {
@@ -201,7 +237,7 @@ export default function MyPatients() {
                 } else {
                      // Update last visit if newer
                      const existing = uniquePatients.get(data.patientId);
-                     if (new Date(data.date) > new Date(existing.lastVisit)) {
+                     if (existing && existing.lastVisit && new Date(data.date) > new Date(existing.lastVisit)) {
                          existing.lastVisit = data.date;
                          // Keep most recent appointment details
                          uniquePatients.set(data.patientId, {
@@ -214,34 +250,31 @@ export default function MyPatients() {
             }
         });
 
-        // --- PLACEHOLDER DATA FOR LAYOUT PREVIEW ---
+        // Keep design visible with neutral placeholders when backend has no records yet.
         if (pending.length === 0 && uniquePatients.size === 0) {
-             const placeholderReq = {
+            pending.push({
                 id: 'placeholder_req',
-                name: '[Patient Name]',
+                name: 'Patient Name',
                 image: null,
-                type: '[Type]',
-                date: '[Date]',
-                time: '[Time]',
-                reason: '[Reason for visit]',
+                type: 'Type',
+                date: 'Date',
+                time: 'Time',
+                reason: 'Reason',
                 shareAIChat: false,
-                patientId: 'placeholder_p'
-            };
-            pending.push(placeholderReq);
+                patientId: 'Patient ID'
+            });
 
-            const placeholderPat = {
-                id: 'placeholder_pat',
-                name: '[Patient Name]',
+            uniquePatients.set('placeholder_patient', {
+                id: 'placeholder_patient',
+                name: 'Patient Name',
                 image: null,
-                condition: '[Condition]',
-                lastVisit: '[Date]',
-                status: 'Active',
+                condition: 'Condition',
+                lastVisit: 'Date',
+                status: 'Status',
                 shareAIChat: false,
-                patientId: 'placeholder_p'
-            };
-            uniquePatients.set('placeholder_p', placeholderPat);
+                patientId: 'Patient ID'
+            });
         }
-        // -------------------------------------
 
         setRequests(pending);
         setPatients(Array.from(uniquePatients.values()));
@@ -380,7 +413,7 @@ export default function MyPatients() {
                                         e.stopPropagation();
                                         handlePatientClick(req);
                                         setModalTab('chat');
-                                        fetchChatHistory(req.patientId);
+                                        fetchChatHistory();
                                     }} 
                                     className="p-2 bg-blue-100 text-[#0A6ED1] rounded-lg hover:bg-blue-200 transition-colors" 
                                     title="View AI Chat History"
@@ -447,7 +480,7 @@ export default function MyPatients() {
                                         e.stopPropagation();
                                         handlePatientClick(patient);
                                         setModalTab('chat');
-                                        fetchChatHistory(patient.patientId);
+                                        fetchChatHistory();
                                     }}
                                     className="text-[#0A6ED1] hover:text-[#095bb0] p-1"
                                     title="View AI Chat"
@@ -473,7 +506,7 @@ export default function MyPatients() {
 
       {/* Patient Details Modal */}
       {selectedPatient && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedPatient(null)}>
+        <div className="fixed inset-0 bg-black/50 z-100 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedPatient(null)}>
             <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
@@ -511,7 +544,7 @@ export default function MyPatients() {
                     <button 
                         onClick={() => {
                             setModalTab('chat');
-                            fetchChatHistory(selectedPatient.patientId);
+                            fetchChatHistory();
                         }}
                         className={`py-4 px-4 font-semibold text-sm border-b-2 transition-colors flex items-center gap-2 ${modalTab === 'chat' ? 'border-[#0A6ED1] text-[#0A6ED1]' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
                     >
@@ -632,7 +665,7 @@ export default function MyPatients() {
                                             <Calendar size={12} className="text-[#0A6ED1]" />
                                             <span>Consultation Session</span>
                                             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                                            <span>{chatMessages[0]?.timestamp?.toDate ? chatMessages[0].timestamp.toDate().toLocaleDateString() : new Date().toLocaleDateString()}</span>
+                                            <span>{toDateValue(chatMessages[0]?.timestamp).toLocaleDateString()}</span>
                                         </div>
                                      </div>
 
@@ -653,7 +686,7 @@ export default function MyPatients() {
                                                     {msg.content}
                                                 </div>
                                                 <span className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1 px-1">
-                                                    {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString()}
+                                                    {toDateValue(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                                     {msg.role === 'user' && <span className="text-[#0A6ED1]">Sent</span>}
                                                 </span>
                                             </div>
