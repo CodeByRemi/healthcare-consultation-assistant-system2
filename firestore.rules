@@ -31,6 +31,24 @@ service cloud.firestore {
       match /chats/{chatId} {
         allow read, write: if isAuthenticated() && isOwner(userId);
       }
+
+      // Allow access to chatSessions subcollection
+      match /chatSessions/{sessionId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+        
+        match /{document=**} {
+          allow read, write: if isAuthenticated() && isOwner(userId);
+        }
+      }
+      
+      // Allow access to aiConversations subcollection
+      match /aiConversations/{conversationId} {
+        allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        
+        match /{document=**} {
+          allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        }
+      }
     }
 
     // Doctor Profiles
