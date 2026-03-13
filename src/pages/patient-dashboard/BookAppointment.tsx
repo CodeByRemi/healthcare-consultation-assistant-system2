@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaSearch, FaMapMarkerAlt, FaStar, FaUserMd, FaClock, FaCalendarAlt, FaTimes, FaGraduationCap } from "react-icons/fa";
+import { FaSearch, FaMapMarkerAlt, FaUserMd, FaClock, FaCalendarAlt, FaTimes, FaGraduationCap } from "react-icons/fa";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
@@ -115,6 +115,7 @@ interface BookedAppointmentData {
   date: string;
   time: string;
     status: string;
+    reason: string;
 }
 
 export default function BookAppointment() {
@@ -129,6 +130,7 @@ export default function BookAppointment() {
   // Booking State
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
+    const [reasonForVisit, setReasonForVisit] = useState("");
 
   const [selectedDay, setSelectedDay] = useState("Any Day");
   const [selectedTime, setSelectedTime] = useState("All Times"); // Filter preference
@@ -199,6 +201,10 @@ export default function BookAppointment() {
         toast.error("Please select a doctor, date, and time.");
         return;
     }
+    if (!reasonForVisit.trim()) {
+        toast.error("Please add your reason for visiting.");
+        return;
+    }
     if (!currentUser) {
         toast.error("You must be logged in to book.");
         return;
@@ -223,6 +229,7 @@ export default function BookAppointment() {
         patientId: currentUser.uid,
         date: bookingDate,
         time: bookingTime,
+                reason: reasonForVisit.trim(),
         status: "pending",
         createdAt: new Date().toISOString(),
         specialty: selectedDoctor.specialty,
@@ -235,8 +242,9 @@ export default function BookAppointment() {
         doctorSpecialty: selectedDoctor.specialty,
         doctorImage: selectedDoctor.image,
         date: bookingDate,
-                time: bookingTime,
-                status: "pending"
+        time: bookingTime,
+        status: "pending",
+        reason: reasonForVisit.trim()
       });
       setSelectedDoctor(null);       setConfirmationModal(true);
     } catch (error) {
@@ -250,6 +258,7 @@ export default function BookAppointment() {
     setSelectedDoctor(null);
     setBookingDate("");
     setBookingTime("");
+        setReasonForVisit("");
     setBookedAppointment(null);
     toast.success("Appointment booked successfully!");
   };
@@ -450,24 +459,24 @@ export default function BookAppointment() {
                                 </div>
                                 <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg">
                                     <FaStar className="text-yellow-400 w-3 h-3" />
-                                    <span className="text-xs font-bold text-slate-700">{doc.rating || "4.9"}</span>
-                                    <span className="text-slate-400 text-xs">({doc.reviews || "85"} reviews)</span>
+                                    <span className="text-xs font-bold text-slate-700">{doc.rating ?? "Placeholder"}</span>
+                                    <span className="text-slate-400 text-xs">({doc.reviews ?? "Placeholder"})</span>
                                 </div>
                             </div>
 
                             <div className="space-y-3 mb-6">
                                 <div className="flex items-center gap-2 text-slate-500 text-sm">
                                     <FaMapMarkerAlt className="text-slate-400 min-w-4" />
-                                    <span className="truncate">{doc.location || "Online Consultation"}</span>
+                                    <span className="truncate">{doc.location || "Placeholder"}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-500 text-sm">
                                     <FaUserMd className="text-slate-400 min-w-4" />
-                                    {doc.experience ? `${doc.experience} Experience` : "Highly Experienced"}
+                                    {doc.experience ? `${doc.experience} Experience` : "Placeholder"}
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-500 text-sm">
                                     <FaCalendarAlt className="text-slate-400 min-w-4" />
                                     <span className="truncate">
-                                        {doc.availableDays && doc.availableDays.length > 0 ? doc.availableDays.slice(0, 3).join(", ") + (doc.availableDays.length > 3 ? "..." : "") : "Mon - Fri"}
+                                        {doc.availableDays && doc.availableDays.length > 0 ? doc.availableDays.slice(0, 3).join(", ") + (doc.availableDays.length > 3 ? "..." : "") : "Placeholder"}
                                     </span>
                                 </div>
                             </div>
@@ -556,12 +565,12 @@ export default function BookAppointment() {
                                                 <div className="flex items-center gap-4 flex-wrap">
                                                     <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full border border-blue-200">
                                                         <FaStar className="text-yellow-400 w-4 h-4" />
-                                                        <span className="font-bold text-slate-800">{selectedDoctor.rating || "4.9"}</span>
-                                                        <span className="text-slate-500 text-sm">({selectedDoctor.reviews || "85"} reviews)</span>
+                                                        <span className="font-bold text-slate-800">{selectedDoctor.rating ?? "Placeholder"}</span>
+                                                        <span className="text-slate-500 text-sm">({selectedDoctor.reviews ?? "Placeholder"} reviews)</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 text-slate-600">
                                                         <FaClock className="text-slate-400" />
-                                                        <span className="text-sm">{selectedDoctor.experience ? `${selectedDoctor.experience} Years Experience` : "Highly Experienced"}</span>
+                                                        <span className="text-sm">{selectedDoctor.experience ? `${selectedDoctor.experience} Years Experience` : "Placeholder"}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -571,11 +580,11 @@ export default function BookAppointment() {
                                         <div className="grid grid-cols-2 gap-3 mt-6">
                                             <div className="bg-green-50 p-4 rounded-2xl border border-green-200">
                                                 <div className="text-xs text-green-600 font-bold uppercase mb-1">Patients Helped</div>
-                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.patients || "500+"}</div>
+                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.patients || "Placeholder"}</div>
                                             </div>
                                             <div className="bg-blue-50 p-4 rounded-2xl border border-blue-200">
                                                 <div className="text-xs text-[#0A6ED1] font-bold uppercase mb-1">Success Rate</div>
-                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.successRate || "98%"}</div>
+                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.successRate || "Placeholder"}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -592,7 +601,7 @@ export default function BookAppointment() {
                                                 About Doctor
                                             </h3>
                                             <p className="text-slate-600 leading-relaxed">
-                                                {selectedDoctor.about || `Dr. ${selectedDoctor.fullName || selectedDoctor.name || ""} is an experienced medical professional specializing in ${selectedDoctor.specialty || "General Medicine"}. They are committed to providing the highest quality of healthcare.`}
+                                                {selectedDoctor.about || "Placeholder"}
                                             </p>
                                         </div>
 
@@ -605,15 +614,15 @@ export default function BookAppointment() {
                                             <div className="space-y-3">
                                                 <div className="flex items-start gap-3">
                                                     <div className="w-2 h-2 rounded-full bg-[#0A6ED1] mt-2 shrink-0"></div>
-                                                    <p className="text-slate-600">{selectedDoctor.education || "Medical Degree from Renowned University"}</p>
+                                                    <p className="text-slate-600">{selectedDoctor.education || "Placeholder"}</p>
                                                 </div>
                                                 <div className="flex items-start gap-3">
                                                     <div className="w-2 h-2 rounded-full bg-[#0A6ED1] mt-2 shrink-0"></div>
-                                                    <p className="text-slate-600">{selectedDoctor.certification || "Board Certified Professional"}</p>
+                                                    <p className="text-slate-600">{selectedDoctor.certification || "Placeholder"}</p>
                                                 </div>
                                                 <div className="flex items-start gap-3">
                                                     <div className="w-2 h-2 rounded-full bg-[#0A6ED1] mt-2 shrink-0"></div>
-                                                    <p className="text-slate-600">{selectedDoctor.specialization || "Specialized Training & Fellowship"}</p>
+                                                    <p className="text-slate-600">{selectedDoctor.specialization || "Placeholder"}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -625,14 +634,14 @@ export default function BookAppointment() {
                                                     <FaMapMarkerAlt className="text-[#0A6ED1]" />
                                                     Location
                                                 </h4>
-                                                <p className="text-slate-600 text-sm">{selectedDoctor.location || "Available for Online Consultation"}</p>
+                                                <p className="text-slate-600 text-sm">{selectedDoctor.location || "Placeholder"}</p>
                                             </div>
                                             <div className="bg-green-50 p-6 rounded-2xl border border-green-200">
                                                 <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
                                                     <FaClock className="text-green-600" />
                                                     Availability
                                                 </h4>
-                                                <p className="text-green-600 font-bold text-sm">{selectedDoctor.availability || "Check slots for details"}</p>
+                                                <p className="text-green-600 font-bold text-sm">{selectedDoctor.availability || "Placeholder"}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -690,6 +699,18 @@ export default function BookAppointment() {
                                                 )}
                                             </div>
 
+                                            {/* Reason for Visiting */}
+                                            <div className="mb-6">
+                                                <label className="text-xs font-bold text-slate-500 mb-3 uppercase block">Reason for Visiting</label>
+                                                <textarea
+                                                    rows={3}
+                                                    value={reasonForVisit}
+                                                    onChange={(e) => setReasonForVisit(e.target.value)}
+                                                    placeholder="Reason"
+                                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent outline-none transition-all resize-none"
+                                                />
+                                            </div>
+
                                             {/* Summary */}
                                             {bookingDate && bookingTime && (
                                                 <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 mb-6">
@@ -697,6 +718,7 @@ export default function BookAppointment() {
                                                     <div className="space-y-1">
                                                         <p className="text-sm text-slate-700"><span className="font-semibold">Date:</span> {new Date(bookingDate).toLocaleDateString()}</p>
                                                         <p className="text-sm text-slate-700"><span className="font-semibold">Time:</span> {bookingTime}</p>
+                                                        <p className="text-sm text-slate-700"><span className="font-semibold">Reason:</span> {reasonForVisit || "Reason"}</p>
                                                     </div>
                                                 </div>
                                             )}
@@ -704,14 +726,14 @@ export default function BookAppointment() {
                                             {/* Book Button */}
                                             <button 
                                                 onClick={handleBookClick} 
-                                                disabled={!bookingDate || !bookingTime}
+                                                disabled={!bookingDate || !bookingTime || !reasonForVisit.trim()}
                                                 className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all ${
-                                                    (!bookingDate || !bookingTime) 
+                                                    (!bookingDate || !bookingTime || !reasonForVisit.trim()) 
                                                     ? "bg-slate-300 text-slate-500 cursor-not-allowed" 
                                                     : "bg-[#0A6ED1] hover:bg-[#095bb0] text-white shadow-blue-500/30 active:scale-95 hover:shadow-xl"
                                                 }`}
                                             >
-                                                {(!bookingDate || !bookingTime) ? "Select Date & Time" : "Confirm Booking"}
+                                                {(!bookingDate || !bookingTime || !reasonForVisit.trim()) ? "Select Date, Time & Reason" : "Confirm Booking"}
                                             </button>
                                             <p className="text-center text-xs text-slate-400 mt-4">
                                                 A confirmation email will be sent to your registered email.
@@ -858,6 +880,10 @@ export default function BookAppointment() {
                                         <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-200">
                                             <span className="text-slate-600 font-medium text-sm">Status</span>
                                             <span className="font-bold text-amber-700 capitalize text-sm">{bookedAppointment.status}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-200 gap-3">
+                                            <span className="text-slate-600 font-medium text-sm">Reason</span>
+                                            <span className="font-bold text-slate-900 text-sm text-right">{bookedAppointment.reason || "Reason"}</span>
                                         </div>
                                     </div>
 

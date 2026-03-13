@@ -36,7 +36,7 @@ export default function AppointmentDetailsModal({ appointment, isOpen, onClose, 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4"
           onClick={onClose}
         >
           <motion.div
@@ -61,7 +61,7 @@ export default function AppointmentDetailsModal({ appointment, isOpen, onClose, 
                   <FaUserMd className="w-8 h-8" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white max-w-[200px] truncate">{appointment.doctorName}</h2>
+                  <h2 className="text-2xl font-bold text-white max-w-50 truncate">{appointment.doctorName}</h2>
                   <p className="text-blue-100 font-medium">{appointment.specialty}</p>
                 </div>
               </div>
@@ -116,7 +116,7 @@ export default function AppointmentDetailsModal({ appointment, isOpen, onClose, 
                   <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                       <p className="text-xs font-bold text-slate-400 uppercase mb-1">Location</p>
                       <p className="text-slate-700 text-sm font-medium">
-                        {appointment.location || "Placeholder"}
+                        {appointment.location || "Location"}
                       </p>
                   </div>
               )}
@@ -127,8 +127,8 @@ export default function AppointmentDetailsModal({ appointment, isOpen, onClose, 
                   <FaNotesMedical className="text-slate-400" />
                   Appointment Notes
                 </h4>
-                <p className="text-slate-500 text-sm leading-relaxed bg-white p-3 rounded-xl border border-slate-100 min-h-[80px]">
-                  {appointment.notes || "Placeholder"}
+                <p className="text-slate-500 text-sm leading-relaxed bg-white p-3 rounded-xl border border-slate-100 min-h-20">
+                  {appointment.notes || "Notes"}
                 </p>
               </div>
 
