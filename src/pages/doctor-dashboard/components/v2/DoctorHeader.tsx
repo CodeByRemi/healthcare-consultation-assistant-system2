@@ -1,5 +1,9 @@
 import { FaBars, FaBell, FaUserMd } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../../../context/AuthContext";
+import { useState, useEffect } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../../../lib/firebase";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -7,6 +11,36 @@ interface HeaderProps {
 }
 
 export default function DoctorHeader({ toggleSidebar }: HeaderProps) {
+  const { currentUser } = useAuth();
+  const [doctorName, setDoctorName] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (currentUser) {
+        try {
+          const docRef = doc(db, "doctors", currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists() && docSnap.data().fullName) {
+            setDoctorName(docSnap.data().fullName);
+          } else if (docSnap.exists() && docSnap.data().name) {
+            setDoctorName(docSnap.data().name);
+          }
+        } catch (error) {
+          console.error("Error fetching doctor profile for header:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [currentUser]);
+
+  // Format the name slightly
+  const displayLastName = doctorName ? doctorName.split(' ').pop() : '';
+
   return (
     <header className="h-20 bg-white border-b border-slate-100 px-6 md:px-8 flex items-center justify-between sticky top-0 z-10 transition-all duration-200">
       <div className="flex items-center gap-4">
@@ -32,7 +66,9 @@ export default function DoctorHeader({ toggleSidebar }: HeaderProps) {
           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[#0A6ED1]">
              <FaUserMd className="w-5 h-5" />
           </div>
-          <span className="hidden md:block font-medium text-sm text-slate-700">Dr. Smith</span>
+          <span className="hidden md:block font-medium text-sm text-slate-700">
+            {isLoading ? "Loading..." : displayLastName ? `Dr. ${displayLastName}` : "Doctor"}
+          </span>
         </Link>
       </div>
     </header>

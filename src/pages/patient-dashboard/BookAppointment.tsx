@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaSearch, FaMapMarkerAlt, FaUserMd, FaClock, FaCalendarAlt, FaTimes, FaGraduationCap } from "react-icons/fa";
+import { FaSearch, FaMapMarkerAlt, FaStar, FaUserMd, FaClock, FaCalendarAlt, FaTimes, FaGraduationCap } from "react-icons/fa";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
@@ -227,6 +227,7 @@ export default function BookAppointment() {
         doctorId: selectedDoctor.id,
         doctorName: selectedDoctor.fullName || selectedDoctor.name,
         patientId: currentUser.uid,
+        patientName: currentUser.displayName || currentUser.email || "Unknown Patient",
         date: bookingDate,
         time: bookingTime,
                 reason: reasonForVisit.trim(),
@@ -459,24 +460,24 @@ export default function BookAppointment() {
                                 </div>
                                 <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg">
                                     <FaStar className="text-yellow-400 w-3 h-3" />
-                                    <span className="text-xs font-bold text-slate-700">{doc.rating ?? "Placeholder"}</span>
-                                    <span className="text-slate-400 text-xs">({doc.reviews ?? "Placeholder"})</span>
+                                    <span className="text-xs font-bold text-slate-700">{doc.rating ?? "—"}</span>
+                                    <span className="text-slate-400 text-xs">({doc.reviews ?? "—"})</span>
                                 </div>
                             </div>
 
                             <div className="space-y-3 mb-6">
                                 <div className="flex items-center gap-2 text-slate-500 text-sm">
                                     <FaMapMarkerAlt className="text-slate-400 min-w-4" />
-                                    <span className="truncate">{doc.location || "Placeholder"}</span>
+                                    <span className="truncate">{doc.location || "Not specified"}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-500 text-sm">
                                     <FaUserMd className="text-slate-400 min-w-4" />
-                                    {doc.experience ? `${doc.experience} Experience` : "Placeholder"}
+                                    {doc.experience ? `${doc.experience} Experience` : "Experience not specified"}
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-500 text-sm">
                                     <FaCalendarAlt className="text-slate-400 min-w-4" />
                                     <span className="truncate">
-                                        {doc.availableDays && doc.availableDays.length > 0 ? doc.availableDays.slice(0, 3).join(", ") + (doc.availableDays.length > 3 ? "..." : "") : "Placeholder"}
+                                        {doc.availableDays && doc.availableDays.length > 0 ? doc.availableDays.slice(0, 3).join(", ") + (doc.availableDays.length > 3 ? "..." : "") : "N/A"}
                                     </span>
                                 </div>
                             </div>
@@ -565,12 +566,12 @@ export default function BookAppointment() {
                                                 <div className="flex items-center gap-4 flex-wrap">
                                                     <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full border border-blue-200">
                                                         <FaStar className="text-yellow-400 w-4 h-4" />
-                                                        <span className="font-bold text-slate-800">{selectedDoctor.rating ?? "Placeholder"}</span>
-                                                        <span className="text-slate-500 text-sm">({selectedDoctor.reviews ?? "Placeholder"} reviews)</span>
+                                                        <span className="font-bold text-slate-800">{selectedDoctor.rating ?? "—"}</span>
+                                                        <span className="text-slate-500 text-sm">({selectedDoctor.reviews ?? "—"} reviews)</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 text-slate-600">
                                                         <FaClock className="text-slate-400" />
-                                                        <span className="text-sm">{selectedDoctor.experience ? `${selectedDoctor.experience} Years Experience` : "Placeholder"}</span>
+                                                        <span className="text-sm">{selectedDoctor.experience ? `${selectedDoctor.experience} Years Experience` : "Experience not specified"}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -580,11 +581,11 @@ export default function BookAppointment() {
                                         <div className="grid grid-cols-2 gap-3 mt-6">
                                             <div className="bg-green-50 p-4 rounded-2xl border border-green-200">
                                                 <div className="text-xs text-green-600 font-bold uppercase mb-1">Patients Helped</div>
-                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.patients || "Placeholder"}</div>
+                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.patients || "—"}</div>
                                             </div>
                                             <div className="bg-blue-50 p-4 rounded-2xl border border-blue-200">
                                                 <div className="text-xs text-[#0A6ED1] font-bold uppercase mb-1">Success Rate</div>
-                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.successRate || "Placeholder"}</div>
+                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.successRate || "—"}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -601,7 +602,7 @@ export default function BookAppointment() {
                                                 About Doctor
                                             </h3>
                                             <p className="text-slate-600 leading-relaxed">
-                                                {selectedDoctor.about || "Placeholder"}
+                                                {selectedDoctor.about || "Profile not updated yet."}
                                             </p>
                                         </div>
 
@@ -614,15 +615,15 @@ export default function BookAppointment() {
                                             <div className="space-y-3">
                                                 <div className="flex items-start gap-3">
                                                     <div className="w-2 h-2 rounded-full bg-[#0A6ED1] mt-2 shrink-0"></div>
-                                                    <p className="text-slate-600">{selectedDoctor.education || "Placeholder"}</p>
+                                                    <p className="text-slate-600">{selectedDoctor.education || "Not specified"}</p>
                                                 </div>
                                                 <div className="flex items-start gap-3">
                                                     <div className="w-2 h-2 rounded-full bg-[#0A6ED1] mt-2 shrink-0"></div>
-                                                    <p className="text-slate-600">{selectedDoctor.certification || "Placeholder"}</p>
+                                                    <p className="text-slate-600">{selectedDoctor.certification || "Not specified"}</p>
                                                 </div>
                                                 <div className="flex items-start gap-3">
                                                     <div className="w-2 h-2 rounded-full bg-[#0A6ED1] mt-2 shrink-0"></div>
-                                                    <p className="text-slate-600">{selectedDoctor.specialization || "Placeholder"}</p>
+                                                    <p className="text-slate-600">{selectedDoctor.specialization || "Not specified"}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -634,14 +635,14 @@ export default function BookAppointment() {
                                                     <FaMapMarkerAlt className="text-[#0A6ED1]" />
                                                     Location
                                                 </h4>
-                                                <p className="text-slate-600 text-sm">{selectedDoctor.location || "Placeholder"}</p>
+                                                <p className="text-slate-600 text-sm">{selectedDoctor.location || "Not specified"}</p>
                                             </div>
                                             <div className="bg-green-50 p-6 rounded-2xl border border-green-200">
                                                 <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
                                                     <FaClock className="text-green-600" />
                                                     Availability
                                                 </h4>
-                                                <p className="text-green-600 font-bold text-sm">{selectedDoctor.availability || "Placeholder"}</p>
+                                                <p className="text-green-600 font-bold text-sm">{selectedDoctor.availability || "Not specified"}</p>
                                             </div>
                                         </div>
                                     </div>

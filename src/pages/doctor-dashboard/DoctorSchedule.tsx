@@ -17,7 +17,7 @@ import {
 } from "react-icons/fa";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 
 interface Appointment {
   id: string;
@@ -165,8 +165,23 @@ export default function DoctorSchedule() {
             let blockedCount = 0;
             let newPatientsCount = 0;
 
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
+            // Pre-fetch patient info matching my patients logic
+            const patientDataMap = new Map<string, any>();
+            for (const docSnap of querySnapshot.docs) {
+               const data = docSnap.data();
+               if (data.patientId && !patientDataMap.has(data.patientId)) {
+                   try {
+                       const pDoc = await getDoc(doc(db, "patients", data.patientId));
+                       if (pDoc.exists()) {
+                           patientDataMap.set(data.patientId, pDoc.data());
+                       }
+                   } catch(e) { console.error(e); }
+               }
+            }
+
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+		const pData = patientDataMap.get(data.patientId) || {};
                 let status: Appointment['status'] = 'Pending';
                 
                 if (data.status) {
@@ -214,10 +229,10 @@ export default function DoctorSchedule() {
                 });
 
                 appts.push({
-                    id: doc.id,
+                    id: docSnap.id,
                     date: data.date,
                     time: data.time || "00:00",
-                    patient: data.patientName || "Unknown Patient",
+                    patient: pData.fullName || data.patientName || "Unknown Patient",
                     status: status,
                     type: data.type || "General Consultation",
                     duration: data.duration || "60 min", // Default to hour slots for grid simplicity unless specified
@@ -226,8 +241,8 @@ export default function DoctorSchedule() {
                     doctorId: data.doctorId,
                     doctorName: data.doctorName,
                     patientId: data.patientId,
-                    patientPhone: data.patientPhone,
-                    patientEmail: data.patientEmail,
+                    patientPhone: pData.phoneNumber || data.patientPhone || "Phone not available",
+                    patientEmail: pData.email || data.patientEmail || "Email not available",
                     specialty: data.specialty,
                     shareAIChat: data.shareAIChat,
                     mode: data.mode,
@@ -252,9 +267,9 @@ export default function DoctorSchedule() {
             const filledSlots = appts.length;
             setStats({
                 totalAppointments: filledSlots,
-                newPatients: newPatientsCount || 4,
-                capacityUsed: Math.round((filledSlots / totalSlots) * 100) || 72,
-                blockedHours: blockedCount || 2.5
+                newPatients: newPatientsCount,
+                capacityUsed: totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0,
+                blockedHours: blockedCount
             });
 
         } catch (error) {
@@ -305,8 +320,6 @@ export default function DoctorSchedule() {
   const getAppointment = (dateStr: string, time: string) => {
       return appointments.find(a => a.date === dateStr && a.time === time);
   };
-
-  const isSameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 
   // Helpers for time formatting and ranges
   const to24h = (t: string) => {
@@ -536,15 +549,9 @@ export default function DoctorSchedule() {
                                     
                                     <div className="space-y-1">
                                         {dayAppts.length === 0 ? (
-                                            appointments.length === 0 && isCurrentMonth && isSameDay(day, displayDays[0]) ? (
-                                                <button onClick={(e) => { e.stopPropagation(); openDetails({ id: 'preview-1', date: dateStr, time: '09:00 AM', patient: 'Appointment Placeholder', status: 'Confirmed', type: 'General Consultation', duration: '60 min' }); }} className="w-full text-left text-[10px] truncate px-1.5 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-100 hover:opacity-90">
-                                                  Time • Appointment Placeholder
-                                                </button>
-                                            ) : (
-                                                <div className="text-[10px] text-slate-400 pl-1 font-medium">
-                                                    No availability set
-                                                </div>
-                                            )
+                                            <div className="text-[10px] text-slate-400 pl-1 font-medium">
+                                                No availability set
+                                            </div>
                                         ) : (
                                             <>
                                                 {dayAppts.slice(0, 3).map(appt => (
@@ -623,30 +630,7 @@ export default function DoctorSchedule() {
                                         }`}
                                     >
                                         {!appt ? (
-                                            appointments.length === 0 && dateStr === formatDateId(displayDays[0]) && (time === '09:00 AM' || time === '11:00 AM') ? (
-                                              <div onClick={() => openDetails({ id: `preview-${time}`, date: dateStr, time, patient: time === '11:00 AM' ? 'Blocked Slot' : 'Appointment Placeholder', status: time === '11:00 AM' ? 'Blocked' : 'Confirmed', type: time === '11:00 AM' ? '—' : 'General Consultation', duration: '60 min' })} role="button" className={`w-full h-full rounded-xl p-3 flex flex-col justify-between shadow-sm border ${
-                                                    time === '11:00 AM' 
-                                                        ? 'bg-slate-100 border-slate-200 text-slate-500' 
-                                                  : 'bg-linear-to-br from-white via-blue-50/30 to-white border-blue-100 hover:shadow-md cursor-pointer'
-                                                } ${time !== '11:00 AM' ? 'border-l-4 border-l-[#0A6ED1]' : ''}`}>
-                                                    <div>
-                                                  <div className="flex justify-between items-start mb-1.5">
-                                                    <span className={`text-sm font-bold ${time === '11:00 AM' ? 'text-slate-500' : 'text-slate-900'}`}>
-                                                      {time === '11:00 AM' ? 'Blocked Placeholder' : 'Appointment Placeholder'}
-                                                            </span>
-                                                            {time !== '11:00 AM' && (
-                                                      <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wide">Placeholder</span>
-                                                            )}
-                                                        </div>
-                                                  <p className={`text-xs ${time === '11:00 AM' ? 'text-slate-400' : 'text-slate-600'}`}>{time === '11:00 AM' ? 'Reason' : 'Type'}</p>
-                                                    </div>
-                                                    {time !== '11:00 AM' && (
-                                                  <div className="mt-2 flex items-center justify-end text-[10px] font-semibold uppercase tracking-wide">
-                                                    <span className="text-blue-600">Time</span>
-                                                  </div>
-                                                    )}
-                                                </div>
-                                            ) : (
+                                            
                                                 <div 
                                                     onClick={() => handleCellClick()}
                                                     className="w-full h-full border-2 border-dashed border-transparent hover:border-slate-200 rounded-xl flex items-center justify-center cursor-pointer group"
@@ -655,7 +639,6 @@ export default function DoctorSchedule() {
                                                         <FaPlus /> Add availability
                                                     </span>
                                                 </div>
-                                            )
                                         ) : (
                                             <div onClick={() => openDetails(appt)} role="button" className={`w-full h-full rounded-xl p-3 flex flex-col justify-between shadow-sm border ${
                                                 isBlocked || isConference

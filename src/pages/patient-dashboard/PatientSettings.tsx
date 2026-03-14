@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { toast } from "sonner";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
@@ -50,18 +54,66 @@ const englishLanguageOptions = [
 ];
 
 export default function PatientSettings() {
+  const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("account");
 
-  // Mock Settings State
   const [settings, setSettings] = useState({
     emailNotifications: true,
     publicProfile: false,
     language: "English (US)"
   });
 
-  const toggleSetting = (key: keyof typeof settings) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!currentUser) return;
+      try {
+        const docRef = doc(db, "patients", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.settings) {
+            setSettings(prev => ({ ...prev, ...data.settings }));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching patient settings:", error);
+      }
+    };
+    fetchSettings();
+  }, [currentUser]);
+
+  const toggleSetting = async (key: keyof typeof settings) => {
+    const newValue = !settings[key];
+    setSettings(prev => ({ ...prev, [key]: newValue }));
+
+    if (!currentUser) return;
+    try {
+      const docRef = doc(db, "patients", currentUser.uid);
+      await updateDoc(docRef, {
+        [`settings.${key}`]: newValue
+      });
+      toast.success("Setting updated");
+    } catch (error) {
+      console.error("Error updating setting:", error);
+      toast.error("Failed to update setting");
+      setSettings(prev => ({ ...prev, [key]: !newValue }));
+    }
+  };
+
+  const updateLanguage = async (newLang: string) => {
+    setSettings(prev => ({ ...prev, language: newLang }));
+    if (!currentUser) return;
+    try {
+      const docRef = doc(db, "patients", currentUser.uid);
+      await updateDoc(docRef, {
+        "settings.language": newLang
+      });
+      toast.success("Language updated");
+    } catch (error) {
+      console.error("Error updating language:", error);
+      toast.error("Failed to update language");
+    }
   };
 
   const tabs = [
@@ -131,7 +183,7 @@ export default function PatientSettings() {
                       </div>
                       <select
                         value={settings.language}
-                        onChange={(e) => setSettings((prev) => ({ ...prev, language: e.target.value }))}
+                        onChange={(e) => updateLanguage(e.target.value)}
                         className="text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]/20"
                       >
                         {englishLanguageOptions.map((lang) => (

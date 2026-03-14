@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { FaUserMd, FaBell, FaCalendarAlt, FaToggleOn, FaToggleOff } from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { toast } from "sonner";
 
 export default function DoctorSettings() {
+  const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("availability");
 
@@ -15,8 +20,43 @@ export default function DoctorSettings() {
     smsAlerts: false
   });
 
-  const toggleSetting = (key: keyof typeof settings) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!currentUser) return;
+      try {
+        const docRef = doc(db, "doctors", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.settings) {
+            setSettings(prev => ({ ...prev, ...data.settings }));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
+    fetchSettings();
+  }, [currentUser]);
+
+  const toggleSetting = async (key: keyof typeof settings) => {
+    const newValue = !settings[key];
+    setSettings(prev => ({ ...prev, [key]: newValue }));
+    
+    if (!currentUser) return;
+    
+    try {
+      const docRef = doc(db, "doctors", currentUser.uid);
+      await updateDoc(docRef, {
+        [`settings.${key}`]: newValue
+      });
+      toast.success("Setting updated");
+    } catch (error) {
+      console.error("Error updating setting:", error);
+      toast.error("Failed to update setting");
+      // Revert on failure
+      setSettings(prev => ({ ...prev, [key]: !newValue }));
+    }
   };
 
   return (
@@ -59,10 +99,19 @@ export default function DoctorSettings() {
                 {activeTab === "account" && (
                     <div className="space-y-6">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Account Settings</h2>
+                        
+                        <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-100 dark:border-slate-600">
+                             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Profile Information</h3>
+                             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Manage your public profile, contact details, and professional information.</p>
+                             <Link to="/doctor/profile" className="px-4 py-2 bg-[#0A6ED1] text-white border border-transparent rounded-lg text-sm font-medium hover:bg-[#0958a8] transition-colors inline-block mb-2">
+                                Edit Profile
+                             </Link>
+                        </div>
+
                         <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-100 dark:border-slate-600">
                              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Password</h3>
                              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Update your password to keep your account secure.</p>
-                             <Link to="/update-password" className="px-4 py-2 bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-500 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors">
+                             <Link to="/doctor/update-password" className="px-4 py-2 bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-500 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors">
                                 Change Password
                              </Link>
                         </div>

@@ -5,8 +5,11 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import { useAuth } from "../../context/AuthContext";
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 
 export default function DoctorUpdatePassword() {
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showPassword, setShowPassword] = useState({
@@ -49,15 +52,30 @@ export default function DoctorUpdatePassword() {
     setIsLoading(true);
     
     try {
-      // Simulate password update
-      setTimeout(() => {
-        toast.success("Password updated successfully!");
-        setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      if (!currentUser || !currentUser.email) {
+        toast.error("User not found or misconfigured");
         setIsLoading(false);
-        navigate("/doctor/password-success?mode=update", { replace: true });
-      }, 1500);
-    } catch {
-      toast.error("Failed to update password");
+        return;
+      }
+
+      // 1. Reauthenticate user with current password
+      const credential = EmailAuthProvider.credential(currentUser.email, formData.currentPassword);
+      await reauthenticateWithCredential(currentUser, credential);
+
+      // 2. Update to new password
+      await updatePassword(currentUser, formData.newPassword);
+
+      toast.success("Password updated successfully!");
+      setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      navigate("/doctor/password-success?mode=update", { replace: true });
+    } catch (error: any) {
+      console.error("Error updating password:", error);
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        toast.error("The current password you entered is incorrect. Please try again.");
+      } else {
+        toast.error("Failed to update password. Please try again later.");
+      }
+    } finally {
       setIsLoading(false);
     }
   };

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { FaSearch, FaCheck, FaTimes, FaClock, FaEllipsisH, FaUserInjured, FaCommentMedical } from "react-icons/fa";
 import { MessageCircle, User, Bot, Send, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
 
@@ -210,18 +210,52 @@ export default function MyPatients() {
         const pending: PatientRow[] = [];
         const uniquePatients = new Map<string, PatientRow>();
 
+        // Pre-fetch actual patient docs to join on the fly
+        const patientDataMap = new Map<string, any>();
+        for (const docSnap of snapshot.docs) {
+           const data = docSnap.data();
+           if (data.patientId && !patientDataMap.has(data.patientId)) {
+               try {
+                   const pDoc = await getDoc(doc(db, "patients", data.patientId));
+                   if (pDoc.exists()) {
+                       patientDataMap.set(data.patientId, pDoc.data());
+                   }
+               } catch(e) { console.error("Error pre-fetching patient docs:", e); }
+           }
+        }
+
+        const calculateAge = (dob: string) => {
+            if (!dob) return "Age";
+            const diff_ms = Date.now() - new Date(dob).getTime();
+            const age_dt = new Date(diff_ms); 
+            return Math.abs(age_dt.getUTCFullYear() - 1970) + " yrs";
+        };
+
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            const appointment = { 
-                id: docSnap.id, 
+            const pData = patientDataMap.get(data.patientId) || {};
+            
+            const appointment = {
+                id: docSnap.id,
                 ...data,
-                name: data.patientName || "Unknown Patient",
+                name: pData.fullName || data.patientName || "Unknown Patient",
                 time: data.time || "Time",
                 type: data.type || "Type",
-                age: data.patientAge || "Age",
+                age: pData.dob ? calculateAge(pData.dob) : (data.patientAge || "Age"),
                 reason: data.notes || data.reason || "Reason",
-                image: data.patientImage || null,
-                date: data.date || "Date"
+                image: pData.profilePhotoUrl || data.patientImage || null,
+                date: data.date || "Date",
+                
+                // Inject deeper DB fields for the details modal
+                bloodType: pData.bloodType || "--",
+                genotype: pData.genotype || "--",
+                height: pData.height || "--",
+                weight: pData.weight || "--",
+                phone: pData.phoneNumber || data.patientPhone || "--",
+                email: pData.email || data.patientEmail || "--",
+                address: pData.address || "--",
+                gender: pData.gender || "--",
+                emergencyContact: pData.emergencyContact || { name: "--", relation: "--", phone: "--" }
             };
 
             if (data.status === 'pending') {
@@ -249,32 +283,6 @@ export default function MyPatients() {
                 }
             }
         });
-
-        // Keep design visible with neutral placeholders when backend has no records yet.
-        if (pending.length === 0 && uniquePatients.size === 0) {
-            pending.push({
-                id: 'placeholder_req',
-                name: 'Patient Name',
-                image: null,
-                type: 'Type',
-                date: 'Date',
-                time: 'Time',
-                reason: 'Reason',
-                shareAIChat: false,
-                patientId: 'Patient ID'
-            });
-
-            uniquePatients.set('placeholder_patient', {
-                id: 'placeholder_patient',
-                name: 'Patient Name',
-                image: null,
-                condition: 'Condition',
-                lastVisit: 'Date',
-                status: 'Status',
-                shareAIChat: false,
-                patientId: 'Patient ID'
-            });
-        }
 
         setRequests(pending);
         setPatients(Array.from(uniquePatients.values()));

@@ -83,16 +83,10 @@ export default function DoctorDashboard() {
 
              // Placeholder injection for empty states
              if (appts.length === 0 && completedAppts === 0) {
-               const placeholderAppts: Appointment[] = [
-                 { id: 'ph-1', patientName: 'Patient Name', patientId: 'Patient ID', date: today, time: 'Time', type: 'Type', status: 'pending', notes: 'Notes' },
-                 { id: 'ph-2', patientName: 'Patient Name', patientId: 'Patient ID', date: today, time: 'Time', type: 'Type', status: 'confirmed', notes: 'Notes' },
-                 { id: 'ph-3', patientName: 'Patient Name', patientId: 'Patient ID', date: today, time: 'Time', type: 'Type', status: 'pending', notes: 'Notes' },
-                 ];
-               appts.push(...placeholderAppts);
                  setStats([
-                { label: "Total Patients", value: "Count", change: "Delta", icon: FaUserInjured, color: "bg-blue-50 text-blue-600" },
-                { label: "Today's Appts", value: "Count", change: "Status", icon: FaCalendarCheck, color: "bg-purple-50 text-purple-600" },
-                { label: "Completed", value: "Count", change: "Total", icon: FaClipboardList, color: "bg-emerald-50 text-emerald-600" },
+                { label: "Total Patients", value: "0", change: "—", icon: FaUserInjured, color: "bg-blue-50 text-blue-600" },
+                { label: "Today's Appts", value: "0", change: "—", icon: FaCalendarCheck, color: "bg-purple-50 text-purple-600" },
+                { label: "Completed", value: "0", change: "—", icon: FaClipboardList, color: "bg-emerald-50 text-emerald-600" },
                  ]);
              } else {
                  // Real Stats
@@ -202,41 +196,9 @@ export default function DoctorDashboard() {
                     <div className="space-y-2">
                         {isLoading ? (
                             <div className="py-12 text-center text-slate-400">Loading schedule...</div>
-                        ) : (
-                            // Render real data OR placeholders if empty, to ensure layout is visible
-                            (appointments.length > 0 ? appointments : [
-                                {
-                                    id: 'ph-1',
-                                    patientName: 'Patient Name',
-                                patientId: 'Patient ID',
-                                    date: new Date().toISOString(),
-                                time: 'Time',
-                                type: 'Type',
-                                status: 'pending' as const
-                                },
-                                {
-                                    id: 'ph-2',
-                                    patientName: 'Patient Name',
-                                patientId: 'Patient ID',
-                                    date: new Date().toISOString(),
-                                time: 'Time',
-                                type: 'Type',
-                                status: 'confirmed' as const
-                                },
-                                {
-                                    id: 'ph-3',
-                                    patientName: 'Patient Name',
-                                patientId: 'Patient ID',
-                                    date: new Date().toISOString(),
-                                time: 'Time',
-                                type: 'Type',
-                                    status: 'pending' as const
-                                }
-                            ]).map((appt, index) => {
-                                // Simulate one being "In Progress" or active for the visual demo
-                                // If using placeholders, make the second one active to match the design request
-                                const isPlaceholder = appt.id.startsWith('ph-');
-                                const isActive = isPlaceholder ? (index === 1) : (index === 0 && appt.status === 'confirmed');
+                        ) : appointments.length > 0 ? (
+                            appointments.map((appt, index) => {
+                                const isActive = (index === 0 && appt.status === 'confirmed');
                                 
                                 return (
                                     <div 
@@ -254,7 +216,7 @@ export default function DoctorDashboard() {
                                             <span className="md:hidden text-xs font-bold text-slate-400 uppercase tracking-wider">Time</span>
                                             <div>
                                                 <div className={`font-bold ${isActive ? 'text-[#10B981]' : 'text-slate-900'}`}>{appt.time}</div>
-                                                <div className="text-xs text-slate-500 font-medium">{isPlaceholder ? 'Duration' : isActive ? 'In Progress' : 'Duration'}</div>
+                                                <div className="text-xs text-slate-500 font-medium">{isActive ? 'In Progress' : 'Upcoming'}</div>
                                             </div>
                                         </div>
 
@@ -269,7 +231,7 @@ export default function DoctorDashboard() {
                                                 </div>
                                                 <div>
                                                     <div className="font-bold text-slate-900">{appt.patientName}</div>
-                                                    <div className="text-xs text-slate-500">ID: #{isPlaceholder ? 'Patient ID' : (appt.patientId ? appt.patientId.replace('p', 'MS-') : 'UNKNOWN')}</div>
+                                                    <div className="text-xs text-slate-500">ID: #{appt.patientId ? appt.patientId.substring(0, 8) : 'UNKNOWN'}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -307,6 +269,12 @@ export default function DoctorDashboard() {
                                     </div>
                                 );
                             })
+                        ) : (
+                            <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-100">
+                                <FaCalendarCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                <h3 className="text-slate-900 font-bold mb-1">No Appointments Today</h3>
+                                <p className="text-slate-500 text-sm">Your schedule is clear for now.</p>
+                            </div>
                         )}
                     </div>
 

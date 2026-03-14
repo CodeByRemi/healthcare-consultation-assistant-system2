@@ -4,6 +4,8 @@ import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../../lib/firebase";
 
 export default function DoctorAvailability() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -46,11 +48,21 @@ export default function DoctorAvailability() {
 
     try {
       setIsSaving(true);
-      // Placeholder: integrate with Firestore here if needed
-      // await addDoc(collection(db, 'availability'), { ...payload })
-      toast.success("Availability saved");
+      await addDoc(collection(db, 'availability'), {
+        doctorId: user.uid,
+        date,
+        startTime,
+        endTime,
+        duration,
+        mode,
+        notes,
+        repeatWeekly,
+        createdAt: serverTimestamp(),
+      });
+      toast.success("Availability saved successfully!");
       navigate(-1);
     } catch (e) {
+      console.error("Error saving availability:", e);
       toast.error("Failed to save availability");
     } finally {
       setIsSaving(false);

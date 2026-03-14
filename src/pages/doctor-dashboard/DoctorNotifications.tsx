@@ -3,37 +3,14 @@ import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { FaBell, FaCalendarCheck, FaInfoCircle, FaCheckDouble, FaTrash, FaClipboardList, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
-interface Notification {
-  id: number;
-  type: "appointment" | "system" | "patient" | "warning";
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-}
+import { useNotifications } from "../../context/NotificationContext";
 
 export default function DoctorNotifications() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
   
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-    toast.success("Marked all as read");
-  };
-
-  const deleteNotification = (id: number) => {
-    setNotifications(notifications.filter(n => n.id !== id));
-    toast.success("Notification dismissed");
-  };
-
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
-    toast.success("Marked as read");
-  };
+  const { notifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
 
   const getIcon = (type: string) => {
     switch (type) {
