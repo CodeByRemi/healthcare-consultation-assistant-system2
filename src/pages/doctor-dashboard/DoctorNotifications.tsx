@@ -1,6 +1,8 @@
 import { useState } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { FaBell, FaCalendarCheck, FaInfoCircle, FaCheckDouble, FaTrash, FaClipboardList, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
@@ -32,8 +34,8 @@ export default function DoctorNotifications() {
           isSidebarOpen={isSidebarOpen}
         />
         
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-4xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+          <DoctorPageTransition className="max-w-4xl mx-auto">
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
               <div className="flex items-center gap-3">
@@ -116,8 +118,10 @@ export default function DoctorNotifications() {
               )}
             </div>
 
-          </div>
+          </DoctorPageTransition>
         </div>
+
+        <DoctorMobileFooter />
       </main>
     </div>
   );

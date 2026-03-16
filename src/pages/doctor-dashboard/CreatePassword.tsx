@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 
 export default function DoctorCreatePassword() {
   const navigate = useNavigate();
@@ -58,8 +60,8 @@ export default function DoctorCreatePassword() {
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <DoctorHeader toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} isSidebarOpen={isSidebarOpen} />
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-4xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+          <DoctorPageTransition className="max-w-4xl mx-auto">
             <button
               onClick={() => navigate("/doctor/settings")}
               className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-8 font-medium transition-colors"
@@ -133,8 +135,10 @@ export default function DoctorCreatePassword() {
                 </button>
               </form>
             </motion.div>
-          </div>
+          </DoctorPageTransition>
         </div>
+
+        <DoctorMobileFooter />
       </main>
     </div>
   );

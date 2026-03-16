@@ -1,9 +1,10 @@
-import { FaBars, FaBell, FaUserMd } from "react-icons/fa";
+import { FaBell, FaUserMd } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
+import logo from "../../../../assets/patientreg.png";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -46,12 +47,13 @@ export default function DoctorHeader({ toggleSidebar }: HeaderProps) {
       <div className="flex items-center gap-4">
         <button 
           onClick={toggleSidebar}
-          className="p-2 -ml-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors md:hidden"
+          className="hidden"
           title="Toggle Sidebar"
         >
-          <FaBars className="w-5 h-5" />
+          
         </button>
-        <span className="text-slate-400 text-sm">Doctor Portal</span>
+        <img src={logo} alt="Medicare" className="h-9 w-9 rounded-lg object-contain" />
+        <span className="hidden md:block text-slate-400 text-sm">Doctor Portal</span>
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">

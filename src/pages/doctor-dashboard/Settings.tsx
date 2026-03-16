@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
 import { useAuth } from "../../context/AuthContext";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -96,7 +97,7 @@ export default function DoctorSettings() {
           isSidebarOpen={isSidebarOpen}
         />
         
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
           <div className="max-w-4xl mx-auto">
             <header className="mb-8">
               <h1 className="text-3xl font-bold text-slate-900 mb-2">Settings</h1>
@@ -353,6 +354,8 @@ export default function DoctorSettings() {
             </div>
           </div>
         </div>
+
+        <DoctorMobileFooter />
       </main>
     </div>
   );

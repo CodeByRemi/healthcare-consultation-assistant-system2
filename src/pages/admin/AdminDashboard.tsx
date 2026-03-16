@@ -9,6 +9,7 @@ import {
   Calendar,
   Clock,
   User,
+  Settings,
   Stethoscope,
   Activity,
   AlertCircle,
@@ -18,6 +19,7 @@ import {
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../../lib/firebase";
+import logo from "../../assets/patientreg.png";
 import AdminSidebar from "./components/AdminSidebar";
 import AdminMobileFooter from "./components/AdminMobileFooter";
 import AdminSettings from "./AdminSettings";
@@ -124,6 +126,7 @@ export default function AdminDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
+            <img src={logo} alt="Medicare" className="h-8 w-8 rounded-lg object-contain" />
             <h1 className="text-xl font-bold text-gray-800 capitalize">{currentTab}</h1>
           </div>
 
@@ -139,11 +142,27 @@ export default function AdminDashboard() {
             
             <button
               type="button"
+              onClick={() => setCurrentTab("settings")}
+              className="relative p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-blue-600 transition-colors"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCurrentTab("profile")}
+              className="relative p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-blue-600 transition-colors"
+            >
+              <User className="w-5 h-5" />
+            </button>
+
+            <button
+              type="button"
               onClick={() => setCurrentTab("notifications")}
               className="relative p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-blue-600 transition-colors"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] leading-4 text-center">0</span>
             </button>
           </div>
         </motion.header>
@@ -1119,9 +1138,116 @@ function AppointmentsList() {
     fetchAppointments();
   }, []);
 
+  const getPatientInitials = (name: string) => {
+    const parts = name.trim().split(" ").filter(Boolean);
+    if (parts.length === 0) return "PT";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] ?? "P"}${parts[1][0] ?? "T"}`.toUpperCase();
+  };
+
+  const parseDateValue = (rawDate: string) => {
+    const parsed = new Date(rawDate);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+    return null;
+  };
+
+  const today = new Date();
+  const todayCount = appointments.filter((appointment) => {
+    const parsed = parseDateValue(appointment.date);
+    if (!parsed) return false;
+
+    return (
+      parsed.getDate() === today.getDate() &&
+      parsed.getMonth() === today.getMonth() &&
+      parsed.getFullYear() === today.getFullYear()
+    );
+  }).length;
+
+  const statusDotClass = (status: string) => {
+    if (status.toLowerCase() === "completed") return "bg-emerald-500";
+    if (status.toLowerCase() === "cancelled") return "bg-slate-300";
+    return "bg-green-500";
+  };
+
   return (
     <>
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="md:hidden bg-slate-100 rounded-3xl border border-slate-200 p-4 shadow-sm">
+      <div className="mb-8 flex items-center justify-between">
+        <button
+          type="button"
+          className="h-11 w-11 rounded-full border border-emerald-100 bg-white text-emerald-600 shadow-sm flex items-center justify-center"
+          aria-label="Back"
+        >
+          <span className="text-2xl leading-none">&larr;</span>
+        </button>
+        <button
+          type="button"
+          className="h-11 w-11 rounded-full border border-emerald-100 bg-white text-slate-600 shadow-sm flex items-center justify-center"
+          aria-label="Notifications"
+        >
+          <Bell className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="mb-6">
+        <h2 className="text-4xl font-['Newsreader'] font-medium text-slate-900 leading-tight">Recent Appointments</h2>
+        <p className="mt-2 text-lg text-slate-500">
+          You have {todayCount} appointments scheduled for today
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {appointments.length === 0 ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-400 italic">
+            No appointments found
+          </div>
+        ) : (
+          appointments.map((appointment) => (
+            <button
+              key={appointment.id}
+              type="button"
+              onClick={() => setSelectedAppointment(appointment)}
+              className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-5 text-left shadow-sm transition-all hover:shadow-md"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <div className="h-16 w-16 rounded-full border-4 border-emerald-100 bg-slate-200 flex items-center justify-center text-slate-700 font-bold text-sm">
+                    {getPatientInitials(appointment.patientName || "Patient")}
+                  </div>
+                  <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full ring-2 ring-white ${statusDotClass(appointment.status || "")}`}></span>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="truncate text-2xl font-bold text-slate-900 font-['Manrope']">
+                      {appointment.patientName || "Unknown Patient"}
+                    </p>
+                    <span className="text-3xl text-slate-300 leading-none">&rsaquo;</span>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-600">
+                      #APT-{appointment.id.substring(0, 4).toUpperCase()}
+                    </span>
+                    <span className="text-slate-300">&bull;</span>
+                    <span>{appointment.date || "N/A"}</span>
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-2 text-slate-600">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-base">{appointment.time || "N/A"}</span>
+                    <span className="text-slate-300">&bull;</span>
+                    <span className="text-sm">{appointment.doctorName || "Unknown Doctor"}</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+
+    <div className="hidden md:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="p-6 border-b border-gray-100 flex items-center justify-between">
         <h3 className="font-bold text-gray-900 text-lg">Recent Appointments</h3>
          <span className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">

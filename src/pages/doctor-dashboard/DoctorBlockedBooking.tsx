@@ -4,6 +4,8 @@ import { addDoc, collection } from "firebase/firestore";
 import { toast } from "sonner";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
 
@@ -102,8 +104,8 @@ export default function DoctorBlockedBooking() {
           isSidebarOpen={isSidebarOpen}
         />
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-          <div className="max-w-3xl mx-auto space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+          <DoctorPageTransition className="max-w-3xl mx-auto space-y-6">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Blocked Booking</h1>
@@ -187,8 +189,10 @@ export default function DoctorBlockedBooking() {
                 </button>
               </div>
             </section>
-          </div>
+          </DoctorPageTransition>
         </div>
+
+        <DoctorMobileFooter />
 
         {isConfirmOpen && (
           <div className="fixed inset-0 z-60 flex items-center justify-center p-4">

@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { collection, query, where, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 
 type PatientDetails = {
     age: string;
@@ -339,8 +341,8 @@ export default function MyPatients() {
           isSidebarOpen={isSidebarOpen}
         />
         
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-7xl mx-auto">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+                    <DoctorPageTransition className="max-w-7xl mx-auto">
             <header className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-slate-800 mb-2">My Patients</h1>
@@ -508,8 +510,10 @@ export default function MyPatients() {
               </div>
             )}
             
-          </div>
+                    </DoctorPageTransition>
         </div>
+
+                <DoctorMobileFooter />
       </main>
 
       {/* Patient Details Modal */}
