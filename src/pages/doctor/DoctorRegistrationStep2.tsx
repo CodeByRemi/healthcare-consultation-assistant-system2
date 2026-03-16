@@ -93,7 +93,7 @@ export default function DoctorRegistrationStep2() {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
-        className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden"
+        className="hidden lg:flex lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex-col justify-between relative overflow-hidden"
       >
         {/* Background Pattern Overlay */}
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1581056771107-24ca5f033842?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
@@ -150,7 +150,7 @@ export default function DoctorRegistrationStep2() {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto"
+        className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto"
       >
         <div className="w-full max-w-lg bg-white p-8 lg:p-10 rounded-3xl shadow-xl border border-slate-100">
           <div className="mb-8">

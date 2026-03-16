@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
+import patientimg from "../../../assets/patientreg.png";
 
 export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -75,6 +76,12 @@ export default function RegisterForm() {
   return (
     <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center font-['Manrope'] bg-white h-full overflow-y-auto">
       <div className="max-w-md mx-auto w-full">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+            <img src={patientimg} alt="Medicare" className="w-6 h-6 object-contain" />
+          </div>
+          <span className="text-xl font-bold text-slate-900 font-['Newsreader']">Medicare</span>
+        </div>
         <h1 className="text-3xl font-['Newsreader'] font-medium text-slate-900 mb-2">
           Create Patient Account
         </h1>

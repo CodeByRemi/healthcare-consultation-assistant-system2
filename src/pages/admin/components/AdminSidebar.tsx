@@ -5,10 +5,10 @@ import {
   Settings, 
   LogOut, 
   LayoutDashboard, 
-  UserPlus, 
-  Activity
+  UserPlus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import logo from '../../../assets/patientreg.png';
 
 export default function AdminSidebar({ 
   currentTab, 
@@ -45,7 +45,7 @@ export default function AdminSidebar({
       >
           {/* Header */}
           <div className={`h-16 flex items-center border-b border-gray-200 ${isOpen ? "px-6" : "justify-center"}`}>
-            <Activity className={`text-blue-600 ${isOpen ? "mr-3" : ""}`} />
+            <img src={logo} alt="Medicare" className={`h-8 w-8 rounded-lg object-contain ${isOpen ? "mr-3" : ""}`} />
             {isOpen && <h1 className="text-xl font-bold font-display tracking-tight text-gray-900">Admin</h1>}
           </div>
 

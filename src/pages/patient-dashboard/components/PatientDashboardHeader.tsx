@@ -4,6 +4,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
+import logo from "../../../assets/patientreg.png";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -29,7 +30,10 @@ export default function PatientDashboardHeader({ toggleSidebar: _toggleSidebar }
 
   return (
     <header className="h-20 bg-white border-b border-slate-100 px-6 md:px-8 flex items-center justify-between sticky top-0 z-10 transition-all duration-200">
-      <div />
+      <div className="flex items-center gap-2">
+        <img src={logo} alt="Medicare" className="h-9 w-9 rounded-lg object-contain" />
+        <span className="hidden sm:block text-slate-800 font-semibold">Medicare</span>
+      </div>
 
       <div className="flex items-center gap-2 md:gap-4">
         <Link to="/patient/notifications" className="p-2 text-slate-400 hover:text-[#0A6ED1] hover:bg-slate-50 rounded-full transition-colors relative">

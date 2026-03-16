@@ -5,6 +5,8 @@ import { doc, getDoc, collection, query, where, orderBy, onSnapshot } from "fire
 import { db } from "../../lib/firebase";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { 
   FaCalendarCheck, 
   FaEllipsisH,
@@ -127,7 +129,7 @@ export default function DoctorDashboard() {
         />
         
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-7xl mx-auto space-y-8">
+          <DoctorPageTransition className="max-w-7xl mx-auto space-y-8">
             
             {/* Intro */}
             <header className="flex flex-col md:flex-row justify-between md:items-end gap-3 md:gap-4">
@@ -151,18 +153,18 @@ export default function DoctorDashboard() {
             </header>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {stats.map((stat, idx) => (
-                <div key={idx} className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex items-start justify-between hover:shadow-md transition-shadow">
-                        <div>
-                            <p className="text-slate-500 text-sm font-medium mb-1">{stat.label}</p>
-                            <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
-                            <span className={`text-xs font-semibold ${stat.change.includes('+') ? 'text-green-600' : 'text-slate-400'}`}>
+                <div key={idx} className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-start justify-between hover:shadow-md transition-shadow gap-2 md:gap-0">
+                        <div className="order-2 md:order-1">
+                            <p className="text-slate-500 text-xs md:text-sm font-medium mb-1">{stat.label}</p>
+                            <h3 className="text-xl md:text-2xl font-bold text-slate-900">{stat.value}</h3>
+                            <span className={`text-[10px] md:text-xs font-semibold ${stat.change.includes('+') ? 'text-green-600' : 'text-slate-400'}`}>
                               {stat.change}
                             </span>
                         </div>
-                         <div className={`p-3 rounded-xl ${stat.color}`}>
-                            <stat.icon className="w-5 h-5 text-current" />
+                         <div className={`p-2 md:p-3 rounded-xl ${stat.color} w-fit order-1 md:order-2`}>
+                            <stat.icon className="w-4 h-4 md:w-5 md:h-5 text-current" />
                         </div>
                     </div>
                 ))}
@@ -193,9 +195,9 @@ export default function DoctorDashboard() {
                     </div>
 
                     {/* List */}
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-2">
                         {isLoading ? (
-                            <div className="py-12 text-center text-slate-400">Loading schedule...</div>
+                            <div className="col-span-2 py-12 text-center text-slate-400">Loading schedule...</div>
                         ) : appointments.length > 0 ? (
                             appointments.map((appt, index) => {
                                 const isActive = (index === 0 && appt.status === 'confirmed');
@@ -290,10 +292,10 @@ export default function DoctorDashboard() {
                 </div>
             </div>
 
-          </div>
+          </DoctorPageTransition>
         </div>
         
-        {/* Mobile footer for doctors if needed, can reuse or create specific */}
+        <DoctorMobileFooter />
       </main>
     </div>
   );

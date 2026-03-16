@@ -1,4 +1,5 @@
 import { FaUserMd, FaStethoscope, FaHeartbeat, FaCalendarCheck } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 
 const services = [
     {
@@ -27,21 +28,34 @@ const Services = () => {
     return (
         <section id="services" className="py-24 bg-white">
             <div className="const-container">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-16">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="flex flex-col md:flex-row justify-between items-center md:items-end mb-16 text-center md:text-left"
+                >
                     <div className="max-w-xl">
                         <span className="text-accent font-bold tracking-wider text-sm uppercase mb-2 block">Our Expertise</span>
                         <h2 className="text-4xl md:text-5xl font-display text-primary leading-tight">
                             Excellence in <br/><span className="italic text-gray-400">Medical Care</span>
                         </h2>
                     </div>
-                    <p className="text-gray-500 max-w-sm mt-6 md:mt-0 text-right md:text-left">
+                    <p className="text-gray-500 max-w-sm mt-6 md:mt-0">
                         We combine cutting-edge technology with compassionate care to deliver a healthcare experience like no other.
                     </p>
-                </div>
+                </motion.div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {services.map((service, index) => (
-                        <div key={index} className="group p-8 border border-gray-100 bg-surface hover:bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-300 rounded-sm">
+                        <motion.div 
+                            key={index} 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                            className="group p-8 border border-gray-100 bg-surface hover:bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-300 rounded-sm"
+                        >
                             <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-primary mb-6 group-hover:bg-accent group-hover:text-white transition-colors shadow-sm border border-gray-50">
                                 {service.icon}
                             </div>
@@ -50,7 +64,7 @@ const Services = () => {
                                 {service.description}
                             </p>
                             <div className="mt-6 w-8 h-px bg-gray-200 group-hover:w-full group-hover:bg-accent transition-all duration-500"></div>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             </div>

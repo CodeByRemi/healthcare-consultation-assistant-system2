@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { 
   ArrowLeft, 
   Activity, 
@@ -209,7 +211,7 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
         />
         
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-6xl mx-auto">
+          <DoctorPageTransition className="max-w-6xl mx-auto">
             {/* Back Button */}
             <Link to="/doctor/patients" className="inline-flex items-center gap-2 text-slate-500 hover:text-[#0A6ED1] mb-6 font-medium transition-colors">
               <ArrowLeft size={20} /> Back to Patient List
@@ -522,8 +524,10 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
               </motion.div>
             )}
             </AnimatePresence>
-          </div>
+          </DoctorPageTransition>
         </div>
+
+        <DoctorMobileFooter />
       </main>
     </div>
   );

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  FaShieldAlt, 
   FaLock, 
   FaArrowRight, 
   FaCheckCircle,
@@ -10,6 +9,7 @@ import {
 import { toast } from 'sonner';
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../lib/firebase";
+import logo from "../../assets/patientreg.png";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -52,14 +52,14 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-['Manrope'] bg-slate-50">
       {/* Left Panel - Branding & Info */}
-      <div className="lg:w-1/2 bg-blue-600 p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-blue-600 p-8 lg:p-16 flex-col justify-between relative overflow-hidden">
         {/* Background Pattern Overlay */}
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555529733-0e670560f7e1?q=80&w=2864&auto=format&fit=crop')] opacity-20 bg-cover bg-center mix-blend-overlay"></div>
         
         <div className="relative z-10">
           <Link to="/" className="inline-flex items-center gap-2 mb-12 group transition-all duration-300 ease-in-out hover:translate-x-1">
             <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 shadow-inner group-hover:bg-white/20 transition-all">
-              <FaShieldAlt className="w-5 h-5 text-white" />
+              <img src={logo} alt="Medicare" className="w-6 h-6 object-contain" />
             </div>
             <span className="text-white font-bold text-2xl tracking-tight">Medicare Admin</span>
           </Link>
@@ -100,11 +100,11 @@ export default function AdminLogin() {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="lg:w-1/2 flex items-center justify-center p-8 lg:p-16">
-        <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+      <div className="min-h-screen lg:min-h-0 w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-16">
+        <div className="max-w-md w-full bg-white p-6 md:p-8 rounded-2xl md:shadow-xl shadow-none border border-slate-100">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600">
-              <FaUserShield size={32} />
+              <img src={logo} alt="Medicare" className="w-8 h-8 object-contain" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900">Admin Login</h2>
             <p className="text-slate-500 mt-2">Please sign in to continue</p>

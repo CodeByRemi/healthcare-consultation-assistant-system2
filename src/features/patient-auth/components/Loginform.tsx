@@ -3,23 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
 import { toast } from "sonner";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc, Timestamp } from "firebase/firestore";
-import { auth, db } from "../../../lib/firebase";
-import PatientDetailsModal from "./PatientDetailsModal";
+import { auth } from "../../../lib/firebase";
+import patientimg from "../../../assets/patientreg.png";
 
 export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [patientData, setPatientData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    address: "",
-    bloodType: "",
-    joinDate: ""
-  });
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -36,52 +25,11 @@ export default function LoginForm() {
 
     try {
       console.log("Attempting sign in with:", formData.email);
-      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-
-      const profileSnap = await getDoc(doc(db, "patients", userCredential.user.uid));
-      if (profileSnap.exists()) {
-        const profile = profileSnap.data();
-        const fullName = (profile.fullName || "").trim();
-        const [firstName = "", ...restName] = fullName.split(" ");
-        const lastName = restName.join(" ");
-
-        let memberSince = "";
-        const createdAtValue = profile.createdAt;
-        if (createdAtValue instanceof Timestamp) {
-          memberSince = createdAtValue.toDate().toLocaleDateString();
-        } else if (typeof createdAtValue === "string") {
-          const createdAtDate = new Date(createdAtValue);
-          if (!Number.isNaN(createdAtDate.getTime())) {
-            memberSince = createdAtDate.toLocaleDateString();
-          }
-        }
-
-        setPatientData({
-          firstName,
-          lastName,
-          email: profile.email || userCredential.user.email || "",
-          phone: profile.phoneNumber || "",
-          address: profile.address || "",
-          bloodType: profile.bloodType || "",
-          joinDate: memberSince
-        });
-      } else {
-        setPatientData({
-          firstName: "",
-          lastName: "",
-          email: userCredential.user.email || "",
-          phone: "",
-          address: "",
-          bloodType: "",
-          joinDate: ""
-        });
-      }
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
 
       console.log("Sign in successful!");
       toast.success("Welcome back!");
-      
-      // Show the details modal first
-      setShowModal(true);
+      navigate("/patient/dashboard", { replace: true });
       
     } catch (error) {
       console.error("Login error:", error);
@@ -91,18 +39,15 @@ export default function LoginForm() {
     }
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    // Delay navigation slightly to ensure modal closes
-    setTimeout(() => {
-      console.log("Navigating to dashboard...");
-      navigate("/patient/dashboard", { replace: true }); 
-    }, 300);
-  };
-
   return (
-    <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center font-['Manrope'] bg-white">
+    <div className="min-h-screen md:min-h-0 md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col justify-center font-['Manrope'] bg-white">
       <div className="max-w-md mx-auto w-full">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+            <img src={patientimg} alt="Medicare" className="w-6 h-6 object-contain" />
+          </div>
+          <span className="text-xl font-bold text-slate-900 font-['Newsreader']">Medicare</span>
+        </div>
         <h1 className="text-4xl font-['Newsreader'] font-medium text-slate-900 mb-2">
           Welcome back
         </h1>
@@ -194,12 +139,6 @@ export default function LoginForm() {
         </div>
       </div>
 
-      {/* Patient Details Modal */}
-      <PatientDetailsModal 
-        isOpen={showModal} 
-        onClose={handleCloseModal}
-        patientData={patientData}
-      />
     </div>
   );
 }

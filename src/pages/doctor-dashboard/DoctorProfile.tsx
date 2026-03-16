@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { FaUserMd, FaMapMarkerAlt, FaEnvelope, FaPhone, FaGraduationCap, FaHospital, FaBriefcase, FaAward, FaEdit, FaSave, FaClock, FaCamera } from "react-icons/fa";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
@@ -163,7 +165,7 @@ export default function DoctorProfile() {
         />
         
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-5xl mx-auto">
+          <DoctorPageTransition className="max-w-5xl mx-auto">
             <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-slate-900 font-['Newsreader']">Doctor Profile</h1>
@@ -472,8 +474,10 @@ export default function DoctorProfile() {
               </div>
             </div>
             )}
-          </div>
+          </DoctorPageTransition>
         </div>
+
+        <DoctorMobileFooter />
       </main>
     </div>
   );
