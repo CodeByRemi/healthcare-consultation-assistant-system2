@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -107,8 +109,8 @@ export default function DoctorAvailability() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-3xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+          <DoctorPageTransition className="max-w-3xl mx-auto">
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Date */}
@@ -232,8 +234,10 @@ export default function DoctorAvailability() {
                 </button>
               </div>
             </div>
-          </div>
+          </DoctorPageTransition>
         </div>
+
+        <DoctorMobileFooter />
       </main>
     </div>
   );

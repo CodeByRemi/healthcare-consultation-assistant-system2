@@ -4,7 +4,6 @@ import {
   Calendar, 
   MessageSquare, 
   ArrowRight, 
-  Stethoscope,
   Activity,
   User 
 } from "lucide-react";
@@ -13,7 +12,6 @@ import { useNavigate } from "react-router-dom";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
-import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -114,7 +112,7 @@ export default function PatientDashboard() {
                 className="space-y-8"
               >
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4">
                     {[
                         {
                           label: "Upcoming Appointments",
@@ -137,14 +135,14 @@ export default function PatientDashboard() {
                             key={idx}
                             variants={itemVariants}
                             onClick={() => navigate(stat.path)}
-                            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all cursor-pointer"
+                            className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between group hover:shadow-md transition-all cursor-pointer h-full"
                         >
-                            <div>
-                                <p className="text-slate-500 text-sm font-medium mb-1">{stat.label}</p>
-                                <h3 className="text-2xl font-bold text-slate-800">{stat.value}</h3>
+                            <div className="order-2 md:order-1 mt-3 md:mt-0">
+                                <p className="text-slate-500 text-xs md:text-sm font-medium mb-1">{stat.label}</p>
+                                <h3 className="text-xl md:text-2xl font-bold text-slate-800">{stat.value}</h3>
                             </div>
-                            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                                <stat.icon size={24} />
+                            <div className={`order-1 md:order-2 p-2 md:p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform self-end md:self-auto`}>
+                                <stat.icon size={20} className="md:w-6 md:h-6" />
                             </div>
                         </motion.div>
                     ))}
@@ -229,21 +227,6 @@ export default function PatientDashboard() {
                                         <p className="font-semibold text-slate-800">{personalInfo.bloodType}</p>
                                     </div>
                                 </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Quick Actions Grid - Modified */}
-                        <motion.div variants={itemVariants} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                            <h3 className="font-semibold text-lg text-slate-800 mb-4">Quick Actions</h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button onClick={() => toast.info("Finding nearby doctors...")} className="p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors flex flex-col items-center gap-2 text-center group">
-                                    <Stethoscope className="text-blue-600 group-hover:scale-110 transition-transform" size={24} />
-                                    <span className="text-xs font-medium text-blue-800">Find Doctor</span>
-                                </button>
-                                <button onClick={() => toast.info("Opening AI Assistant...")} className="p-4 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors flex flex-col items-center gap-2 text-center group">
-                                    <MessageSquare className="text-amber-600 group-hover:scale-110 transition-transform" size={24} />
-                                    <span className="text-xs font-medium text-amber-800">Chat AI</span>
-                                </button>
                             </div>
                         </motion.div>
 

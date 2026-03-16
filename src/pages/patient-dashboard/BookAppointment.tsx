@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaSearch, FaMapMarkerAlt, FaStar, FaUserMd, FaClock, FaCalendarAlt, FaTimes, FaGraduationCap } from "react-icons/fa";
+import { FaSearch, FaMapMarkerAlt, FaStar, FaUserMd, FaClock, FaCalendarAlt, FaTimes, FaGraduationCap, FaArrowLeft } from "react-icons/fa";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
@@ -137,7 +137,6 @@ export default function BookAppointment() {
   
   // Selected Doctor for Modal
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
-    const [selectedDoctorMobileId, setSelectedDoctorMobileId] = useState("");
   const [hoveredSpecialty, setHoveredSpecialty] = useState<string | null>(null);
   const [confirmationModal, setConfirmationModal] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
@@ -314,7 +313,6 @@ export default function BookAppointment() {
   };
 
   const currentSlots = getAvailableTimeSlots(bookingDate);
-    const selectedDoctorMobile = filteredDoctors.find((doc) => doc.id === selectedDoctorMobileId) || null;
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -336,8 +334,82 @@ export default function BookAppointment() {
                     </p>
                 </header>
 
+                <div className="md:hidden space-y-4 mb-8">
+                    <div className="rounded-3xl bg-linear-to-br from-[#0A6ED1] via-[#2C87DE] to-[#79B6FF] p-5 text-white shadow-lg">
+                        <p className="text-xs uppercase tracking-[0.16em] text-blue-100">Quick Booking</p>
+                        <h2 className="mt-2 text-2xl font-['Newsreader']">Find Your Specialist</h2>
+                        <p className="mt-1 text-sm text-blue-100">Search doctors and book in a few taps.</p>
+                    </div>
+
+                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="relative">
+                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search by name or specialty"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm focus:border-[#0A6ED1] focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]/20"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="relative">
+                            <FaUserMd className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={selectedSpecialty}
+                                onChange={(e) => setSelectedSpecialty(e.target.value)}
+                                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm focus:border-[#0A6ED1] focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]/20"
+                            >
+                                {specialties.map((spec) => (
+                                    <option key={spec.value} value={spec.value}>
+                                        {spec.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-500">Available Today</h3>
+                            <span className="text-xs text-slate-400">{filteredDoctors.length} found</span>
+                        </div>
+
+                        {filteredDoctors.slice(0, 4).map((doc) => (
+                            <button
+                                key={doc.id}
+                                type="button"
+                                onClick={() => setSelectedDoctor({ ...doc })}
+                                className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all active:scale-[0.99]"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src={doc.image || DOCTOR_IMAGE_PLACEHOLDER}
+                                        alt={doc.fullName || doc.name || "Doctor"}
+                                        className="h-14 w-14 rounded-2xl object-cover"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-base font-bold text-slate-900">{doc.fullName || doc.name || "Doctor"}</p>
+                                        <p className="text-xs font-semibold text-[#0A6ED1]">{doc.specialty || "General"}</p>
+                                        <p className="mt-1 truncate text-xs text-slate-500">{doc.location || "Location not specified"}</p>
+                                    </div>
+                                    <div className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-[#0A6ED1]">
+                                        Book
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+
+                        {filteredDoctors.length === 0 && (
+                            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+                                No doctors found for your current filters.
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Search and Filter */}
-                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-8 flex flex-col gap-4">
+                <div className="hidden md:flex bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-8 flex-col gap-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative flex-1 w-full">
                             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -406,36 +478,6 @@ export default function BookAppointment() {
                 </div>
 
                 {/* Doctors Grid */}
-                <div className="md:hidden bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 space-y-3">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Choose Doctor</label>
-                    <div className="relative">
-                        <FaUserMd className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <select
-                            value={selectedDoctorMobileId}
-                            onChange={(e) => setSelectedDoctorMobileId(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]/20 focus:border-[#0A6ED1] appearance-none"
-                        >
-                            <option value="">Select a doctor</option>
-                            {filteredDoctors.map((doc) => (
-                                <option key={doc.id} value={doc.id}>
-                                    {(doc.fullName || doc.name || "Doctor")} - {doc.specialty || "General"}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {selectedDoctorMobile && (
-                        <button
-                            type="button"
-                            onClick={() => setSelectedDoctor({ ...selectedDoctorMobile })}
-                            className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-left hover:border-[#0A6ED1] hover:bg-blue-50 transition-colors"
-                        >
-                            <p className="text-sm font-semibold text-slate-900 truncate">{selectedDoctorMobile.fullName || selectedDoctorMobile.name || "Doctor"}</p>
-                            <p className="text-xs text-[#0A6ED1] mt-1">{selectedDoctorMobile.specialty || "General"} • Tap to view details</p>
-                        </button>
-                    )}
-                </div>
-
                 <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredDoctors.map((doc, idx) => (
                         <motion.div 
@@ -514,6 +556,168 @@ export default function BookAppointment() {
             
             <PatientMobileFooter />
 
+            {/* Mobile Doctor Booking Screen */}
+            <AnimatePresence>
+                {selectedDoctor && (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="md:hidden fixed inset-0 z-50 bg-slate-50 overflow-y-auto"
+                    >
+                        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedDoctor(null)}
+                                className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700"
+                            >
+                                <FaArrowLeft className="text-xs" />
+                                Back
+                            </button>
+                            <h2 className="text-sm font-bold text-slate-900">Book Appointment</h2>
+                            <span className="w-12" />
+                        </div>
+
+                        <div className="p-4 pb-8 space-y-4">
+                            <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-[#0A6ED1] to-cyan-500 px-4 pb-5 pt-12 text-white">
+                                <div className="absolute inset-0 opacity-10 pointer-events-none">
+                                    <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-white"></div>
+                                </div>
+                                <div className="relative flex items-end gap-3">
+                                    <img
+                                        src={selectedDoctor.image || DOCTOR_IMAGE_PLACEHOLDER}
+                                        alt={selectedDoctor.fullName || selectedDoctor.name || "Doctor"}
+                                        className="h-20 w-20 rounded-2xl border-4 border-white/40 object-cover bg-white"
+                                    />
+                                    <div className="min-w-0 flex-1 pb-1">
+                                        <p className="truncate text-2xl font-bold font-['Newsreader']">{selectedDoctor.fullName || selectedDoctor.name || "Doctor"}</p>
+                                        <p className="text-sm font-medium text-blue-100">{selectedDoctor.specialty || "General"}</p>
+                                        <div className="mt-2 flex items-center gap-2 text-xs text-blue-50">
+                                            <FaStar className="text-yellow-300" />
+                                            <span>{selectedDoctor.rating ?? "—"} rating</span>
+                                            <span>•</span>
+                                            <span>{selectedDoctor.experience ? `${selectedDoctor.experience} exp` : "Experience not specified"}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Location</p>
+                                    <p className="mt-2 text-sm font-medium text-slate-800">{selectedDoctor.location || "Not specified"}</p>
+                                </div>
+                                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-600">Availability</p>
+                                    <p className="mt-2 text-sm font-medium text-emerald-700">{selectedDoctor.availability || "Not specified"}</p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <h3 className="text-base font-bold text-slate-900">About Doctor</h3>
+                                <p className="mt-2 text-sm leading-6 text-slate-600">{selectedDoctor.about || "Profile not updated yet."}</p>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <h3 className="text-base font-bold text-slate-900">Education & Certifications</h3>
+                                <div className="mt-3 space-y-3 text-sm text-slate-600">
+                                    <p>{selectedDoctor.education || "Not specified"}</p>
+                                    <p>{selectedDoctor.certification || "Not specified"}</p>
+                                    <p>{selectedDoctor.specialization || "Not specified"}</p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                                    <FaCalendarAlt className="text-[#0A6ED1]" />
+                                    Book Appointment
+                                </h3>
+
+                                <div className="mt-5 space-y-5">
+                                    <div>
+                                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Select Date</label>
+                                        <input
+                                            type="date"
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none transition-all focus:border-[#0A6ED1] focus:ring-2 focus:ring-[#0A6ED1]/20"
+                                            value={bookingDate}
+                                            onChange={(e) => setBookingDate(e.target.value)}
+                                            min={new Date().toISOString().split('T')[0]}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Select Time</label>
+                                        {!bookingDate ? (
+                                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm italic text-slate-400">
+                                                Please select a date first
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {currentSlots.length > 0 ? (
+                                                    currentSlots.map((time: string) => (
+                                                        <button
+                                                            key={time}
+                                                            type="button"
+                                                            onClick={() => setBookingTime(time)}
+                                                            className={`rounded-xl border-2 px-3 py-3 text-sm font-semibold transition-all ${
+                                                                bookingTime === time
+                                                                    ? "border-[#0A6ED1] bg-[#0A6ED1] text-white shadow-lg shadow-blue-500/20"
+                                                                    : "border-slate-200 bg-white text-slate-600"
+                                                            }`}
+                                                        >
+                                                            {time}
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 py-4 text-center text-sm text-slate-400">
+                                                        No slots available
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Reason for Visiting</label>
+                                        <textarea
+                                            rows={4}
+                                            value={reasonForVisit}
+                                            onChange={(e) => setReasonForVisit(e.target.value)}
+                                            placeholder="Reason"
+                                            className="w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none transition-all focus:border-[#0A6ED1] focus:ring-2 focus:ring-[#0A6ED1]/20"
+                                        />
+                                    </div>
+
+                                    {bookingDate && bookingTime && (
+                                        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                                            <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-600">Booking Summary</div>
+                                            <div className="mt-2 space-y-1 text-sm text-slate-700">
+                                                <p><span className="font-semibold">Date:</span> {new Date(bookingDate).toLocaleDateString()}</p>
+                                                <p><span className="font-semibold">Time:</span> {bookingTime}</p>
+                                                <p><span className="font-semibold">Reason:</span> {reasonForVisit || "Reason"}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        onClick={handleBookClick}
+                                        disabled={!bookingDate || !bookingTime || !reasonForVisit.trim()}
+                                        className={`w-full rounded-2xl py-4 text-base font-bold transition-all ${
+                                            (!bookingDate || !bookingTime || !reasonForVisit.trim())
+                                                ? "cursor-not-allowed bg-slate-300 text-slate-500"
+                                                : "bg-[#0A6ED1] text-white shadow-lg shadow-blue-500/30"
+                                        }`}
+                                    >
+                                        {(!bookingDate || !bookingTime || !reasonForVisit.trim()) ? "Select Date, Time & Reason" : "Confirm Booking"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Doctor Details Modal */}
             <AnimatePresence>
                 {selectedDoctor && (
@@ -521,7 +725,7 @@ export default function BookAppointment() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100 flex items-center justify-center p-4"
+                        className="hidden md:flex fixed inset-0 bg-black/60 backdrop-blur-sm z-100 items-center justify-center p-4"
                         onClick={() => setSelectedDoctor(null)}
                     >
                         <motion.div 

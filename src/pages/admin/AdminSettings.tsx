@@ -9,12 +9,16 @@ import {
   Server,
   Trash2,
   Save,
-  CheckCircle
+  CheckCircle,
+  LogOut
 } from "lucide-react";
 import { toast } from "sonner";
 import { auth } from "../../lib/firebase";
+import { signOut } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminSettings() {
+  const navigate = useNavigate();
   const [isCleaning, setIsCleaning] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
 
@@ -232,7 +236,41 @@ export default function AdminSettings() {
                     <div className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-blue-400 transition-colors mr-2" />
                   )}
                 </button>
+
               </div>
+            </div>
+          </section>
+
+          {/* Danger Zone */}
+          <section className="bg-gradient-to-br from-white to-gray-50/50 rounded-2xl shadow-sm border border-gray-200 overflow-hidden md:col-span-2">
+            <div className="border-b border-gray-100 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-red-50 p-2.5 rounded-xl text-red-600 border border-red-100">
+                  <Shield size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Session Control</h3>
+                  <p className="text-sm text-gray-500">Manage your active session</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+                <button
+                  onClick={async () => {
+                      try {
+                        await signOut(auth);
+                        toast.success("Signed out successfully");
+                        navigate("/admin/login");
+                      } catch (error) {
+                        toast.error("Failed to sign out");
+                      }
+                  }}
+                  className="w-full h-12 flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 hover:border-red-300 font-semibold rounded-xl transition-all duration-200"
+                >
+                  <LogOut size={18} />
+                  Sign Out
+                </button>
             </div>
           </section>
         </div>
