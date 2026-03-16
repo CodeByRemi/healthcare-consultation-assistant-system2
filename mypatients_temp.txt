@@ -1,0 +1,27 @@
+
+>         // Keep design visible with neutral placeholders when backend has no 
+records yet.
+          if (pending.length === 0 && uniquePatients.size === 0) {
+              pending.push({
+                  id: 'placeholder_req',
+                  name: 'Patient Name',
+                  image: null,
+                  type: 'Type',
+                  date: 'Date',
+                  time: 'Time',
+                  reason: 'Reason',
+                  shareAIChat: false,
+                  patientId: 'Patient ID'
+              });
+  
+              uniquePatients.set('placeholder_patient', {
+                  id: 'placeholder_patient',
+                  name: 'Patient Name',
+                  image: null,
+                  condition: 'Condition',
+                  lastVisit: 'Date',
+                  status: 'Status',
+                  shareAIChat: false,
+
+
+

@@ -8,7 +8,7 @@ import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 
 
 export default function UpdatePassword() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   
   const [currentPassword, setCurrentPassword] = useState("");
@@ -41,7 +41,7 @@ export default function UpdatePassword() {
 
   const handleUpdate = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!user ||!user.email) return;
+      if (!currentUser ||!currentUser.email) return;
       if (newPassword !== confirmPassword) {
           toast.error("New passwords do not match");
           return;
@@ -54,11 +54,11 @@ export default function UpdatePassword() {
       setLoading(true);
       try {
           // Re-authenticate first
-          const credential = EmailAuthProvider.credential(user.email, currentPassword);
-          await reauthenticateWithCredential(user, credential);
+          const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+          await reauthenticateWithCredential(currentUser, credential);
           
           // Update Password
-          await updatePassword(user, newPassword);
+          await updatePassword(currentUser, newPassword);
           toast.success("Password updated successfully");
           navigate(-1); // Go back
       } catch (error: any) {

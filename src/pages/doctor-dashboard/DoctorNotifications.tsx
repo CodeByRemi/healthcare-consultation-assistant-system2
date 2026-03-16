@@ -1,39 +1,18 @@
 import { useState } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { FaBell, FaCalendarCheck, FaInfoCircle, FaCheckDouble, FaTrash, FaClipboardList, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
-interface Notification {
-  id: number;
-  type: "appointment" | "system" | "patient" | "warning";
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-}
+import { useNotifications } from "../../context/NotificationContext";
 
 export default function DoctorNotifications() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
   
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-    toast.success("Marked all as read");
-  };
-
-  const deleteNotification = (id: number) => {
-    setNotifications(notifications.filter(n => n.id !== id));
-    toast.success("Notification dismissed");
-  };
-
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
-    toast.success("Marked as read");
-  };
+  const { notifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -55,8 +34,8 @@ export default function DoctorNotifications() {
           isSidebarOpen={isSidebarOpen}
         />
         
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-4xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+          <DoctorPageTransition className="max-w-4xl mx-auto">
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
               <div className="flex items-center gap-3">
@@ -139,8 +118,10 @@ export default function DoctorNotifications() {
               )}
             </div>
 
-          </div>
+          </DoctorPageTransition>
         </div>
+
+        <DoctorMobileFooter />
       </main>
     </div>
   );

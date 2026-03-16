@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { 
   ArrowLeft, 
   Activity, 
@@ -76,40 +80,51 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
 
-  // Mock Patient Data - PLACEHOLDERS
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const patientsMap: Record<string, any> = {
-    'default': {
-        name: "Patient Name",
-        age: "--",
-        dob: 'YYYY-MM-DD',
-        gender: "Gender",
-        height: "-'-\"",
-        weight: "--- lbs",
-        bmi: "--.-",
-        bloodType: "--",
-        history: ["Medical History Item"],
-        allergies: ['Allergy 1', 'Allergy 2'],
-        medications: ['Medication Name 1', 'Medication Name 2'],
-        insurance: 'Insurance Provider',
-        address: '123 Patient Address, City, State',
-        emergencyContact: { name: 'Contact Name', relation: 'Relation', phone: '(555) 000-0000' },
-        image: 'https://ui-avatars.com/api/?name=Patient+Name&background=0D8ABC&color=fff',
-        lastVitals: { bp: "--/--", heartRate: "-- bpm", temp: "--.-°F", oxygen: "--%" }
-    }
-  };
+  
+  const [patientData, setPatientData] = useState<any>(null);
+  const [loadingPatient, setLoadingPatient] = useState(true);
 
-  const currentPatientData = patientsMap['default'];
+  useEffect(() => {
+    const fetchPatientData = async () => {
+      if (!id) return;
+      try {
+        setLoadingPatient(true);
+        const pDoc = await getDoc(doc(db, "patients", id));
+        if (pDoc.exists()) {
+          setPatientData(pDoc.data());
+        } else {
+          console.error("Patient not found");
+        }
+      } catch (error) {
+        console.error("Error fetching patient", error);
+      } finally {
+        setLoadingPatient(false);
+      }
+    };
+    fetchPatientData();
+  }, [id]);
 
   const patient = {
     id: id || "---",
-    ...currentPatientData,
-    phone: "+1 (555) 000-0000",
-    email: "patient.email@example.com"
+    name: patientData?.name || patientData?.fullName || "Unknown Patient",
+    age: patientData?.dob ? Math.floor((Date.now() - new Date(patientData.dob).getTime()) / 31557600000).toString() : "--",
+    dob: patientData?.dob || 'YYYY-MM-DD',
+    gender: patientData?.gender || "Unknown",
+    height: patientData?.height || "-'-",
+    weight: patientData?.weight || "--- lbs",
+    bmi: patientData?.bmi || "--.-",
+    bloodType: patientData?.bloodType || "--",
+    history: patientData?.history || ["No medical history recorded"],
+    allergies: patientData?.allergies || ['None declared'],
+    medications: patientData?.medications || ['None declared'],
+    insurance: patientData?.insurance || 'Not provided',
+    address: patientData?.address || 'Address not provided',
+    emergencyContact: patientData?.emergencyContact || { name: '-', relation: '-', phone: '-' },
+    image: patientData?.photoURL || patientData?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(patientData?.name || patientData?.fullName || 'P')}&background=0D8ABC&color=fff`,
+    lastVitals: patientData?.lastVitals || { bp: "--/--", heartRate: "-- bpm", temp: "--.-F", oxygen: "--%" },
+    phone: patientData?.phone || patientData?.phoneNumber || "---",
+    email: patientData?.email || "---"
   };
-
-
-
   
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -177,6 +192,14 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
 
 
 
+  if (loadingPatient) {
+    return <div className="flex h-screen items-center justify-center bg-slate-50"><div className="w-12 h-12 border-4 border-[#0A6ED1] border-t-transparent rounded-full animate-spin"></div></div>;
+  }
+
+  if (loadingPatient) {
+    return <div className="flex h-screen items-center justify-center bg-slate-50"><div className="w-12 h-12 border-4 border-[#0A6ED1] border-t-transparent rounded-full animate-spin"></div></div>;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-['Manrope']">
       <DoctorSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -188,7 +211,7 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
         />
         
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-6xl mx-auto">
+          <DoctorPageTransition className="max-w-6xl mx-auto">
             {/* Back Button */}
             <Link to="/doctor/patients" className="inline-flex items-center gap-2 text-slate-500 hover:text-[#0A6ED1] mb-6 font-medium transition-colors">
               <ArrowLeft size={20} /> Back to Patient List
@@ -501,8 +524,10 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
               </motion.div>
             )}
             </AnimatePresence>
-          </div>
+          </DoctorPageTransition>
         </div>
+
+        <DoctorMobileFooter />
       </main>
     </div>
   );

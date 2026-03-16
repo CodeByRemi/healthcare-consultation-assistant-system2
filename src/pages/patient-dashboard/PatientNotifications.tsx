@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNotifications } from "../../context/NotificationContext";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
@@ -6,70 +7,25 @@ import { FaBell, FaCalendarCheck, FaInfoCircle, FaCheckDouble, FaTrash, FaTimes 
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface Notification {
-  id: number;
-  type: "appointment" | "system" | "info";
-  title: string;
-  message: string;
-  details?: string;
-  time: string;
-  read: boolean;
-}
-
 export default function PatientNotifications() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: "appointment",
-      title: "Appointment Confirmed",
-      message: "Your appointment with Dr. Sarah Smith has been confirmed.",
-      details: "Your appointment is scheduled for March 15th, 2024 at 10:00 AM. Location: Main Clinic, Room 302. Please arrive 15 minutes early and bring your ID.",
-      time: "2 hours ago",
-      read: false
-    },
-    {
-      id: 2,
-      type: "system",
-      title: "System Maintenance",
-      message: "Scheduled maintenance tonight at 2:00 AM.",
-      details: "The system will be undergoing scheduled maintenance from 2:00 AM to 4:00 AM. During this time, you may experience intermittent access issues. We apologize for any inconvenience.",
-      time: "5 hours ago",
-      read: true
-    },
-     {
-      id: 3,
-      type: "info",
-      title: "New Health Tip",
-      message: "Check out our latest article on maintaining a healthy lifestyle.",
-      details: "We have published a new article titled '10 Tips for a Healthier You'. Read it in the Health Resources section to learn about balanced diets, regular exercise, and mental well-being.",
-      time: "1 day ago",
-      read: true
-    }
-  ]);
+  const { notifications, markAsRead, markAllAsRead, deleteNotification: contextDeleteNotification } = useNotifications();
+  const [selectedNotification, setSelectedNotification] = useState<any | null>(null);
 
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-    toast.success("Marked all as read");
-  };
-
-  const deleteNotification = (e: React.MouseEvent, id: number) => {
+  const deleteNotification = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    setNotifications(notifications.filter(n => n.id !== id));
+    contextDeleteNotification(id);
     toast.success("Notification dismissed");
     if (selectedNotification?.id === id) {
       setSelectedNotification(null);
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: any) => {
     setSelectedNotification(notification);
-    // Mark as read when opened
     if (!notification.read) {
-       setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+      markAsRead(notification.id);
     }
   };
 

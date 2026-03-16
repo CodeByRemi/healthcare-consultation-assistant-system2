@@ -50,6 +50,27 @@ export default function PatientAppointments() {
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [isRateOpen, setIsRateOpen] = useState(false);
 
+  const placeholderAppointments: Appointment[] = [
+    {
+      id: "placeholder-appointment-1",
+      doctorName: "Doctor Name",
+      specialty: "Specialty",
+      date: "Date",
+      time: "Time",
+      type: "Type",
+      status: "Status"
+    },
+    {
+      id: "placeholder-appointment-2",
+      doctorName: "Doctor Name",
+      specialty: "Specialty",
+      date: "Date",
+      time: "Time",
+      type: "Type",
+      status: "Status"
+    }
+  ];
+
   const handleOpenDetails = (apt: Appointment) => {
     setSelectedAppointment(apt);
     setIsDetailsOpen(true);
@@ -170,17 +191,56 @@ export default function PatientAppointments() {
                     <p className="text-slate-500">Loading appointments...</p>
                   </div>
                 ) : appointments.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm text-center">
-                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-                      <FaCalendarCheck className="text-4xl text-[#0A6ED1] opacity-50" />
+                  <div className="space-y-6">
+                    <div className="flex flex-col items-center justify-center py-12 bg-white rounded-3xl border border-slate-100 shadow-sm text-center">
+                      <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                        <FaCalendarCheck className="text-4xl text-[#0A6ED1] opacity-50" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">Appointments</h3>
+                      <p className="text-slate-500 max-w-md mx-auto mb-6">
+                        This section will show your upcoming consultations.
+                      </p>
+                      <Link to="/patient/book-appointment" className="px-8 py-3 bg-[#0A6ED1] text-white rounded-xl font-semibold hover:bg-[#095bb0] transition-colors shadow-lg shadow-blue-500/20">
+                        Find a Doctor
+                      </Link>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">No Appointments Yet</h3>
-                    <p className="text-slate-500 max-w-md mx-auto mb-8">
-                      You don't have any upcoming consultations scheduled. Book an appointment with a specialist today.
-                    </p>
-                    <Link to="/patient/book-appointment" className="px-8 py-3 bg-[#0A6ED1] text-white rounded-xl font-semibold hover:bg-[#095bb0] transition-colors shadow-lg shadow-blue-500/20">
-                      Find a Doctor
-                    </Link>
+
+                    <div className="grid gap-4">
+                      {placeholderAppointments.map((apt) => (
+                        <div key={apt.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center justify-between gap-6">
+                          <div className="flex gap-4">
+                            <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-[#0A6ED1] text-sm font-bold">
+                              Date
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-bold text-slate-900">{apt.doctorName}</h3>
+                              <p className="text-slate-500 text-sm mb-2">{apt.specialty}</p>
+                              <p className="text-slate-500 text-sm mb-2">Date</p>
+                              <div className="flex items-center gap-4 text-sm text-slate-600">
+                                <span className="flex items-center gap-1.5">
+                                  <FaClock className="text-[#0A6ED1]" /> Time
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                  <FaMapMarkerAlt className="text-[#0A6ED1]" /> Type
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3">
+                            <span className="px-4 py-2 rounded-lg font-medium text-sm bg-slate-100 text-slate-600 border border-slate-200">
+                              Status
+                            </span>
+                            <button
+                              onClick={() => handleOpenDetails(apt)}
+                              className="px-4 py-2 border border-[#0A6ED1] text-[#0A6ED1] hover:bg-blue-50 rounded-lg font-medium transition-colors"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="grid gap-6">

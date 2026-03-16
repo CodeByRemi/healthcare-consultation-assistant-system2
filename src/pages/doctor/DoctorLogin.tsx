@@ -8,8 +8,9 @@ import {
 } from 'react-icons/fa';
 import logo from "../../assets/patientreg.png";
 import { toast } from 'sonner';
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../lib/firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { auth, db } from "../../lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function DoctorLogin() {
   const navigate = useNavigate();
@@ -31,7 +32,25 @@ export default function DoctorLogin() {
     setIsLoading(true);
     
     try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      // Check if suspended
+      const doctorDocRef = doc(db, "doctors", user.uid);
+      const doctorDoc = await getDoc(doctorDocRef);
+
+      if (doctorDoc.exists()) {
+        const doctorData = doctorDoc.data();
+        if (doctorData.verificationStatus === "Suspended") {
+          await signOut(auth);
+          toast.error("Account Suspended", {
+            description: "Your account effectively has been suspended by the administrator. Please contact support."
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       toast.success('Welcome back, Doctor!');
       navigate('/doctor/dashboard');
     } catch (error: unknown) {
@@ -52,7 +71,7 @@ export default function DoctorLogin() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-['Manrope'] bg-slate-50">
       {/* Left Panel - Branding & Info */}
-      <div className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex-col justify-between relative overflow-hidden">
         {/* Background Pattern Overlay */}
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=2864&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
         
@@ -100,16 +119,10 @@ export default function DoctorLogin() {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto w-full">
-        <div className="w-full max-w-md bg-white p-8 lg:p-10 rounded-3xl shadow-xl border border-slate-100">
+      <div className="min-h-screen lg:min-h-0 lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto w-full">
+        <div className="w-full max-w-md bg-transparent lg:bg-white p-0 lg:p-10 rounded-none lg:rounded-3xl shadow-none lg:shadow-xl border-0 lg:border border-slate-100">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-slate-900 mb-2 font-['Newsreader']">Practitioner Login</h2>
-            <p className="text-slate-500">
-              New here?{' '}
-              <Link to="/doctor" className="text-[#0da540] font-semibold hover:text-[#087a2f] transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-px after:bg-[#0da540] after:scale-x-0 hover:after:scale-x-100 after:transition-transform">
-                Apply to join network
-              </Link>
-            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

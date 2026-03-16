@@ -31,6 +31,7 @@ import DoctorProfile from "./pages/doctor-dashboard/DoctorProfile";
 import MyPatients from "./pages/doctor-dashboard/MyPatients";
 import PatientDetails from "./pages/doctor-dashboard/PatientDetails";
 import DoctorSchedule from "./pages/doctor-dashboard/DoctorSchedule";
+import DoctorBlockedBooking from "./pages/doctor-dashboard/DoctorBlockedBooking";
 import DoctorNotifications from "./pages/doctor-dashboard/DoctorNotifications";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUpdatePassword from "./pages/admin/UpdatePassword";
@@ -45,7 +46,7 @@ import DoctorRegistrationStep4 from "./pages/doctor/DoctorRegistrationStep4";
 import AdminLogin from "./pages/admin/AdminLogin";
 
 // In your Routes
-
+  
 function App() {
   return (
     <>
@@ -68,6 +69,8 @@ function App() {
         <Route path="/patient/dashboard" element={<PatientDashboard />} />
         <Route path="/patient/appointments" element={<PatientAppointments />} />
         <Route path="/patient/book-appointment" element={<BookAppointment />} />
+        <Route path="/book-appointment" element={<BookAppointment />} />
+        <Route path="/patient/book" element={<BookAppointment />} />
         <Route path="/patient/chat" element={<PatientChat />} />
         <Route path="/patient/ai-chat" element={<AIChat />} />
         <Route path="/patient/ai-chat/history" element={<AIChatHistory />} />
@@ -78,6 +81,7 @@ function App() {
         <Route path="/doctor/settings" element={<DoctorSettings />} />
         <Route path="/doctor/notifications" element={<DoctorNotifications />} />
         <Route path="/doctor/schedule" element={<DoctorSchedule />} />
+        <Route path="/doctor/blocked-booking" element={<DoctorBlockedBooking />} />
         <Route path="/doctor/availability" element={<DoctorAvailability />} />
         <Route path="/doctor/patients" element={<MyPatients />} />
         <Route path="/doctor/patients/:id" element={<PatientDetails />} />

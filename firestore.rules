@@ -31,6 +31,24 @@ service cloud.firestore {
       match /chats/{chatId} {
         allow read, write: if isAuthenticated() && isOwner(userId);
       }
+
+      // Allow access to chatSessions subcollection
+      match /chatSessions/{sessionId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+        
+        match /{document=**} {
+          allow read, write: if isAuthenticated() && isOwner(userId);
+        }
+      }
+      
+      // Allow access to aiConversations subcollection
+      match /aiConversations/{conversationId} {
+        allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        
+        match /{document=**} {
+          allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        }
+      }
     }
 
     // Doctor Profiles
@@ -45,6 +63,11 @@ service cloud.firestore {
     	allow read: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
+    }
+
+    // Admin Profiles (For initial setup)
+    match /admins/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
     }
 
     // Default deny

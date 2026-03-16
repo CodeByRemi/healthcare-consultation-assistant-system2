@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { 
+import {
   User,
   Mail,
   Phone,
@@ -13,29 +13,78 @@ import {
 import { useNavigate } from "react-router-dom";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import { useAuth } from "../../context/AuthContext";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { toast } from "sonner";
 
 export default function DoctorSettings() {
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const [doctorData, setDoctorData] = useState({
-    fullName: "Dr. John Doe",
-    email: "doctor@healthcare.com",
-    phone: "+1 (555) 123-4567",
-    address: "Medical Center, City",
-    specialization: "Cardiology"
+    fullName: "",
+    email: "",
+    phone: "",
+    address: "",
+    specialization: ""
   });
 
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState(doctorData);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!currentUser) return;
+      try {
+        const docRef = doc(db, "doctors", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const loadedData = {
+            fullName: data.fullName || data.name || "",
+            email: data.email || currentUser.email || "",
+            phone: data.phone || "",
+            address: data.hospital || data.address || "", // Map hospital/address
+            specialization: data.specialty || data.specialization || ""
+          };
+          setDoctorData(loadedData);
+          setFormData(loadedData);
+        }
+      } catch (error) {
+        console.error("Error fetching doctor profile:", error);
+      }
+    };
+    fetchProfile();
+  }, [currentUser]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveProfile = () => {
-    setDoctorData(formData);
-    setEditMode(false);
+  const handleSaveProfile = async () => {
+    if (!currentUser) return;
+    try {
+      const docRef = doc(db, "doctors", currentUser.uid);
+      await updateDoc(docRef, {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        hospital: formData.address, // Mapping address back to hospital depending on schema
+        address: formData.address,
+        specialty: formData.specialization,
+        specialization: formData.specialization
+      });
+      setDoctorData(formData);
+      setEditMode(false);
+      toast.success("Profile saved successfully");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("Failed to save changes");
+    }
   };
 
   return (
@@ -48,7 +97,7 @@ export default function DoctorSettings() {
           isSidebarOpen={isSidebarOpen}
         />
         
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
           <div className="max-w-4xl mx-auto">
             <header className="mb-8">
               <h1 className="text-3xl font-bold text-slate-900 mb-2">Settings</h1>
@@ -90,7 +139,9 @@ export default function DoctorSettings() {
                         />
                       </div>
                     ) : (
-                      <p className="text-slate-900 font-medium py-2">{doctorData.fullName}</p>
+                      <p className={`font-medium py-2 ${doctorData.fullName ? 'text-slate-900' : 'text-slate-400 italic'}`}>
+                        {doctorData.fullName || "Not specified"}
+                      </p>
                     )}
                   </div>
 
@@ -109,7 +160,9 @@ export default function DoctorSettings() {
                         />
                       </div>
                     ) : (
-                      <p className="text-slate-900 font-medium py-2">{doctorData.email}</p>
+                      <p className={`font-medium py-2 ${doctorData.email ? 'text-slate-900' : 'text-slate-400 italic'}`}>
+                        {doctorData.email || "Not specified"}
+                      </p>
                     )}
                   </div>
 
@@ -128,7 +181,9 @@ export default function DoctorSettings() {
                         />
                       </div>
                     ) : (
-                      <p className="text-slate-900 font-medium py-2">{doctorData.phone}</p>
+                      <p className={`font-medium py-2 ${doctorData.phone ? 'text-slate-900' : 'text-slate-400 italic'}`}>
+                        {doctorData.phone || "Not specified"}
+                      </p>
                     )}
                   </div>
 
@@ -147,14 +202,28 @@ export default function DoctorSettings() {
                         />
                       </div>
                     ) : (
-                      <p className="text-slate-900 font-medium py-2">{doctorData.address}</p>
+                      <p className={`font-medium py-2 ${doctorData.address ? 'text-slate-900' : 'text-slate-400 italic'}`}>
+                        {doctorData.address || "Not specified"}
+                      </p>
                     )}
                   </div>
 
                   {/* Specialization */}
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Specialization</label>
-                    <p className="text-slate-900 font-medium py-2">{doctorData.specialization}</p>
+                    {editMode ? (
+                      <input 
+                          type="text" 
+                          name="specialization" 
+                          value={formData.specialization} 
+                          onChange={handleInputChange} 
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0A6ED1]/20 focus:border-[#0A6ED1] transition-all" 
+                      />
+                    ) : (
+                      <p className={`font-medium py-2 ${doctorData.specialization ? 'text-slate-900' : 'text-slate-400 italic'}`}>
+                        {doctorData.specialization || "Not specified"}
+                      </p>
+                    )}
                   </div>
 
                   {/* Action Buttons */}
@@ -285,6 +354,8 @@ export default function DoctorSettings() {
             </div>
           </div>
         </div>
+
+        <DoctorMobileFooter />
       </main>
     </div>
   );

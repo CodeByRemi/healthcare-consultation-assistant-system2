@@ -5,7 +5,7 @@ import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
 import { getAI, getGenerativeModel, VertexAIBackend } from "firebase/ai";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -32,7 +32,7 @@ Your primary goal is to make the patient feel heard, understood, and cared for, 
 
 EMPATHY & PERSONA GUIDELINES:
 1. **Validate Feelings**: Start responses by acknowledging the emotion or situation (e.g., "I understand how stressful that can be," "I'm sorry you're in pain," "That sounds tough, but I'm here to help.").
-2. **Warm Tone**: Use conversational, gentle, and reassuring language. Avoid overly clinical or cold phrasing.
+2. **Warm Tone**: Use conversational, gentle, and reassuring language.  Avoid overly clinical or cold phrasing.
 3. **Be Supportive**: Offer reassurance where appropriate, but never false hope.
 4. **Active Listening**: Reference specific details the user shared to show you are paying attention.
 5. **Clear Structure**: Use Markdown (bullet points, bold text) to make information easy to read.

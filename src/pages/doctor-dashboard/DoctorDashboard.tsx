@@ -5,12 +5,13 @@ import { doc, getDoc, collection, query, where, orderBy, onSnapshot } from "fire
 import { db } from "../../lib/firebase";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
+import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
+import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { 
   FaCalendarCheck, 
   FaEllipsisH,
   FaUserInjured,
   FaClipboardList,
-  FaStar,
   FaPlus
 } from "react-icons/fa";
 
@@ -36,7 +37,6 @@ export default function DoctorDashboard() {
     { label: "Total Patients", value: "0", change: "0%", icon: FaUserInjured, color: "bg-blue-50 text-blue-600" },
     { label: "Today's Appts", value: "0", change: "Active", icon: FaCalendarCheck, color: "bg-purple-50 text-purple-600" },
     { label: "Completed", value: "0", change: "Total", icon: FaClipboardList, color: "bg-emerald-50 text-emerald-600" },
-    { label: "Rating", value: "0.0", change: "+0.0", icon: FaStar, color: "bg-yellow-50 text-yellow-600" },
   ]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -83,20 +83,12 @@ export default function DoctorDashboard() {
                 if (data.patientId) uniquePatients.add(data.patientId);
              });
 
-             // --- DUMMY DATA INJECTION (If no real data found) ---
+             // Placeholder injection for empty states
              if (appts.length === 0 && completedAppts === 0) {
-                 const dummyAppts: Appointment[] = [
-                     { id: 'd1', patientName: 'Sarah Johnson', patientId: 'p1', date: today, time: '09:00 AM', type: 'General Consultation', status: 'confirmed', notes: 'Persistent headaches' },
-                     { id: 'd2', patientName: 'Michael Chen', patientId: 'p2', date: today, time: '10:30 AM', type: 'Follow-up', status: 'confirmed', notes: 'Blood pressure check' },
-                     { id: 'd3', patientName: 'Emily Davis', patientId: 'p3', date: today, time: '02:00 PM', type: 'Specialist Referral', status: 'pending', notes: 'Dermatology consultation' },
-                 ];
-                 // Inject logic
-                 appts.push(...dummyAppts);
                  setStats([
-                    { label: "Total Patients", value: "128", change: "+12%", icon: FaUserInjured, color: "bg-blue-50 text-blue-600" },
-                    { label: "Today's Appts", value: "3", change: "Active", icon: FaCalendarCheck, color: "bg-purple-50 text-purple-600" },
-                    { label: "Completed", value: "452", change: "Total", icon: FaClipboardList, color: "bg-emerald-50 text-emerald-600" },
-                    { label: "Rating", value: "4.9", change: "+0.2", icon: FaStar, color: "bg-yellow-50 text-yellow-600" },
+                { label: "Total Patients", value: "0", change: "—", icon: FaUserInjured, color: "bg-blue-50 text-blue-600" },
+                { label: "Today's Appts", value: "0", change: "—", icon: FaCalendarCheck, color: "bg-purple-50 text-purple-600" },
+                { label: "Completed", value: "0", change: "—", icon: FaClipboardList, color: "bg-emerald-50 text-emerald-600" },
                  ]);
              } else {
                  // Real Stats
@@ -104,7 +96,6 @@ export default function DoctorDashboard() {
                     { label: "Total Patients", value: uniquePatients.size.toString(), change: "+5%", icon: FaUserInjured, color: "bg-blue-50 text-blue-600" },
                     { label: "Today's Appts", value: appts.filter(a => a.date === today).length.toString(), change: "Active", icon: FaCalendarCheck, color: "bg-purple-50 text-purple-600" },
                     { label: "Completed", value: completedAppts.toString(), change: "Total", icon: FaClipboardList, color: "bg-emerald-50 text-emerald-600" },
-                    { label: "Rating", value: "4.9", change: "+0.2", icon: FaStar, color: "bg-yellow-50 text-yellow-600" },
                  ]);
              }
              // -----------------------------------------------------
@@ -138,10 +129,10 @@ export default function DoctorDashboard() {
         />
         
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-7xl mx-auto space-y-8">
+          <DoctorPageTransition className="max-w-7xl mx-auto space-y-8">
             
             {/* Intro */}
-            <header className="flex justify-between items-end">
+            <header className="flex flex-col md:flex-row justify-between md:items-end gap-3 md:gap-4">
                 <div>
                    <h1 className="text-3xl md:text-4xl font-['Newsreader'] font-medium mb-1 text-slate-900">
                      Good morning, <span className="text-[#0A6ED1]">
@@ -162,18 +153,18 @@ export default function DoctorDashboard() {
             </header>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {stats.map((stat, idx) => (
-                    <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-start justify-between hover:shadow-md transition-shadow">
-                        <div>
-                            <p className="text-slate-500 text-sm font-medium mb-1">{stat.label}</p>
-                            <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
-                            <span className={`text-xs font-semibold ${stat.change.includes('+') ? 'text-green-600' : 'text-slate-400'}`}>
+                <div key={idx} className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-start justify-between hover:shadow-md transition-shadow gap-2 md:gap-0">
+                        <div className="order-2 md:order-1">
+                            <p className="text-slate-500 text-xs md:text-sm font-medium mb-1">{stat.label}</p>
+                            <h3 className="text-xl md:text-2xl font-bold text-slate-900">{stat.value}</h3>
+                            <span className={`text-[10px] md:text-xs font-semibold ${stat.change.includes('+') ? 'text-green-600' : 'text-slate-400'}`}>
                               {stat.change}
                             </span>
                         </div>
-                         <div className={`p-3 rounded-xl ${stat.color}`}>
-                            <stat.icon className="w-5 h-5 text-current" />
+                         <div className={`p-2 md:p-3 rounded-xl ${stat.color} w-fit order-1 md:order-2`}>
+                            <stat.icon className="w-4 h-4 md:w-5 md:h-5 text-current" />
                         </div>
                     </div>
                 ))}
@@ -183,14 +174,14 @@ export default function DoctorDashboard() {
                 {/* Upcoming Appointments */}
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col p-6">
                     {/* Header */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4">
                         <div>
                             <h2 className="text-2xl font-serif font-bold text-slate-900 mb-1">Today's Schedule</h2>
                             <p className="text-sm text-slate-500">
                                 {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • You have {appointments.length} remaining appointments
                             </p>
                         </div>
-                        <Link to="/doctor/patients" className="bg-[#0A6ED1] hover:bg-[#0958a8] text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
+                        <Link to="/doctor/patients" className="w-full sm:w-auto justify-center bg-[#0A6ED1] hover:bg-[#0958a8] text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
                             <FaPlus className="text-sm" /> New Appointment
                         </Link>
                     </div>
@@ -204,44 +195,12 @@ export default function DoctorDashboard() {
                     </div>
 
                     {/* List */}
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-2">
                         {isLoading ? (
-                            <div className="py-12 text-center text-slate-400">Loading schedule...</div>
-                        ) : (
-                            // Render real data OR placeholders if empty, to ensure layout is visible
-                            (appointments.length > 0 ? appointments : [
-                                {
-                                    id: 'ph-1',
-                                    patientName: 'Patient Name',
-                                    patientId: 'demo-patient',
-                                    date: new Date().toISOString(),
-                                    time: '09:00 AM',
-                                    type: 'Consultation Type',
-                                    status: 'completed' as const
-                                },
-                                {
-                                    id: 'ph-2',
-                                    patientName: 'Patient Name',
-                                    patientId: 'demo-patient',
-                                    date: new Date().toISOString(),
-                                    time: '10:00 AM',
-                                    type: 'Consultation Type',
-                                    status: 'confirmed' as const // This will trigger "Active" look
-                                },
-                                {
-                                    id: 'ph-3',
-                                    patientName: 'Patient Name',
-                                    patientId: 'demo-patient',
-                                    date: new Date().toISOString(),
-                                    time: '11:00 AM',
-                                    type: 'Consultation Type',
-                                    status: 'pending' as const
-                                }
-                            ]).map((appt, index) => {
-                                // Simulate one being "In Progress" or active for the visual demo
-                                // If using placeholders, make the second one active to match the design request
-                                const isPlaceholder = appt.id.startsWith('ph-');
-                                const isActive = isPlaceholder ? (index === 1) : (index === 0 && appt.status === 'confirmed');
+                            <div className="col-span-2 py-12 text-center text-slate-400">Loading schedule...</div>
+                        ) : appointments.length > 0 ? (
+                            appointments.map((appt, index) => {
+                                const isActive = (index === 0 && appt.status === 'confirmed');
                                 
                                 return (
                                     <div 
@@ -250,7 +209,7 @@ export default function DoctorDashboard() {
                                             // Navigate to patient details on row click
                                             navigate(`/doctor/patients/${appt.patientId}`);
                                         }}
-                                        className={`cursor-pointer grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr_0.5fr] items-center p-4 rounded-2xl transition-all gap-4 md:gap-0 ${
+                                        className={`cursor-pointer grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr_0.5fr] items-center p-3 md:p-4 rounded-2xl transition-all gap-4 md:gap-0 ${
                                             isActive ? 'bg-[#10B981]/5 border border-[#10B981]/10' : 'hover:bg-slate-50 border border-transparent'
                                         }`}
                                     >
@@ -259,7 +218,7 @@ export default function DoctorDashboard() {
                                             <span className="md:hidden text-xs font-bold text-slate-400 uppercase tracking-wider">Time</span>
                                             <div>
                                                 <div className={`font-bold ${isActive ? 'text-[#10B981]' : 'text-slate-900'}`}>{appt.time}</div>
-                                                <div className="text-xs text-slate-500 font-medium">{index === 0 ? '45 mins' : isActive ? 'In Progress' : '30 mins'}</div>
+                                                <div className="text-xs text-slate-500 font-medium">{isActive ? 'In Progress' : 'Upcoming'}</div>
                                             </div>
                                         </div>
 
@@ -274,7 +233,7 @@ export default function DoctorDashboard() {
                                                 </div>
                                                 <div>
                                                     <div className="font-bold text-slate-900">{appt.patientName}</div>
-                                                    <div className="text-xs text-slate-500">ID: #{appt.patientId ? appt.patientId.replace('p', 'MS-') : 'UNKNOWN'}</div>
+                                                    <div className="text-xs text-slate-500">ID: #{appt.patientId ? appt.patientId.substring(0, 8) : 'UNKNOWN'}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -296,7 +255,7 @@ export default function DoctorDashboard() {
                                         </div>
 
                                         {/* Actions */}
-                                        <div className="flex justify-end gap-2 mt-2 md:mt-0" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex justify-end md:justify-end gap-2 mt-2 md:mt-0" onClick={(e) => e.stopPropagation()}>
                                             {isActive && (
                                                 <button className="p-2 bg-[#10B981]/10 text-[#10B981] rounded-lg hover:bg-[#10B981]/20 transition-colors" title="Start Consultation">
                                                     <FaCalendarCheck />
@@ -312,6 +271,12 @@ export default function DoctorDashboard() {
                                     </div>
                                 );
                             })
+                        ) : (
+                            <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-100">
+                                <FaCalendarCheck className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                <h3 className="text-slate-900 font-bold mb-1">No Appointments Today</h3>
+                                <p className="text-slate-500 text-sm">Your schedule is clear for now.</p>
+                            </div>
                         )}
                     </div>
 
@@ -327,10 +292,10 @@ export default function DoctorDashboard() {
                 </div>
             </div>
 
-          </div>
+          </DoctorPageTransition>
         </div>
         
-        {/* Mobile footer for doctors if needed, can reuse or create specific */}
+        <DoctorMobileFooter />
       </main>
     </div>
   );
