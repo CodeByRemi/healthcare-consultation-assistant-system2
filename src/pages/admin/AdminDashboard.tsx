@@ -101,20 +101,20 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 relative overflow-hidden">
+    <div className="fixed inset-0 bg-gray-50 flex overflow-hidden">
       <AdminSidebar 
         currentTab={currentTab} 
         setCurrentTab={setCurrentTab} 
         isOpen={isSidebarOpen}
       />
 
-      <main className="flex-1 overflow-y-auto w-full">
+      <main className="flex-1 overflow-y-auto w-full h-full pb-20 md:pb-0">
         
         {/* Header */}
         <motion.header 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="sticky top-0 z-10 bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between"
+          className="sticky top-0 z-10 bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between shadow-sm"
         >
           <div className="flex items-center gap-4">
             <button 
@@ -127,7 +127,7 @@ export default function AdminDashboard() {
               </svg>
             </button>
             <img src={logo} alt="Medicare" className="h-8 w-8 rounded-lg object-contain" />
-            <h1 className="text-xl font-bold text-gray-800 capitalize">{currentTab}</h1>
+            <h1 className="text-xl font-bold text-gray-800 capitalize hidden md:block">{currentTab}</h1>
           </div>
 
           <div className="flex items-center gap-4">
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
         </motion.header>
 
         {/* Content */}
-        <div className="p-6 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto">
+        <div className="p-6 md:p-8 pb-40 md:pb-8 max-w-7xl mx-auto min-h-screen">
           {currentTab === 'dashboard' && <DashboardOverview />}
           {currentTab === 'doctors' && <DoctorsListView />}
           {currentTab === 'patients' && <PatientsList />}
@@ -195,6 +195,7 @@ export default function AdminDashboard() {
 
 
 function DashboardOverview() {
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState([
     { label: "Total Doctors", value: "0", change: "0", trend: "neutral" },
     { label: "Total Patients", value: "0", change: "0", trend: "neutral" },
@@ -215,10 +216,26 @@ function DashboardOverview() {
         ]);
       } catch (error) {
         console.error("Error fetching stats:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchStats();
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="w-full bg-gray-200 h-1.5 rounded-full"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

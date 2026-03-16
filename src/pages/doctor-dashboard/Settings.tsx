@@ -290,18 +290,41 @@ export default function DoctorSettings() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between py-4 border-b border-slate-100">
-                    <div>
-                      <p className="font-medium text-slate-900">Two-Factor Authentication</p>
-                      <p className="text-sm text-slate-500">Add an extra layer of security</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" />
-                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
+
+
+
+                  {/* Mobile Logout (replaces Session Management) */}
+                  <div className="md:hidden py-4 border-t border-slate-100 mt-4">
+                    <button 
+                      onClick={async () => {
+                        try {
+                           // Try existing auth logout first
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          if ((currentUser as any)?.logout) {
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              await (currentUser as any).logout();
+                          } else {
+                              // Fallback to direct firebase signOut if context logout isn't available
+                              const { signOut } = await import("firebase/auth");
+                              const { auth } = await import("../../lib/firebase");
+                              await signOut(auth);
+                          }
+                          toast.success("Logged out successfully");
+                          navigate("/doctor/login");
+                        } catch (error) {
+                          console.error("Logout error", error);
+                          toast.error("Failed to log out");
+                        }
+                      }}
+                      className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                    >
+                      <Lock size={18} />
+                      Sign Out
+                    </button>
                   </div>
 
-                  <div className="flex items-center justify-between py-4">
+                  {/* Desktop Session Management */}
+                  <div className="hidden md:flex items-center justify-between py-4">
                     <div>
                       <p className="font-medium text-slate-900">Session Management</p>
                       <p className="text-sm text-slate-500">View and manage active sessions</p>

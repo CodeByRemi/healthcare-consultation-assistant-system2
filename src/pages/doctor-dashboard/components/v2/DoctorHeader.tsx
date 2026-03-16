@@ -1,6 +1,7 @@
 import { FaBell, FaUserMd } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
+import { useNotifications } from "../../../../context/NotificationContext";
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
@@ -13,6 +14,7 @@ interface HeaderProps {
 
 export default function DoctorHeader({ toggleSidebar }: HeaderProps) {
   const { currentUser } = useAuth();
+  const { unreadCount } = useNotifications();
   const [doctorName, setDoctorName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -59,7 +61,11 @@ export default function DoctorHeader({ toggleSidebar }: HeaderProps) {
       <div className="flex items-center gap-2 md:gap-4">
         <Link to="/doctor/notifications" className="p-2 text-slate-400 hover:text-[#0A6ED1] hover:bg-slate-50 rounded-full transition-colors relative">
           <FaBell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </Link>
 
         <div className="h-8 w-px bg-slate-200 mx-2 hidden md:block"></div>

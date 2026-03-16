@@ -153,6 +153,7 @@ export default function DoctorAvailability() {
                   />
                 </div>
 
+
                 {/* End time */}
                 <div className="flex flex-col gap-2">
                   <label htmlFor="endTime" className="text-sm font-semibold text-slate-700">End time<span className="text-red-500">*</span></label>
@@ -163,21 +164,6 @@ export default function DoctorAvailability() {
                     onChange={e => setEndTime(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent"
                   />
-                </div>
-
-                {/* Mode */}
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="mode" className="text-sm font-semibold text-slate-700">Mode</label>
-                  <select
-                    id="mode"
-                    value={mode}
-                    onChange={e => setMode(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent bg-white"
-                  >
-                    <option>In-person</option>
-                    <option>Virtual</option>
-                    <option>Either</option>
-                  </select>
                 </div>
 
                 {/* Repeat weekly */}

@@ -137,36 +137,34 @@ export default function DoctorSettings() {
                         </div>
 
                         <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-100 dark:border-slate-600">
-                             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Security</h3>
-                             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Manage your password and session security.</p>
-                             <div className="flex flex-col gap-3">
-                                 <Link to="/doctor/update-password" className="text-center px-4 py-2 bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-500 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors">
-                                    Change Password
-                                 </Link>
-                                 
-                                 <button 
-                                    onClick={async () => {
-                                        try {
-                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                            if ((currentUser as any)?.logout) {
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                await (currentUser as any).logout();
-                                            } else if (logout) {
-                                                await logout();
-                                            }
-                                            toast.success("Logged out successfully");
-                                            navigate("/doctor/login");
-                                        } catch (error) {
-                                            console.error(error);
-                                            toast.error("Failed to log out");
-                                        }
-                                    }}
-                                    className="md:hidden w-full px-4 py-2 bg-rose-50 border border-rose-200 text-rose-600 font-bold rounded-lg hover:bg-rose-100 transition-colors shadow-sm flex items-center justify-center gap-2 text-sm"
-                                >
-                                    <FaSignOutAlt /> Log Out
-                                </button>
-                             </div>
+                             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Password</h3>
+                             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Update your password to keep your account secure.</p>
+                             <Link to="/doctor/update-password" className="px-4 py-2 bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-500 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors inline-block">
+                                Change Password
+                             </Link>
                         </div>
+
+                        <button 
+                            onClick={async () => {
+                                try {
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    if ((currentUser as any)?.logout) {
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                        await (currentUser as any).logout();
+                                    } else if (logout) {
+                                        await logout();
+                                    }
+                                    toast.success("Logged out successfully");
+                                    navigate("/doctor/login");
+                                } catch (error) {
+                                    console.error(error);
+                                    toast.error("Failed to log out");
+                                }
+                            }}
+                            className="md:hidden w-full p-4 bg-rose-50 border border-rose-200 text-rose-600 font-bold rounded-xl hover:bg-rose-100 transition-colors shadow-sm flex items-center justify-center gap-2 mt-6"
+                        >
+                            <FaSignOutAlt /> Log Out
+                        </button>
                     </div>
                 )}
 
