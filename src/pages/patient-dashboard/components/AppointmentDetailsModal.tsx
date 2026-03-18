@@ -111,15 +111,6 @@ export default function AppointmentDetailsModal({ appointment, isOpen, onClose, 
                       </a>
                   </div>
               )}
-              
-              {appointment.type !== 'Video Consultation' && (
-                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <p className="text-xs font-bold text-slate-400 uppercase mb-1">Location</p>
-                      <p className="text-slate-700 text-sm font-medium">
-                        {appointment.location || "Location"}
-                      </p>
-                  </div>
-              )}
 
               {/* Notes */}
               <div>

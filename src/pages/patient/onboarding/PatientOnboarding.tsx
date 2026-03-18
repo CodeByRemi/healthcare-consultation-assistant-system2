@@ -26,6 +26,12 @@ const steps = [
   { id: 3, title: "Emergency Contact", icon: FaPhone },
 ];
 
+const stepRequiredFields: Record<number, (keyof OnboardingData)[]> = {
+  1: ["dob", "gender", "address", "bloodGroup"],
+  2: ["allergies", "conditions", "medications"],
+  3: ["emergencyName", "emergencyPhone", "emergencyRelation"],
+};
+
 export default function PatientOnboarding() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -48,7 +54,20 @@ export default function PatientOnboarding() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const validateStep = (currentStep: number) => {
+    const requiredFields = stepRequiredFields[currentStep] ?? [];
+    const hasMissingFields = requiredFields.some((field) => !formData[field].trim());
+
+    if (hasMissingFields) {
+      toast.error("Please fill in all fields before continuing.");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleNext = () => {
+    if (!validateStep(step)) return;
     if (step < 3) setStep(step + 1);
   };
 
@@ -61,9 +80,13 @@ export default function PatientOnboarding() {
     
     // Prevent submission if not on final step
     if (step < 3) {
-      handleNext();
+      if (validateStep(step)) {
+        setStep(step + 1);
+      }
       return;
     }
+
+    if (!validateStep(3)) return;
 
     if (!currentUser) return;
 
@@ -91,7 +114,7 @@ export default function PatientOnboarding() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row min-h-150">
         
         {/* Sidebar / Progress */}
-        <div className="bg-[#0A6ED1] p-8 text-white md:w-1/3 flex flex-col justify-between">
+        <div className="hidden bg-[#0A6ED1] p-8 text-white lg:flex lg:w-1/3 lg:flex-col lg:justify-between">
           <div>
             <h1 className="text-3xl font-['Newsreader'] font-bold mb-2">Welcome!</h1>
             <p className="text-blue-100 mb-12">Let's set up your profile to give you the best care.</p>
@@ -180,6 +203,7 @@ export default function PatientOnboarding() {
                       value={formData.bloodGroup}
                       onChange={handleChange}
                       className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent"
+                      required
                     >
                       <option value="">Select Blood Group</option>
                       <option value="A+">A+</option>
@@ -213,7 +237,8 @@ export default function PatientOnboarding() {
                       onChange={handleChange}
                       rows={3}
                       className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent resize-none"
-                      placeholder="e.g. Peanuts, Penicillin (Leave empty if none)"
+                      placeholder="e.g. Peanuts, Penicillin (Type 'None' if not applicable)"
+                      required
                     />
                   </div>
 
@@ -225,7 +250,8 @@ export default function PatientOnboarding() {
                       onChange={handleChange}
                       rows={3}
                       className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent resize-none"
-                      placeholder="e.g. Diabetes, Hypertension (Leave empty if none)"
+                      placeholder="e.g. Diabetes, Hypertension (Type 'None' if not applicable)"
+                      required
                     />
                   </div>
 
@@ -238,6 +264,7 @@ export default function PatientOnboarding() {
                       rows={3}
                       className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent resize-none"
                       placeholder="List any medications you currently take"
+                      required
                     />
                   </div>
                 </motion.div>

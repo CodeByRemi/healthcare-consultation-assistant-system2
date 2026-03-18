@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { toast } from "sonner";
+import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
@@ -75,14 +77,47 @@ const MOCK_MESSAGES_DATA: Record<string, Message[]> = {
   ]
 };
 
+interface AppointmentRecord {
+  id: string;
+  status: string;
+  doctorName?: string;
+  consultationEndedByDoctor?: boolean;
+  ratingSubmitted?: boolean;
+}
+
+interface PatientFirestoreData {
+  name?: string;
+  fullName?: string;
+  dob?: string;
+  gender?: string;
+  height?: string;
+  weight?: string;
+  bmi?: string;
+  bloodType?: string;
+  history?: string[];
+  allergies?: string;
+  medications?: string;
+  insurance?: string;
+  address?: string;
+  emergencyContact?: { name: string; relation: string; phone: string };
+  photoURL?: string;
+  image?: string;
+  lastVitals?: { bp: string; heartRate: string; temp: string; oxygen: string };
+  phone?: string;
+  phoneNumber?: string;
+  email?: string;
+}
+
 export default function PatientDetails() { // Dynamic route /doctor/patients/:id
   const { id } = useParams();
+  const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
 
-  
-  const [patientData, setPatientData] = useState<any>(null);
+  const [patientData, setPatientData] = useState<PatientFirestoreData | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  const [activeAppointment, setActiveAppointment] = useState<AppointmentRecord | null>(null);
+  const [endingConsultation, setEndingConsultation] = useState(false);
 
   useEffect(() => {
     const fetchPatientData = async () => {
@@ -103,6 +138,78 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
     };
     fetchPatientData();
   }, [id]);
+
+  // Fetch the confirmed/active appointment between this doctor and this patient
+  useEffect(() => {
+    const fetchAppointment = async () => {
+      if (!id || !currentUser) return;
+      try {
+        const q = query(
+          collection(db, "appointments"),
+          where("doctorId", "==", currentUser.uid),
+          where("patientId", "==", id)
+        );
+        const snap = await getDocs(q);
+        // Pick the most relevant: confirmed first, then pending, then completed
+        const priority = ["confirmed", "pending", "completed"];
+        let best: AppointmentRecord | null = null;
+        snap.forEach((d) => {
+          const data = d.data();
+          const appt: AppointmentRecord = { id: d.id, status: String(data.status || ""), doctorName: String(data.doctorName || ""), consultationEndedByDoctor: Boolean(data.consultationEndedByDoctor), ratingSubmitted: Boolean(data.ratingSubmitted) };
+          if (!best) { best = appt; return; }
+          if (priority.indexOf(appt.status) < priority.indexOf(best.status)) best = appt;
+        });
+        setActiveAppointment(best);
+      } catch (err) {
+        console.error("Error fetching appointment", err);
+      }
+    };
+    fetchAppointment();
+  }, [id, currentUser]);
+
+  const doEndConsultation = async () => {
+    if (!activeAppointment || !id) return;
+    try {
+      setEndingConsultation(true);
+      await updateDoc(doc(db, "appointments", activeAppointment.id), {
+        status: "completed",
+        consultationEndedByDoctor: true,
+        consultationEndedAt: new Date().toISOString(),
+        allowRating: true,
+        ratingSubmitted: false,
+        updatedAt: new Date().toISOString(),
+      });
+
+      const drName = activeAppointment.doctorName || "your doctor";
+      await addDoc(collection(db, "notifications"), {
+        userId: id,
+        type: "appointment",
+        title: "Rate Your Doctor",
+        message: `Your consultation with ${drName} has ended. How was your experience?`,
+        details: activeAppointment.id,
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+
+      setActiveAppointment((prev) => prev ? { ...prev, status: "completed", consultationEndedByDoctor: true } : prev);
+      toast.success("Consultation ended. Patient has been notified.");
+    } catch (err) {
+      console.error("Error ending consultation", err);
+      toast.error("Failed to end consultation. Please try again.");
+    } finally {
+      setEndingConsultation(false);
+    }
+  };
+
+  const handleEndConsultation = () => {
+    toast("Are you sure you want to end this consultation?", {
+      description: "The patient will be notified and can rate their experience.",
+      action: {
+        label: "End Consultation",
+        onClick: () => { void doEndConsultation(); },
+      },
+    });
+  };
 
   const patient = {
     id: id || "---",
@@ -170,7 +277,8 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
             setLoadingSessions(false);
         }, 500);
     }
-  }, [activeTab]); // activeSessionId omitted to prevent reset on selection
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]); // activeSessionId intentionally omitted to prevent session reset on selection
 
   // Load Messages when Session Changes
   useEffect(() => {
@@ -231,8 +339,23 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
                       <span>ID: #{patient.id}</span>
                     </div>
                   </div>
-                  <div className="flex rounded-lg p-1">
-                    {/* Buttons removed in favor of Underline Tabs below header card */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mt-2 md:mt-0">
+                    {activeAppointment && activeAppointment.status !== "completed" && (
+                      <button
+                        onClick={handleEndConsultation}
+                        disabled={endingConsultation}
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-xl font-bold hover:bg-red-100 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed text-sm w-full sm:w-auto"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        {endingConsultation ? "Ending..." : "Stop Appointment"}
+                      </button>
+                    )}
+                    {activeAppointment?.status === "completed" && (
+                      <span className="flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-xl font-semibold text-sm w-full sm:w-auto">
+                        <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                        Consultation Ended
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
