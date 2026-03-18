@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaCalendarPlus, FaVideo, FaMapMarkerAlt, FaClock, FaCalendarCheck } from "react-icons/fa";
+import { FaCalendarPlus, FaVideo, FaMapMarkerAlt, FaClock, FaCalendarCheck, FaStar } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
@@ -8,18 +8,21 @@ import AppointmentDetailsModal from "./components/AppointmentDetailsModal";
 import RescheduleModal from "./components/RescheduleModal";
 import RateDoctorModal from "./components/RateDoctorModal";
 import { toast } from "sonner";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
 
 interface Appointment {
   id: string;
   doctorName: string;
+  doctorId?: string;
   specialty: string;
   date: string;
   time: string;
   type: string;
   status: string;
+  consultationEndedByDoctor?: boolean;
+  ratingSubmitted?: boolean;
 }
 
 const formatDateLabel = (dateValue: string) => {
@@ -113,29 +116,32 @@ export default function PatientAppointments() {
   };
 
   useEffect(() => {
-    const fetchAppointments = async () => {
-      if (!currentUser) {
-        setAppointments([]);
-        setIsLoading(false);
-        return;
-      }
+    if (!currentUser) {
+      setAppointments([]);
+      setIsLoading(false);
+      return;
+    }
 
-      try {
-        setIsLoading(true);
-        const q = query(collection(db, "appointments"), where("patientId", "==", currentUser.uid));
-        const querySnapshot = await getDocs(q);
+    setIsLoading(true);
+    const q = query(collection(db, "appointments"), where("patientId", "==", currentUser.uid));
 
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
         const fetchedAppointments = querySnapshot.docs
           .map((doc) => {
             const docData = doc.data();
             return {
               id: doc.id,
               doctorName: (docData.doctorName as string) || "Doctor",
+              doctorId: (docData.doctorId as string) || "",
               specialty: (docData.specialty as string) || "Specialist",
               date: (docData.date as string) || "",
               time: (docData.time as string) || "Time not set",
               type: (docData.type as string) || "In-Person Consultation",
-              status: (docData.status as string) || "pending"
+              status: (docData.status as string) || "pending",
+              consultationEndedByDoctor: Boolean(docData.consultationEndedByDoctor),
+              ratingSubmitted: Boolean(docData.ratingSubmitted),
             };
           })
           .sort((a, b) => {
@@ -145,19 +151,20 @@ export default function PatientAppointments() {
           });
 
         setAppointments(fetchedAppointments);
+        setIsLoading(false);
 
         if (fetchedAppointments.length === 0) {
           toast.info("No upcoming appointments found.");
         }
-      } catch (error) {
+      },
+      (error) => {
         console.error("Error fetching appointments:", error);
         toast.error("Failed to load appointments.");
-      } finally {
         setIsLoading(false);
       }
-    };
+    );
 
-    fetchAppointments();
+    return () => unsubscribe();
   }, [currentUser]);
 
   return (
@@ -266,38 +273,69 @@ export default function PatientAppointments() {
                                 </div>
                             </div>
                             
-                            <div className="flex gap-3">
-                                <span className={`px-4 py-2 rounded-lg font-medium text-sm capitalize ${
+                            {/* Status badge + action buttons — wraps properly on mobile */}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className={`px-3 py-1.5 rounded-lg font-medium text-sm capitalize whitespace-nowrap ${
                                   apt.status.toLowerCase() === "pending"
                                     ? "bg-amber-50 text-amber-700 border border-amber-200"
                                     : apt.status.toLowerCase() === "confirmed"
                                       ? "bg-green-50 text-green-700 border border-green-200"
+                                      : apt.status.toLowerCase() === "completed"
+                                        ? "bg-blue-50 text-blue-700 border border-blue-200"
                                       : "bg-slate-100 text-slate-600 border border-slate-200"
                                 }`}>
                                   {apt.status}
                                 </span>
-                                {apt.status.toLowerCase() === "completed" ? (
-                                    <button 
+                                {apt.status.toLowerCase() === "completed" && !apt.ratingSubmitted ? (
+                                    <button
                                       onClick={() => handleOpenRate(apt)}
-                                      className="px-4 py-2 bg-yellow-400 text-yellow-900 border border-yellow-500 hover:bg-yellow-300 rounded-lg font-bold transition-colors shadow-sm"
+                                      className="flex items-center gap-1.5 px-4 py-2 bg-amber-400 text-amber-900 hover:bg-amber-300 rounded-lg font-bold transition-colors shadow-sm text-sm whitespace-nowrap"
                                     >
+                                        <FaStar className="w-3.5 h-3.5" />
                                         Rate Doctor
                                     </button>
+                                ) : apt.status.toLowerCase() === "completed" && apt.ratingSubmitted ? (
+                                    <button
+                                      disabled
+                                      className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg font-semibold cursor-not-allowed text-sm whitespace-nowrap"
+                                    >
+                                      <FaStar className="w-3.5 h-3.5 text-amber-300" />
+                                      Rated
+                                    </button>
                                 ) : (
-                                    <button 
+                                    <button
                                       onClick={() => handleOpenReschedule(apt)}
-                                      className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors"
+                                      className="px-4 py-2 text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg font-medium transition-colors text-sm whitespace-nowrap"
                                     >
                                         Reschedule
                                     </button>
                                 )}
-                                <button 
+                                <button
                                   onClick={() => handleOpenDetails(apt)}
-                                  className="px-4 py-2 border border-[#0A6ED1] text-[#0A6ED1] hover:bg-blue-50 rounded-lg font-medium transition-colors"
+                                  className="px-4 py-2 border border-[#0A6ED1] text-[#0A6ED1] hover:bg-blue-50 rounded-lg font-medium transition-colors text-sm whitespace-nowrap"
                                 >
                                     View Details
                                 </button>
                             </div>
+
+                            {/* Consultation-ended prompt — prominent card on mobile */}
+                            {apt.consultationEndedByDoctor && apt.status.toLowerCase() === "completed" && !apt.ratingSubmitted && (
+                              <div className="flex items-start sm:items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                                <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+                                  <FaStar className="w-3.5 h-3.5 text-amber-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-amber-800 leading-snug">Consultation ended</p>
+                                  <p className="text-xs text-amber-700 leading-snug">How was your experience? Your feedback helps other patients.</p>
+                                </div>
+                                <button
+                                  onClick={() => handleOpenRate(apt)}
+                                  className="shrink-0 text-xs font-bold text-amber-800 bg-amber-400 hover:bg-amber-300 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+                                >
+                                  Rate Now
+                                </button>
+                              </div>
+                            )}
                         </div>
                     ))}
                   </div>

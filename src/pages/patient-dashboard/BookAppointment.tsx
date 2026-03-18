@@ -391,7 +391,6 @@ export default function BookAppointment() {
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-base font-bold text-slate-900">{doc.fullName || doc.name || "Doctor"}</p>
                                         <p className="text-xs font-semibold text-[#0A6ED1]">{doc.specialty || "General"}</p>
-                                        <p className="mt-1 truncate text-xs text-slate-500">{doc.location || "Location not specified"}</p>
                                     </div>
                                     <div className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-[#0A6ED1]">
                                         Book

@@ -10,7 +10,9 @@ import {
   Star,
   ChevronRight,
   Bell,
-  ArrowLeft
+  ArrowLeft,
+  CalendarPlus,
+  ShieldAlert
 } from 'lucide-react';
 import PatientSidebar from './components/PatientSidebar';
 import PatientDashboardHeader from './components/PatientDashboardHeader';
@@ -307,6 +309,7 @@ export default function AIChat() {
   const pinnedChats = chatHistory.filter(c => c.isPinned);
   const regularChats = chatHistory.filter(c => !c.isPinned);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formatTimeAgo = (dateInput: any) => {
     if (!dateInput) return '';
     const date = dateInput.toDate ? dateInput.toDate() : new Date(dateInput);
@@ -320,6 +323,7 @@ export default function AIChat() {
     return `${Math.floor(days / 7)} weeks ago`;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formatTime = (dateInput: any) => {
     if (!dateInput) return '';
     const date = dateInput.toDate ? dateInput.toDate() : new Date(dateInput);
@@ -342,42 +346,57 @@ export default function AIChat() {
         
 
         {/* Mobile Header */}
-        <div className="md:hidden h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 z-10 shrink-0">
-            {/* Left Actions - New & View */}
-            <div className="flex items-center gap-3">
+        <div className="md:hidden shrink-0">
+          <div className="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4 z-10">
+            {/* Left Actions */}
+            <div className="flex items-center gap-2.5">
                 <Link
                     to="/patient/dashboard"
-                    className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center shadow-sm"
+                    className="p-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center shadow-sm"
                     title="Back to Dashboard"
                 >
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={18} />
                 </Link>
                 <button
                     onClick={startNewChat}
-                    className="p-2.5 bg-[#0A6ED1] text-white rounded-xl shadow-lg shadow-blue-100 hover:bg-[#095bb0] transition-colors flex items-center justify-center group"
+                    className="p-2 bg-[#0A6ED1] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-[#095bb0] transition-colors flex items-center justify-center"
                     title="New Chat"
                 >
-                    <Plus size={20} className="group-active:scale-90 transition-transform" />
+                    <Plus size={18} />
                 </button>
                 <Link
                   to="/patient/ai-chat/history"
-                  className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center shadow-sm"
+                  className="p-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center shadow-sm"
                   title="View History"
                 >
-                    <MessageCircle size={20} />
+                    <MessageCircle size={18} />
+                </Link>
+                <Link
+                  to="/patient/book-appointment"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[#0A6ED1] text-white text-xs font-bold rounded-xl shadow-md shadow-blue-100 hover:bg-[#095bb0] transition-all active:scale-95"
+                  title="Book Appointment"
+                >
+                  <CalendarPlus size={14} />
+                  Book
                 </Link>
             </div>
-            
-            {/* Right Side - Branding/Profile */}
-            <div className="flex items-center gap-4">
+
+            {/* Right Side */}
+            <div className="flex items-center gap-3">
                  <Link to="/patient/notifications" className="relative p-2 text-slate-400 hover:text-[#0A6ED1]">
-                    <Bell size={20} />
+                    <Bell size={18} />
                     <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                  </Link>
-                   <div className="w-9 h-9 rounded-full bg-linear-to-tr from-blue-50 to-blue-100 flex items-center justify-center text-[#0A6ED1] shadow-sm border border-blue-100">
-                     <UserIcon size={18} />
+                   <div className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-50 to-blue-100 flex items-center justify-center text-[#0A6ED1] shadow-sm border border-blue-100">
+                     <UserIcon size={16} />
                  </div>
             </div>
+          </div>
+          {/* Health-only notice strip */}
+          <div className="flex items-center gap-1.5 bg-amber-50 border-b border-amber-100 px-4 py-1.5">
+            <ShieldAlert size={12} className="text-amber-600 shrink-0" />
+            <p className="text-[11px] font-semibold text-amber-700">This assistant can only discuss health-related topics.</p>
+          </div>
         </div>
         
         <div className="flex-1 flex overflow-hidden relative">
@@ -523,8 +542,21 @@ export default function AIChat() {
             <header className="hidden md:flex bg-white border-b border-slate-200 px-6 py-4 items-center justify-between shadow-sm z-10 shrink-0">
               <div>
                 <h1 className="text-xl font-bold text-slate-900">Healthcare AI Assistant</h1>
-                <p className="text-sm text-slate-500">Ask me anything about your health</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold px-2 py-0.5 rounded-full">
+                    <ShieldAlert size={11} />
+                    Health topics only
+                  </span>
+                  <span className="text-xs text-slate-400">This assistant is strictly for health-related questions.</span>
+                </div>
               </div>
+              <Link
+                to="/patient/book-appointment"
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#0A6ED1] text-white text-sm font-bold rounded-xl hover:bg-[#095bb0] shadow-md shadow-blue-200 transition-all active:scale-95"
+              >
+                <CalendarPlus size={16} />
+                Book Appointment
+              </Link>
             </header>
 
 
@@ -599,6 +631,22 @@ export default function AIChat() {
                           </span>
                         </button>
                       ))}
+                      {/* Book Appointment CTA */}
+                      <Link
+                        to="/patient/book-appointment"
+                        className="col-span-full flex items-center justify-between p-4 rounded-xl bg-[#0A6ED1] text-white hover:bg-[#095bb0] shadow-lg shadow-blue-200/50 transition-all group active:scale-[0.99]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                            <CalendarPlus size={18} />
+                          </div>
+                          <div className="text-left">
+                            <p className="font-bold text-sm leading-tight">Book an Appointment</p>
+                            <p className="text-blue-200 text-xs leading-tight mt-0.5">Schedule a visit with a doctor now</p>
+                          </div>
+                        </div>
+                        <ChevronRight size={18} className="-translate-x-1 group-hover:translate-x-0 transition-transform opacity-70" />
+                      </Link>
                     </div>
                   </motion.div>
                 </div>

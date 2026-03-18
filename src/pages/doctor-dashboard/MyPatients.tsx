@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { FaSearch, FaCheck, FaTimes, FaClock, FaEllipsisH, FaUserInjured, FaCommentMedical } from "react-icons/fa";
 import { MessageCircle, User, Bot, Send, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { collection, query, where, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, getDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
 import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
@@ -95,6 +95,7 @@ export default function MyPatients() {
   // Chat Modal State
     const [selectedPatient, setSelectedPatient] = useState<SelectedPatient | null>(null);
   const [modalTab, setModalTab] = useState<'details' | 'chat'>('details');
+    const [endingAppointmentId, setEndingAppointmentId] = useState<string | null>(null);
 
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [loadingChat, setLoadingChat] = useState(false);
@@ -213,7 +214,7 @@ export default function MyPatients() {
         const uniquePatients = new Map<string, PatientRow>();
 
         // Pre-fetch actual patient docs to join on the fly
-        const patientDataMap = new Map<string, any>();
+        const patientDataMap = new Map<string, Record<string, unknown>>();
         for (const docSnap of snapshot.docs) {
            const data = docSnap.data();
            if (data.patientId && !patientDataMap.has(data.patientId)) {
@@ -243,7 +244,7 @@ export default function MyPatients() {
                 name: pData.fullName || data.patientName || "Unknown Patient",
                 time: data.time || "Time",
                 type: data.type || "Type",
-                age: pData.dob ? calculateAge(pData.dob) : (data.patientAge || "Age"),
+                age: typeof pData.dob === 'string' ? calculateAge(pData.dob) : (data.patientAge || "Age"),
                 reason: data.notes || data.reason || "Reason",
                 image: pData.profilePhotoUrl || data.patientImage || null,
                 date: data.date || "Date",
@@ -268,7 +269,7 @@ export default function MyPatients() {
                         ...appointment,
                         lastVisit: data.date,
                         condition: appointment.reason,
-                        status: "Active"
+                        status: String(data.status || "active")
                     });
                 } else {
                      // Update last visit if newer
@@ -279,7 +280,8 @@ export default function MyPatients() {
                          uniquePatients.set(data.patientId, {
                             ...existing,
                             lastVisit: data.date,
-                            condition: appointment.reason
+                            condition: appointment.reason,
+                            status: String(data.status || existing.status || "active")
                          });
                      }
                 }
@@ -329,6 +331,59 @@ export default function MyPatients() {
           console.error("Error declining appointment:", error);
           toast.error("Failed to decline appointment");
       }
+  };
+
+  const endConsultation = async (appointmentId: string) => {
+      try {
+          setEndingAppointmentId(appointmentId);
+          await updateDoc(doc(db, "appointments", appointmentId), {
+              status: 'completed',
+              consultationEndedByDoctor: true,
+              consultationEndedAt: new Date().toISOString(),
+              allowRating: true,
+              ratingSubmitted: false,
+              updatedAt: new Date().toISOString(),
+          });
+
+          const patientUid = selectedPatient?.patientId;
+          const drName = (selectedPatient?.['doctorName'] as string) || "your doctor";
+          if (patientUid) {
+              await addDoc(collection(db, "notifications"), {
+                  userId: patientUid,
+                  type: "appointment",
+                  title: "Rate Your Doctor",
+                  message: `Your consultation with ${drName} has ended. How was your experience?`,
+                  details: appointmentId,
+                  read: false,
+                  createdAt: serverTimestamp(),
+              });
+          }
+
+          setRequests(prev => prev.filter(r => r.id !== appointmentId));
+          setPatients(prev => prev.map((p) => (
+              p.id === appointmentId ? { ...p, status: 'completed', lastVisit: new Date().toISOString().split('T')[0] } : p
+          )));
+          setSelectedPatient((prev) => (prev && prev.id === appointmentId ? { ...prev, status: 'completed' } : prev));
+
+          toast.success("Consultation ended. Patient has been notified.");
+      } catch (error) {
+          console.error("Error ending consultation:", error);
+          toast.error("Failed to end consultation. Please try again.");
+      } finally {
+          setEndingAppointmentId(null);
+      }
+  };
+
+  const handleEndConsultation = (appointmentId: string) => {
+      toast("Are you sure you want to end consultation?", {
+          description: "This will notify the patient and unlock doctor rating.",
+          action: {
+              label: "End Consultation",
+              onClick: () => {
+                  void endConsultation(appointmentId);
+              },
+          },
+      });
   };
 
   return (
@@ -651,6 +706,17 @@ export default function MyPatients() {
                                      >
                                         Start Consultation
                                      </button>
+                                                 <button
+                                                     onClick={() => handleEndConsultation(selectedPatient.id)}
+                                                     disabled={selectedPatient.status?.toLowerCase() === 'completed' || endingAppointmentId === selectedPatient.id}
+                                                     className="w-full py-3 bg-red-50 text-red-700 border border-red-200 rounded-xl font-bold hover:bg-red-100 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                                 >
+                                                     {endingAppointmentId === selectedPatient.id
+                                                        ? 'Ending...'
+                                                        : selectedPatient.status?.toLowerCase() === 'completed'
+                                                          ? 'Consultation Ended'
+                                                          : 'Stop Appointment'}
+                                                 </button>
                                 </div>
                             </div>
                         </div>
