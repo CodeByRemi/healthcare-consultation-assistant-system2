@@ -15,7 +15,7 @@ import {
 import PatientSidebar from './components/PatientSidebar';
 import PatientDashboardHeader from './components/PatientDashboardHeader';
 import PatientMobileFooter from './components/PatientMobileFooter';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { db, model } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
 
@@ -70,6 +70,7 @@ export default function AIChat() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+  const [patientName, setPatientName] = useState<string>('Patient');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +82,23 @@ export default function AIChat() {
   useEffect(() => {
     currentChatIdRef.current = currentChatId;
   }, [currentChatId]);
+
+  // Fetch Patient Name
+  useEffect(() => {
+    if (!currentUser) return;
+    const fetchPatientName = async () => {
+      try {
+        const patientDoc = await getDoc(doc(db, "patients", currentUser.uid));
+        if (patientDoc.exists() && patientDoc.data().fullName) {
+          const fullName = patientDoc.data().fullName;
+          setPatientName(fullName.split(' ')[0]); // Get first name
+        }
+      } catch (error) {
+        console.error("Error fetching patient name:", error);
+      }
+    };
+    fetchPatientName();
+  }, [currentUser]);
 
   // Preselect chat from history page navigation so conversation layout opens immediately.
   useEffect(() => {
@@ -227,7 +245,16 @@ export default function AIChat() {
             timestamp: serverTimestamp()
         });
 
-        const result = await model.generateContent(messageText);
+        // Add context and previous memory to the prompt
+        const recentMessages = messages.slice(-5);
+        let contextBlock = "";
+        if (recentMessages.length > 0) {
+            contextBlock = "Recent conversation history:\n" + recentMessages.map(m => `${m.role === 'user' ? patientName : 'You'}: ${m.content}`).join('\n') + "\n\n";
+        }
+
+        const prompt = `Keep in mind my name is ${patientName} and your name is Medi, the medical AI assistant. If you haven't introduced yourself yet in the recent conversation history, start with "Hi ${patientName}, I am Medi...".\n\n${contextBlock}My next message is: ${messageText}`;
+
+        const result = await model.generateContent(prompt);
         const aiResponse = await result.response;
         let responseText = aiResponse.text();
 
