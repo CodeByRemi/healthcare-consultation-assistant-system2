@@ -19,7 +19,7 @@ export default function DoctorAvailability() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [duration, setDuration] = useState<number>(30);
-  const [mode, setMode] = useState("In-person");
+  const [mode] = useState("In-person");
   const [notes, setNotes] = useState("");
   const [repeatWeekly, setRepeatWeekly] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

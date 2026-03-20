@@ -101,7 +101,7 @@ export default function AdminLogin() {
 
       {/* Right Panel - Login Form */}
       <div className="min-h-screen lg:min-h-0 w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-16">
-        <div className="max-w-md w-full bg-white p-6 md:p-8 rounded-2xl md:shadow-xl shadow-none border border-slate-100">
+        <div className="max-w-md w-full bg-transparent lg:bg-white p-0 lg:p-8 rounded-none lg:rounded-2xl shadow-none lg:shadow-xl border-0 lg:border lg:border-slate-100">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600">
               <img src={logo} alt="Medicare" className="w-8 h-8 object-contain" />

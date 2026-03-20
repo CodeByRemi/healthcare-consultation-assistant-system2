@@ -148,7 +148,7 @@ export default function DoctorLogin() {
                   <FaLock className="w-4 h-4 text-[#0da540]" />
                   Password
                 </label>
-                <Link to="/doctor/forgot-password" className="text-xs font-medium text-[#0da540] hover:underline">Forgot?</Link>
+                <Link to="/doctor/forgot-password" className="text-xs font-medium text-[#0da540] hover:underline">Forgot Password</Link>
               </div>
               <input 
                 type="password"

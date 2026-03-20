@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaTimes, FaPlus, FaTrash } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 import { toast } from "sonner";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
@@ -23,7 +23,7 @@ export default function DoctorAvailabilityModal({ isOpen, onClose, selectedDate 
     // Generate 30 min slots
     const generated: string[] = [];
     // Date object for time calculation (date part doesn't matter)
-    let current = new Date(`2000-01-01T${startTime}`);
+    const current = new Date(`2000-01-01T${startTime}`);
     const end = new Date(`2000-01-01T${endTime}`);
 
     while (current < end) {

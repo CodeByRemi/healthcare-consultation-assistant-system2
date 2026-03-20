@@ -32,7 +32,7 @@ export default function AdminMobileFooter({
             key={item.id}
             type="button"
             onClick={() => setCurrentTab(item.id)}
-            className={`flex-1 min-w-[60px] flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${
+            className={`flex-1 min-w-15 flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${
               isActive ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
             }`}
           >

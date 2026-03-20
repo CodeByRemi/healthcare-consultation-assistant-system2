@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Mail, Lock, Stethoscope, Phone, MapPin } from "lucide-react";
+import { motion } from "framer-motion";
+import { X, User, Mail, Stethoscope, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";

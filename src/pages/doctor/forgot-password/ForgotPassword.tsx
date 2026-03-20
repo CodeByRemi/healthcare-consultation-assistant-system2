@@ -38,7 +38,7 @@ export default function ForgotPassword() {
   if (isEmailSent) {
     return (
       <div className="min-h-screen flex flex-col lg:flex-row font-['Manrope'] bg-slate-50">
-        <div className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+        <div className="hidden lg:flex lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex-col justify-between relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=2864&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
           <div className="relative z-10">
             <Link to="/" className="inline-flex items-center gap-2 mb-12 group transition-all duration-300 ease-in-out hover:translate-x-1">
@@ -62,8 +62,8 @@ export default function ForgotPassword() {
           </div>
         </div>
 
-        <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto w-full">
-          <main className="w-full max-w-md bg-white p-8 lg:p-10 rounded-3xl shadow-xl border border-slate-100 text-center">
+        <div className="min-h-screen lg:min-h-0 lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto w-full">
+          <main className="w-full max-w-md p-6 sm:p-8 lg:p-10 lg:bg-white lg:rounded-3xl lg:shadow-xl lg:border lg:border-slate-100 text-center">
             <div className="w-20 h-20 bg-[#0da540]/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <FaEnvelope className="w-10 h-10 text-[#0da540]" />
             </div>
@@ -94,7 +94,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-['Manrope'] bg-slate-50">
-      <div className="lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-[#0da540] p-8 lg:p-16 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=2864&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
 
         <div className="relative z-10">
@@ -136,10 +136,10 @@ export default function ForgotPassword() {
         </div>
       </div>
 
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto w-full">
-        <main className="w-full max-w-md bg-white p-8 lg:p-10 rounded-3xl shadow-xl border border-slate-100">
-          <h2 className="text-3xl font-bold text-slate-900 mb-2 font-['Newsreader']">Forgot Password</h2>
-          <p className="text-slate-500 mb-8">We’ll email you a link to reset your doctor account password.</p>
+      <div className="min-h-screen lg:min-h-0 lg:w-1/2 flex items-center justify-center p-6 lg:p-12 overflow-y-auto w-full">
+        <main className="w-full max-w-md p-6 sm:p-8 lg:p-10 lg:bg-white lg:rounded-3xl lg:shadow-xl lg:border lg:border-slate-100">
+          <h2 className="text-3xl font-bold text-slate-900 mb-2 font-['Newsreader'] text-center lg:text-left">Forgot Password</h2>
+          <p className="text-slate-500 mb-8 text-center lg:text-left">We’ll email you a link to reset your doctor account password.</p>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-1.5">

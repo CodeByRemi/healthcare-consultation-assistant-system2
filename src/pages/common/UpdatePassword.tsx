@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { FaEye, FaEyeSlash, FaLock, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
@@ -61,9 +61,10 @@ export default function UpdatePassword() {
           await updatePassword(currentUser, newPassword);
           toast.success("Password updated successfully");
           navigate(-1); // Go back
-      } catch (error: any) {
+      } catch (error: unknown) {
           console.error(error);
-          if (error.code === 'auth/wrong-password') {
+          const firebaseError = error as { code?: string };
+          if (firebaseError.code === 'auth/wrong-password') {
             toast.error("Current password is incorrect");
           } else {
             toast.error("Failed to update password. Please try again.");
