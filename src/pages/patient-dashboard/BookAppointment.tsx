@@ -131,6 +131,7 @@ export default function BookAppointment() {
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
     const [reasonForVisit, setReasonForVisit] = useState("");
+    const [shareAIChat, setShareAIChat] = useState(false);
 
   const [selectedDay, setSelectedDay] = useState("Any Day");
   const [selectedTime, setSelectedTime] = useState("All Times"); // Filter preference
@@ -233,7 +234,7 @@ export default function BookAppointment() {
         status: "pending",
         createdAt: new Date().toISOString(),
         specialty: selectedDoctor.specialty,
-        shareAIChat: true // User consented to share AI chat history
+        shareAIChat: shareAIChat // User consented to share AI chat history
       });
 
       // Set booking details for confirmation modal
@@ -685,6 +686,10 @@ export default function BookAppointment() {
                                             placeholder="Reason"
                                             className="w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none transition-all focus:border-[#0A6ED1] focus:ring-2 focus:ring-[#0A6ED1]/20"
                                         />
+                                          <div className="flex items-center gap-2 mt-2">
+                                              <input type="checkbox" id="shareAIChat" checked={shareAIChat} onChange={(e) => setShareAIChat(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                                              <label htmlFor="shareAIChat" className="text-sm text-gray-700">Share AI Medical Assistant History</label>
+                                          </div>
                                     </div>
 
                                     {bookingDate && bookingTime && (
@@ -913,6 +918,10 @@ export default function BookAppointment() {
                                                     placeholder="Reason"
                                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent outline-none transition-all resize-none"
                                                 />
+                                          <div className="flex items-center gap-2 mt-2">
+                                              <input type="checkbox" id="shareAIChat" checked={shareAIChat} onChange={(e) => setShareAIChat(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                                              <label htmlFor="shareAIChat" className="text-sm text-gray-700">Share AI Medical Assistant History</label>
+                                          </div>
                                             </div>
 
                                             {/* Summary */}

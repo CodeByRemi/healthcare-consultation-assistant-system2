@@ -40,11 +40,16 @@ export default function PatientProfile() {
           const snap = await getDoc(docRef);
           if (snap.exists()) {
             const data = snap.data();
+            let pId = data.patientId;
+            if (!pId) {
+              pId = `PT-${Math.floor(10000 + Math.random() * 90000)}`;
+              await updateDoc(docRef, { patientId: pId });
+            }
             setProfileData(prev => ({
-                ...prev, 
+                ...prev,
                 ...data,
-                patientId: data.patientId || "Generating..."
-            })); 
+                patientId: pId
+            }));
           }
         } catch (error) {
           console.error("Error fetching profile:", error);

@@ -2,6 +2,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, CheckCircle, ArrowRight, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../../lib/firebase";
+import { sendEmailVerification } from "firebase/auth";
+import { toast } from "sonner";
+import { sendVerificationEmail } from "../../lib/emailService";
 
 export default function PatientVerification() {
   const navigate = useNavigate();

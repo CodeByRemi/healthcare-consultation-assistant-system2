@@ -1,0 +1,1 @@
+const fs = require("fs"); let content = fs.readFileSync(".env", "utf8"); content = content.replace(/^\uFEFF/gm, "").replace(/\r\n/g, "\n").trim(); fs.writeFileSync(".env", content, "utf8");

@@ -1,17 +1,20 @@
-import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  X, 
-  Calendar, 
-  Clock, 
-  User, 
-  Stethoscope, 
-  FileText, 
-  Activity, 
-  Video, 
-  MapPin, 
-  AlertCircle 
+import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import {
+  X,
+  Calendar,
+  Clock,
+  User,
+  Stethoscope,
+  FileText,
+  Activity,
+  Video,
+  MapPin,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 
 type AppointmentRow = {
@@ -29,64 +32,12 @@ type AppointmentRow = {
   meetingLink?: string;
 };
 
-const SAMPLE_APPOINTMENTS: AppointmentRow[] = [
-  {
-    id: "APT-2024-001",
-    date: "2024-03-20",
-    time: "09:00 AM",
-    patient: "Sarah Johnson",
-    doctor: "Dr. Emily Chen",
-    status: "Present",
-    type: "In-Person",
-    reason: "Annual Checkup",
-    symptoms: ["None"],
-    notes: "Patient requests blood work results discussion.",
-    location: "Room 302, Main Building"
-  },
-  {
-    id: "APT-2024-002",
-    date: "2024-03-20",
-    time: "10:30 AM",
-    patient: "Michael Brown",
-    doctor: "Dr. Sarah Wilson",
-    status: "Present",
-    type: "Virtual",
-    reason: "Skin Rash Consultation",
-    symptoms: ["Redness", "Itching", "Mild swelling"],
-    meetingLink: "https://med-connect.com/meet/apt-002"
-  },
-  {
-    id: "APT-2024-003",
-    date: "2024-03-19",
-    time: "02:00 PM",
-    patient: "Emily Davis",
-    doctor: "Dr. James Wilson",
-    status: "Past",
-    type: "In-Person",
-    reason: "Post-surgery Follow-up",
-    symptoms: ["Mild pain at incision site"],
-    location: "Room 105, Surgery Wing"
-  },
-  {
-    id: "APT-2024-004",
-    date: "2024-03-21",
-    time: "11:00 AM",
-    patient: "Robert Wilson",
-    doctor: "Dr. Emily Chen",
-    status: "Upcoming",
-    type: "Virtual",
-    reason: "Anxiety Consultation",
-    symptoms: ["Insomnia", "Restlessness"],
-    meetingLink: "https://med-connect.com/meet/apt-004"
-  }
-];
-
-function AppointmentModal({ 
-  appointment, 
-  onClose 
-}: { 
-  appointment: AppointmentRow; 
-  onClose: () => void; 
+function AppointmentModal({
+  appointment,
+  onClose
+}: {
+  appointment: AppointmentRow;
+  onClose: () => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -101,7 +52,7 @@ function AppointmentModal({
             <h2 className="text-xl font-bold text-gray-900">Appointment Details</h2>
             <p className="text-sm text-gray-500 mt-1">ID: {appointment.id}</p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
           >
@@ -112,17 +63,10 @@ function AppointmentModal({
         <div className="p-6 space-y-6">
           {/* Status Badge */}
           <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              appointment.status === 'Present' ? 'bg-green-100 text-green-700' :
-              appointment.status === 'Upcoming' ? 'bg-blue-100 text-blue-700' :
-              appointment.status === 'Past' ? 'bg-gray-100 text-gray-700' :
-              'bg-red-100 text-red-700'
-            }`}>
+            <span className={px-3 py-1 rounded-full text-sm font-medium }>
               {appointment.status}
             </span>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ${
-              appointment.type === 'Virtual' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
-            }`}>
+            <span className={px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 }>
               {appointment.type === 'Virtual' ? <Video size={14} /> : <MapPin size={14} />}
               {appointment.type}
             </span>
@@ -178,11 +122,11 @@ function AppointmentModal({
                 Reported Symptoms
               </h3>
               <div className="flex flex-wrap gap-2">
-                {appointment.symptoms.map((symptom, idx) => (
+                {appointment.symptoms.length > 0 ? appointment.symptoms.map((symptom, idx) => (
                   <span key={idx} className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium border border-blue-100">
                     {symptom}
                   </span>
-                ))}
+                )) : <span className="text-sm text-gray-500">None reported</span>}
               </div>
             </div>
 
@@ -204,7 +148,7 @@ function AppointmentModal({
                 <span>Location: {appointment.location}</span>
               </div>
             )}
-            
+
             {appointment.type === 'Virtual' && appointment.meetingLink && (
               <div className="flex items-start gap-2 text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
                 <Video size={16} className="mt-0.5 shrink-0" />
@@ -217,14 +161,11 @@ function AppointmentModal({
         </div>
 
         <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-          <button 
+          <button
             onClick={onClose}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
           >
             Close
-          </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
-            Edit Details
           </button>
         </div>
       </motion.div>
@@ -232,13 +173,21 @@ function AppointmentModal({
   );
 }
 
-function AppointmentTable({ 
-  rows, 
-  onSelect 
-}: { 
-  rows: AppointmentRow[]; 
-  onSelect: (apt: AppointmentRow) => void; 
+function AppointmentTable({
+  rows,
+  onSelect
+}: {
+  rows: AppointmentRow[];
+  onSelect: (apt: AppointmentRow) => void;
 }) {
+  if (rows.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500 bg-white rounded-xl border border-gray-200">
+        No appointments found.
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200">
       <table className="min-w-full divide-y divide-gray-200">
@@ -254,12 +203,12 @@ function AppointmentTable({
         </thead>
         <tbody className="bg-white divide-y divide-gray-100">
           {rows.map((row) => (
-            <tr 
-              key={row.id} 
+            <tr
+              key={row.id}
               onClick={() => onSelect(row)}
               className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
             >
-              <td className="px-4 py-3 text-sm font-medium text-gray-900 group-hover:text-blue-600">{row.id}</td>
+              <td className="px-4 py-3 text-sm font-medium text-gray-900 group-hover:text-blue-600">{row.id.substring(0, 8)}...</td>
               <td className="px-4 py-3 text-sm text-gray-700">
                 <div className="flex flex-col">
                   <span>{row.date}</span>
@@ -269,20 +218,13 @@ function AppointmentTable({
               <td className="px-4 py-3 text-sm text-gray-700">{row.patient}</td>
               <td className="px-4 py-3 text-sm text-gray-700">{row.doctor}</td>
               <td className="px-4 py-3 text-sm">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                  row.type === 'Virtual' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
-                }`}>
+                <span className={inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium }>
                   {row.type === 'Virtual' ? <Video size={12} /> : <MapPin size={12} />}
                   {row.type}
                 </span>
               </td>
               <td className="px-4 py-3 text-sm">
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                  row.status === 'Present' ? 'bg-green-100 text-green-700' :
-                  row.status === 'Upcoming' ? 'bg-blue-100 text-blue-700' :
-                  row.status === 'Past' ? 'bg-gray-100 text-gray-700' :
-                  'bg-red-100 text-red-700'
-                }`}>
+                <span className={inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium }>
                   {row.status}
                 </span>
               </td>
@@ -298,11 +240,62 @@ export default function AppointmentDetails() {
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const entity = params.get("entity") === "doctor" ? "doctor" : "patient";
+  const targetId = params.get("id");
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentRow | null>(null);
+  
+  const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter sample data based on status for demonstration
-  const recentAppointments = SAMPLE_APPOINTMENTS.filter(a => a.status === 'Upcoming' || a.status === 'Present');
-  const pastAppointments = SAMPLE_APPOINTMENTS.filter(a => a.status === 'Past');
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        let q = query(collection(db, "appointments"));
+        if (targetId) {
+          const fieldName = entity === "doctor" ? "doctorId" : "patientId";
+          q = query(collection(db, "appointments"), where(fieldName, "==", targetId));
+        }
+        const snap = await getDocs(q);
+        const data = snap.docs.map(doc => {
+          const d = doc.data();
+          
+          let statusMapped: AppointmentRow["status"] = "Upcoming";
+          if (d.status === "completed") statusMapped = "Past";
+          else if (d.status === "cancelled") statusMapped = "Cancelled";
+          else if (d.status === "in-progress" || d.status === "present") statusMapped = "Present";
+
+          let apptType: AppointmentRow["type"] = "Virtual";
+          if (d.type === "In-Person" || d.mode === "In-Person") apptType = "In-Person";
+
+          return {
+            id: doc.id,
+            date: d.date || "-",
+            time: d.time || "-",
+            patient: d.patientName || "Unknown Patient",
+            doctor: d.doctorName || "Unknown Doctor",
+            status: statusMapped,
+            type: apptType,
+            reason: d.reason || d.issue || "General Consultation",
+            symptoms: d.symptoms || [],
+            notes: d.notes || d.medicalHistory || "",
+            location: d.location || (apptType === "In-Person" ? "Clinic" : ""),
+            meetingLink: d.meetingLink || ""
+          } as AppointmentRow;
+        });
+
+        // We can sort manually to avoid requiring a composite index right now
+        data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setAppointments(data);
+      } catch (err) {
+        console.error("Error fetching admin appointments: ", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAppointments();
+  }, []);
+
+  const recentAppointments = appointments.filter(a => a.status === 'Upcoming' || a.status === 'Present');
+  const pastAppointments = appointments.filter(a => a.status === 'Past' || a.status === 'Cancelled');
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-8">
@@ -322,31 +315,43 @@ export default function AppointmentDetails() {
           </Link>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Recent & Upcoming Appointments</h2>
-          <AppointmentTable 
-            rows={recentAppointments} 
-            onSelect={setSelectedAppointment}
-          />
-        </div>
+        {loading ? (
+           <div className="flex justify-center items-center py-20">
+             <div className="flex flex-col items-center gap-2 text-gray-500">
+               <Loader2 className="animate-spin" size={32} />
+               <p>Loading appointments...</p>
+             </div>
+           </div>
+        ) : (
+          <>
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">Recent & Upcoming Appointments</h2>
+              <AppointmentTable
+                rows={recentAppointments}
+                onSelect={setSelectedAppointment}
+              />
+            </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Past Appointments</h2>
-          <AppointmentTable 
-            rows={pastAppointments} 
-            onSelect={setSelectedAppointment}
-          />
-        </div>
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">Past & Cancelled Appointments</h2>
+              <AppointmentTable
+                rows={pastAppointments}
+                onSelect={setSelectedAppointment}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       <AnimatePresence>
         {selectedAppointment && (
-          <AppointmentModal 
-            appointment={selectedAppointment} 
-            onClose={() => setSelectedAppointment(null)} 
+          <AppointmentModal
+            appointment={selectedAppointment}
+            onClose={() => setSelectedAppointment(null)}
           />
         )}
       </AnimatePresence>
     </div>
   );
 }
+

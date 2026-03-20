@@ -1,0 +1,1 @@
+const fs = require("fs"); let pkg = JSON.parse(fs.readFileSync("package.json")); pkg.dependencies["firebase-admin"] = "^12.0.0"; pkg.dependencies["firebase-functions"] = "^6.0.0"; pkg.dependencies["@sendgrid/mail"] = "^8.1.3"; fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2)); console.log("Done");

@@ -60,7 +60,7 @@ service cloud.firestore {
     
     // Appointments (Example structure)
     match /appointments/{appointmentId} {
-    	allow read: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
+    	allow read: if isAdmin() || (isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid));
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid || isAdmin());
     }
