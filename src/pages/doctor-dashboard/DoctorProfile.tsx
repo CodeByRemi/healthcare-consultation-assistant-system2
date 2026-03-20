@@ -125,7 +125,7 @@ export default function DoctorProfile() {
 
       uploadTask.on(
         "state_changed",
-        (snapshot) => {
+        () => {
           // You can track progress here if needed
         },
         (error) => {
@@ -326,7 +326,7 @@ export default function DoctorProfile() {
                         name="bio"
                         value={profileData.bio}
                         onChange={handleChange}
-                        className="w-full min-h-[150px] p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-slate-600 leading-relaxed"
+                        className="w-full min-h-37.5 p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-slate-600 leading-relaxed"
                         placeholder="Tell patients about your background and approach..."
                       />
                   ) : (

@@ -1,6 +1,6 @@
 // Placeholder for mobile footer if it doesn't exist
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, Users, MessageSquare, Settings } from "lucide-react";
+import { Home, Calendar, Users, Settings } from "lucide-react";
 
 export default function DoctorMobileFooter() {
     const location = useLocation();

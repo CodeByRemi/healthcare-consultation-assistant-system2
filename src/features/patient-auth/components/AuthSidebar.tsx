@@ -1,5 +1,4 @@
 
-import patientimg from "../../../assets/patientreg.png";
 import { FaHeartbeat, FaUserShield, FaNotesMedical } from "react-icons/fa";
 
 export default function AuthSidebar() {
