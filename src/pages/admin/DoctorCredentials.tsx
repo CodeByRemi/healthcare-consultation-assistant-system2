@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { CheckCircle2, Copy, User, Lock, Send } from "lucide-react";
 import { toast } from "sonner";
-import { getAdminEmailSettings } from "./emailSettings";
 import { sendDoctorCredentials } from "../../lib/emailService";
 import { useState } from "react";
 
