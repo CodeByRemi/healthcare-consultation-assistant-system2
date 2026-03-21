@@ -1,0 +1,1 @@
+const fs = require("fs"); let content = fs.readFileSync("AppointmentDetails.tsx", "utf8"); content = content.replace(/className=\{([^}"`\n]+)\s*\}/g, "className=\"$1\""); fs.writeFileSync("AppointmentDetails.tsx", content); console.log("Done");

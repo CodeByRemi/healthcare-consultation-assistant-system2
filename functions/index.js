@@ -20,7 +20,7 @@ exports.sendVerificationEmail = onCall({ cors: true }, async (request) => {
   const currentYear = new Date().getFullYear();
 
   const htmlTemplate = `
-    <!DOCTYPE html>
+    <!DOCTYPE html> 
     <html>
     <head>
       <meta charset="utf-8">
@@ -77,5 +77,74 @@ exports.sendVerificationEmail = onCall({ cors: true }, async (request) => {
   } catch (error) {
     console.error("SendGrid Error:", error);
     throw new HttpsError("internal", "Failed to send email");
+  }
+});
+
+exports.sendDoctorCredentials = onCall({ cors: true }, async (request) => {
+  const data = request.data || {};
+  const to = data.to;
+  const doctorName = data.doctorName;
+  const password = data.password;
+
+  if (!to || !doctorName || !password) {
+    throw new HttpsError("invalid-argument", "Missing recipient email or credentials");
+  }
+
+  const currentYear = new Date().getFullYear();
+
+  const htmlTemplate = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+        .header { background-color: #0A6ED1; padding: 30px; text-align: center; }
+        .header img { max-width: 150px; height: auto; }
+        .content { padding: 40px 30px; color: #334155; line-height: 1.6; }
+        .content h1 { color: #0f172a; font-size: 24px; margin-top: 0; margin-bottom: 20px; font-weight: 600; }
+        .content p { font-size: 16px; margin: 0 0 20px 0; }
+        .credentials { background-color: #f1f5f9; padding: 20px; border-radius: 8px; margin: 30px 0; font-family: monospace; font-size: 16px; color: #0A6ED1; }
+        .footer { background-color: #f8fafc; padding: 20px 30px; text-align: center; font-size: 14px; color: #64748b; border-top: 1px solid #e2e8f0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <img src="https://firebasestorage.googleapis.com/v0/b/medicare-c69ab.firebasestorage.app/o/brand%2FMedCare%20Logo.png?alt=media&token=86ae46eb-52cd-43bf-b51f-2bdec10abeb9" alt="MedCare Logo" />
+        </div>
+        <div class="content">
+          <h1>Welcome to MedCare, Dr. ${doctorName}!</h1>
+          <p>Your doctor account has been successfully created by the administration team.</p>
+          <p>You can now log in to your specialized dashboard to manage your appointments and communicate with patients. Please use the following credentials to access your account. We strongly recommend changing your password after your first login.</p>
+          <div class="credentials">
+            <strong>Email:</strong> ${to}<br/><br/>
+            <strong>Temporary Password:</strong> ${password}
+          </div>
+          <p>If you have any questions or need assistance, please contact the administration directly.</p>
+          <p>Best regards,<br>The MedCare Administration Team</p>
+        </div>
+        <div class="footer">
+          &copy; ${currentYear} MedCare. All rights reserved.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const msg = {
+    to,
+    from: { email: SENDER_EMAIL, name: "MedCare Administration" },
+    subject: "Your MedCare Doctor Account Credentials",
+    html: htmlTemplate,
+  };
+
+  try {
+    await sgMail.send(msg);
+    return { success: true };
+  } catch (error) {
+    console.error("SendGrid Error:", error);
+    throw new HttpsError("internal", "Failed to send credentials email");
   }
 });

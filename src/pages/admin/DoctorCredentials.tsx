@@ -2,6 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import { CheckCircle2, Copy, User, Lock, Send } from "lucide-react";
 import { toast } from "sonner";
 import { getAdminEmailSettings } from "./emailSettings";
+import { sendDoctorCredentials } from "../../lib/emailService";
+import { useState } from "react";
 
 type CredentialsState = {
   doctorEmail?: string;
@@ -18,27 +20,28 @@ export default function DoctorCredentials() {
   const password = credentials.password ?? "[Password Placeholder]";
   const doctorEmail = credentials.doctorEmail ?? "";
   const doctorName = credentials.doctorName ?? "Doctor";
+  const [isSending, setIsSending] = useState(false);
 
-  const handleSendToGmail = () => {
+  const handleSendToGmail = async () => {
     if (!doctorEmail) {
       toast.error("Doctor email is missing.");
       return;
     }
 
-    const settings = getAdminEmailSettings();
-    const subject = settings.subjectTemplate;
-    const body = settings.bodyTemplate
-      .replace(/{{doctorName}}/g, doctorName)
-      .replace(/{{username}}/g, username)
-      .replace(/{{password}}/g, password)
-      .replace(/{{adminEmail}}/g, settings.senderGmail || "Admin");
-
-    const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
-      doctorEmail
-    )}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    window.open(gmailComposeUrl, "_blank", "noopener,noreferrer");
-    toast.success("Gmail compose opened with generated credentials.");
+    setIsSending(true);
+    try {
+      const success = await sendDoctorCredentials(doctorEmail, doctorName, password);
+      if (success) {
+        toast.success("Credentials sent to doctor's email successfully!");
+      } else {
+        toast.error("Failed to send email. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast.error("An error occurred while sending email.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -94,10 +97,11 @@ export default function DoctorCredentials() {
             <button
               type="button"
               onClick={handleSendToGmail}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 text-white px-4 py-2 font-medium hover:bg-green-700 transition-colors"
+              disabled={isSending}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 text-white px-4 py-2 font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
             >
               <Send size={16} />
-              Send to Doctor Gmail
+              {isSending ? "Sending Email..." : "Send to Doctor Email"}
             </button>
             <Link
               to="/admin"

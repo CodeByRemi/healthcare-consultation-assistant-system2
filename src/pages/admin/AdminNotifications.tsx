@@ -1,65 +1,39 @@
 import { useState } from "react";
-import { Bell, Clock3, Info, CheckCircle, AlertTriangle, X } from "lucide-react";
+import { Bell, Clock3, Info, CheckCircle, AlertTriangle, X, Calendar, FileText, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface Notification {
-  id: number;
-  type: "info" | "success" | "warning";
-  title: string;
-  message: string;
-  details: string;
-  time: string;
-  read: boolean;
-}
-
-const initialNotifications: Notification[] = [
-  {
-    id: 1,
-    type: "info",
-    title: "Notification Title",
-    message: "This is a placeholder for a notification message.",
-    details: "This is a placeholder for detailed notification content. It provides more context about the notification.",
-    time: "Just now",
-    read: false
-  },
-  {
-    id: 2,
-    type: "warning",
-    title: "System Notification",
-    message: "This is a placeholder for a system warning or alert.",
-    details: "This is a placeholder for detailed system notification content.",
-    time: "1 hour ago",
-    read: true
-  },
-  {
-    id: 3,
-    type: "success",
-    title: "Activity Update",
-    message: "This is a placeholder for a success message.",
-    details: "This is a placeholder for detailed success notification content.",
-    time: "Yesterday",
-    read: true
-  }
-];
+import { useNotifications } from "../../context/NotificationContext";
+import type { Notification } from "../../context/NotificationContext";
 
 export default function AdminNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const { notifications, unreadCount, markAsRead } = useNotifications();
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     setSelectedNotification(notification);
-    // Mark as read locally
     if (!notification.read) {
-      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+      await markAsRead(notification.id);
     }
   };
 
   const getIcon = (type: string) => {
     switch (type) {
       case "success": return <CheckCircle className="text-green-500" size={20} />;
-      case "warning": return <AlertTriangle className="text-amber-500" size={20} />;
+      case "warning": 
+      case "system": return <AlertTriangle className="text-amber-500" size={20} />;
+      case "appointment": return <Calendar className="text-purple-500" size={20} />;
+      case "prescription": return <FileText className="text-indigo-500" size={20} />;
+      case "message": return <MessageSquare className="text-emerald-500" size={20} />;
       default: return <Info className="text-blue-500" size={20} />;
     }
+  };
+
+  const getTypeStyle = (type: string, part: 'bar' | 'iconBg') => {
+    if (type === 'success') return part === 'bar' ? 'bg-green-500' : 'bg-green-50 text-green-600';
+    if (type === 'warning' || type === 'system') return part === 'bar' ? 'bg-amber-500' : 'bg-amber-50 text-amber-600';
+    if (type === 'appointment') return part === 'bar' ? 'bg-purple-500' : 'bg-purple-50 text-purple-600';
+    if (type === 'prescription') return part === 'bar' ? 'bg-indigo-500' : 'bg-indigo-50 text-indigo-600';
+    if (type === 'message') return part === 'bar' ? 'bg-emerald-500' : 'bg-emerald-50 text-emerald-600';
+    return part === 'bar' ? 'bg-blue-500' : 'bg-blue-50 text-blue-600';
   };
 
   return (
@@ -70,7 +44,7 @@ export default function AdminNotifications() {
           <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
         </div>
         <span className="text-sm text-gray-500">
-          {notifications.filter(n => !n.read).length} unread
+          {unreadCount} unread
         </span>
       </div>
 
@@ -99,7 +73,7 @@ export default function AdminNotifications() {
               <p className="text-sm text-gray-600 mb-2 line-clamp-1">{item.message}</p>
               <div className="text-xs text-gray-400 flex items-center gap-1">
                 <Clock3 size={14} />
-                <span>{item.time}</span>
+                <span>{item.time || new Date(item.createdAt).toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -131,27 +105,19 @@ export default function AdminNotifications() {
               className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden relative z-10"
             >
               {/* Header color bar based on type */}
-              <div className={`h-2 w-full ${
-                selectedNotification.type === 'success' ? 'bg-green-500' :
-                selectedNotification.type === 'warning' ? 'bg-amber-500' :
-                'bg-blue-500'
-              }`} />
+              <div className={`h-2 w-full ${getTypeStyle(selectedNotification.type, 'bar')}`} />
               
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
-                       selectedNotification.type === 'success' ? 'bg-green-50 text-green-600' :
-                       selectedNotification.type === 'warning' ? 'bg-amber-50 text-amber-600' :
-                       'bg-blue-50 text-blue-600'
-                    }`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${getTypeStyle(selectedNotification.type, 'iconBg')}`}>
                       {getIcon(selectedNotification.type)}
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-gray-900">{selectedNotification.title}</h3>
                       <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                         <Clock3 size={14} />
-                        <span>{selectedNotification.time}</span>
+                        <span>{selectedNotification.time || new Date(selectedNotification.createdAt).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

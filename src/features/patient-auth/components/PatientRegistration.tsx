@@ -122,7 +122,10 @@ export default function PatientRegistration() {
           createdAt: new Date().toISOString()
         });
 
-        toast.success("Account created successfully!");
+        // Send Email Verification
+        await sendEmailVerification(user);
+
+        toast.success("Account created successfully! Please check your email to verify your account.");
         navigate('/patient/onboarding'); // Redirect to onboarding
         
       } catch (error: any) {

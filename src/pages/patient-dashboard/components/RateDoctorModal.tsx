@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaStar } from "react-icons/fa";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { toast } from "sonner";
 
@@ -42,9 +42,30 @@ export default function RateDoctorModal({ isOpen, onClose, appointment, onSucces
         reviewDate: new Date().toISOString(),
         status: "completed",
         ratingSubmitted: true,
-        ratingSubmittedAt: new Date().toISOString(),
-      });
-      toast.success("Thank you for your feedback!");
+          ratingSubmittedAt: new Date().toISOString(),
+        });
+
+        if (appointment.doctorId) {
+          try {
+            const doctorRef = doc(db, 'doctors', appointment.doctorId);
+            const doctorSnap = await getDoc(doctorRef);
+            if (doctorSnap.exists()) {
+              const data = doctorSnap.data();
+              const currentReviews = data.reviews || 0;
+              const currentRating = data.rating || 0;
+              
+              const newReviews = currentReviews + 1;
+              const newRating = ((currentRating * currentReviews) + rating) / newReviews;
+              
+              await updateDoc(doctorRef, {
+                reviews: newReviews,
+                rating: Number(newRating.toFixed(1))
+              });
+            }
+          } catch(e) { console.error('Error updating doctor avg rating:', e); }
+        }
+
+        toast.success("Thank you for your feedback!");
       onSuccess();
       onClose();
       setRating(0);

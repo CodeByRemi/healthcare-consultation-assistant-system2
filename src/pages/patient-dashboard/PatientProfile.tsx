@@ -5,7 +5,7 @@ import { FaUserCircle, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEdit, FaSave } fro
 import { useAuth } from "../../context/AuthContext";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { toast } from "sonner";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
 
@@ -49,6 +49,19 @@ export default function PatientProfile() {
                 ...prev,
                 ...data,
                 patientId: pId
+            }));
+          } else {
+            // Fix: Create the document for legacy accounts so "ID Loading..." doesn't hang forever
+            const newId = `PT-${Math.floor(10000 + Math.random() * 90000)}`;
+            const newData = {
+              patientId: newId,
+              email: currentUser.email || "",
+              createdAt: new Date().toISOString()
+            };
+            await setDoc(docRef, newData);
+            setProfileData(prev => ({
+              ...prev,
+              ...newData
             }));
           }
         } catch (error) {

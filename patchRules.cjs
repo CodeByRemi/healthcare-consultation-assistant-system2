@@ -1,0 +1,1 @@
+const fs = require('fs'); let rules = fs.readFileSync('firestore.rules', 'utf8'); rules = rules.replace(/match \/notifications\/\{notificationId\} \{[\s\S]*?\n    \}/, 'match /notifications/{notificationId} {\n      allow read, write: if isAuthenticated();\n    }'); fs.writeFileSync('firestore.rules', rules);

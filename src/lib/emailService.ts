@@ -11,3 +11,14 @@ export const sendVerificationEmail = async (to: string, userName: string) => {
     return false;
   }
 };
+
+export const sendDoctorCredentials = async (to: string, doctorName: string, password: string) => {
+  try {
+    const sendCreds = httpsCallable(functions, 'sendDoctorCredentials');
+    const result = await sendCreds({ to, doctorName, password });
+    return (result.data as any)?.success === true;
+  } catch (err) {
+    console.error("Error sending SendGrid email via Cloud Function:", err);
+    return false;
+  }
+};

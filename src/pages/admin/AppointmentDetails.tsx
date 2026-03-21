@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import {
   X,
@@ -63,10 +63,10 @@ function AppointmentModal({
         <div className="p-6 space-y-6">
           {/* Status Badge */}
           <div className="flex items-center gap-3">
-            <span className={px-3 py-1 rounded-full text-sm font-medium }>
+            <span className="px-3 py-1 rounded-full text-sm font-medium ">
               {appointment.status}
             </span>
-            <span className={px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 }>
+            <span className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ">
               {appointment.type === 'Virtual' ? <Video size={14} /> : <MapPin size={14} />}
               {appointment.type}
             </span>
@@ -218,13 +218,13 @@ function AppointmentTable({
               <td className="px-4 py-3 text-sm text-gray-700">{row.patient}</td>
               <td className="px-4 py-3 text-sm text-gray-700">{row.doctor}</td>
               <td className="px-4 py-3 text-sm">
-                <span className={inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium }>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ">
                   {row.type === 'Virtual' ? <Video size={12} /> : <MapPin size={12} />}
                   {row.type}
                 </span>
               </td>
               <td className="px-4 py-3 text-sm">
-                <span className={inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium }>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ">
                   {row.status}
                 </span>
               </td>
