@@ -7,8 +7,9 @@ import {
   FaUserShield
 } from 'react-icons/fa';
 import { toast } from 'sonner';
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../lib/firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { auth, db } from "../../lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 import logo from "../../assets/patientreg.png";
 
 export default function AdminLogin() {
@@ -31,7 +32,14 @@ export default function AdminLogin() {
     setIsLoading(true);
     
     try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      // Verify user is in the admins collection
+      const adminDoc = await getDoc(doc(db, "admins", userCredential.user.uid));
+      if (!adminDoc.exists()) {
+        await signOut(auth);
+        toast.error("Access denied. This account does not have admin privileges.");
+        return;
+      }
       toast.success('Welcome back, Admin!');
       navigate('/admin'); // Redirect to Admin Dashboard
     } catch (error: unknown) {

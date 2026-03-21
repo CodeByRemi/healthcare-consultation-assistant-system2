@@ -17,8 +17,8 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
-import { db, auth } from "../../lib/firebase";
+import { db } from "../../lib/firebase";
+import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/patientreg.png";
 import AdminSidebar from "./components/AdminSidebar";
 import AdminMobileFooter from "./components/AdminMobileFooter";
@@ -77,22 +77,21 @@ interface Appointment {
 export default function AdminDashboard() {
   const [currentTab, setCurrentTab] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { currentUser, userRole, loading } = useAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsLoading(false);
-      if (!user) {
-        toast.error("Please login to access the admin dashboard");
-        navigate("/doctor/login"); // Redirect to login
-      }
-    });
+    if (loading) return;
+    if (!currentUser) {
+      toast.error("Please login to access the admin dashboard");
+      navigate("/admin/login");
+    } else if (userRole !== 'admin') {
+      toast.error("Access denied. Admin privileges required.");
+      navigate("/admin/login");
+    }
+  }, [currentUser, userRole, loading, navigate]);
 
-    return () => unsubscribe();
-  }, [navigate]);
-
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>

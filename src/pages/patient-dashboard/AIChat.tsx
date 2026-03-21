@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 import { 
   Send, 
   Plus, 
@@ -703,7 +704,21 @@ export default function AIChat() {
                               ? 'bg-[#0A6ED1] text-white rounded-tr-none'
                               : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
                           }`}>
-                            <p className="whitespace-pre-wrap">{message.content}</p>
+                            {message.role === 'assistant' ? (
+                              <div className="[&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_strong]:font-semibold [&_a]:text-[#0A6ED1] [&_a]:underline [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded whitespace-pre-wrap wrap-break-word">
+                                <ReactMarkdown
+                                  components={{
+                                    a: ({ ...props }) => (
+                                      <a {...props} target="_blank" rel="noopener noreferrer" />
+                                    )
+                                  }}
+                                >
+                                  {message.content}
+                                </ReactMarkdown>
+                              </div>
+                            ) : (
+                              <p className="whitespace-pre-wrap">{message.content}</p>
+                            )}
                             <span className={`text-[10px] block mt-2 opacity-70 ${
                               message.role === 'user' ? 'text-blue-100 text-right' : 'text-slate-400'
                             }`}>

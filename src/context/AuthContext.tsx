@@ -9,7 +9,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 interface AuthContextType {
   currentUser: User | null;
-  userRole: 'patient' | 'doctor' | null;
+  userRole: 'patient' | 'doctor' | 'admin' | null;
   loading: boolean;
   logout: () => Promise<void>;
 }
@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<'patient' | 'doctor' | null>(null);
+  const [userRole, setUserRole] = useState<'patient' | 'doctor' | 'admin' | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,15 +32,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // But checking both collections is a simple starting point.
         
         try {
-            const doctorDoc = await getDoc(doc(db, "doctors", user.uid));
-            if (doctorDoc.exists()) {
-                setUserRole('doctor');
+            const adminDoc = await getDoc(doc(db, "admins", user.uid));
+            if (adminDoc.exists()) {
+                setUserRole('admin');
             } else {
-                const patientDoc = await getDoc(doc(db, "patients", user.uid));
-                if (patientDoc.exists()) {
-                    setUserRole('patient');
+                const doctorDoc = await getDoc(doc(db, "doctors", user.uid));
+                if (doctorDoc.exists()) {
+                    setUserRole('doctor');
                 } else {
-                    setUserRole(null); // Unknown role yet
+                    const patientDoc = await getDoc(doc(db, "patients", user.uid));
+                    if (patientDoc.exists()) {
+                        setUserRole('patient');
+                    } else {
+                        setUserRole(null); // Unknown role yet
+                    }
                 }
             }
         } catch (error) {

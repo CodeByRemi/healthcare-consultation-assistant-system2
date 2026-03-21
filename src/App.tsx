@@ -1,3 +1,4 @@
+import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Home from "./pages/common/Home";
 import ChooseYourPath from "./pages/common/ChooseYourPath";
@@ -44,6 +45,15 @@ import DoctorRegistrationStep2 from "./pages/doctor/DoctorRegistrationStep2";
 import DoctorRegistrationStep3 from "./pages/doctor/DoctorRegistrationStep3";
 import DoctorRegistrationStep4 from "./pages/doctor/DoctorRegistrationStep4";
 import AdminLogin from "./pages/admin/AdminLogin";
+import { useAuth } from "./context/AuthContext";
+import { Navigate } from "react-router-dom";
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { currentUser, userRole, loading } = useAuth();
+  if (loading) return <div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div></div>;
+  if (!currentUser || userRole !== 'admin') return <Navigate to="/admin/login" replace />;
+  return <>{children}</>;
+}
 
 // In your Routes
   
@@ -53,11 +63,11 @@ function App() {
       <Toaster position="top-center" richColors />
       <Routes>
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/update-password" element={<AdminUpdatePassword />} />
-        <Route path="/admin/doctor-credentials" element={<DoctorCredentials />} />
-        <Route path="/admin/appointment-details" element={<AppointmentDetails />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/update-password" element={<AdminRoute><AdminUpdatePassword /></AdminRoute>} />
+        <Route path="/admin/doctor-credentials" element={<AdminRoute><DoctorCredentials /></AdminRoute>} />
+        <Route path="/admin/appointment-details" element={<AdminRoute><AppointmentDetails /></AdminRoute>} />
+        <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
         <Route path="/" element={<Home />} />
         <Route path="/choose-path" element={<ChooseYourPath />} />
         <Route path="/patient-reg" element={<PatientReg />} />
