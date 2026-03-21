@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 const steps = [
     {
         number: "01",
-        title: "Create Your Account",
-        description: "Sign up and complete your health profile with your personal details, medical history, and insurance information."
+        title: "Login to Your Account",
+        description: "Log in to access your profile, medical history, and consultation tools instantly."
     },
     {
         number: "02",
@@ -14,7 +14,7 @@ const steps = [
     {
         number: "03",
         title: "Pick a Date & Time",
-        description: "Select an available slot from the doctor's live calendar. Choose in-person or video consultation."
+        description: "Select an available slot from the doctor's live calendar. Book physical consultation."
     },
     {
         number: "04",
@@ -51,16 +51,15 @@ const HowItWorks = () => {
                                 <div className="relative rounded-[40px] overflow-hidden bg-black" style={{ aspectRatio: '9/19.5' }}>
                                     {/* Dynamic Island */}
                                     <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-20"></div>
-                                    {/* Demo video — place your video at /public/demo.mp4 */}
+                                    {/* Demo video source from /public/demo1.MP4 */}
                                     <video
-                                        className="absolute inset-0 w-full h-full object-cover z-10"
-                                        style={{ objectPosition: '68% 25%' }}
+                                        className="absolute inset-0 w-full h-full object-contain object-center bg-black z-10"
                                         autoPlay
                                         muted
                                         loop
                                         playsInline
                                     >
-                                        <source src="/demo.MP4" type="video/mp4" />
+                                        <source src="/demo1.MP4" type="video/mp4" />
                                     </video>
                                     {/* Booking UI placeholder (visible until video loads) */}
                                     <div className="absolute inset-0 flex flex-col bg-white z-0">

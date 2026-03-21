@@ -6,12 +6,13 @@ import PatientMobileFooter from "./components/PatientMobileFooter";
 import { FaBell, FaCalendarCheck, FaInfoCircle, FaCheckDouble, FaTrash, FaTimes } from "react-icons/fa";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Notification } from "../../context/NotificationContext";
 
 export default function PatientNotifications() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
-  const { notifications, markAsRead, markAllAsRead, deleteNotification: contextDeleteNotification } = useNotifications();
-  const [selectedNotification, setSelectedNotification] = useState<any | null>(null);
+  const { notifications, markAsRead, deleteNotification: contextDeleteNotification } = useNotifications();
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   const deleteNotification = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -22,7 +23,7 @@ export default function PatientNotifications() {
     }
   };
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: Notification) => {
     setSelectedNotification(notification);
     if (!notification.read) {
       markAsRead(notification.id);
@@ -53,12 +54,6 @@ export default function PatientNotifications() {
                 <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">Notifications</h1>
                 <p className="text-slate-500">Stay updated with your appointments and health alerts.</p>
               </div>
-              <button 
-                onClick={markAllAsRead}
-                className="text-sm font-medium text-[#0A6ED1] hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors"
-              >
-                Mark all as read
-              </button>
             </div>
 
             <div className="space-y-4">

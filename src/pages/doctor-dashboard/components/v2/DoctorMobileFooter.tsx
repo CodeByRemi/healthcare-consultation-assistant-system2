@@ -6,9 +6,17 @@ import {
   FaUserInjured,
   FaCog,
 } from "react-icons/fa";
+import type { IconType } from "react-icons";
+
+type DoctorFooterItem = {
+  icon: IconType;
+  path: string;
+  label: string;
+  count?: number;
+};
 
 export default function DoctorMobileFooter() {
-  const menuItems = [
+  const menuItems: DoctorFooterItem[] = [
     { icon: FaHome, path: "/doctor/dashboard", label: "Home" },
     { icon: FaCalendarAlt, path: "/doctor/schedule", label: "Schedule" },
     { icon: FaClock, path: "/doctor/availability", label: "Avail" },
@@ -32,7 +40,7 @@ export default function DoctorMobileFooter() {
             {({ isActive }) => (
               <>
                 <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 ${
+                  className={`relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 ${
                     isActive ? "bg-blue-50 shadow-sm shadow-blue-100 scale-110" : "bg-transparent"
                   }`}
                 >

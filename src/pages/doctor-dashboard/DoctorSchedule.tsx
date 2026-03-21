@@ -16,8 +16,6 @@ import {
   FaPhone,
   FaEnvelope,
   FaSearch,
-  FaSlidersH,
-  FaClock,
 } from "react-icons/fa";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
@@ -50,6 +48,18 @@ interface Appointment {
   additionalDetails?: Record<string, string>;
 }
 
+interface AvailabilityEntry {
+  id: string;
+  date: string;
+  slots: string[];
+  startTime?: string;
+  endTime?: string;
+  duration?: number;
+  mode?: string;
+  notes?: string;
+  source: 'collection' | 'subcollection';
+}
+
 // Time slots for the grid rows (8 AM to 5 PM)
 const timeSlots = [
   "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM",
@@ -72,6 +82,7 @@ export default function DoctorSchedule() {
   // State for appointments across the week
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [mobileAppointments, setMobileAppointments] = useState<Appointment[]>([]);
+  const [availabilityEntries, setAvailabilityEntries] = useState<AvailabilityEntry[]>([]);
   const [stats, setStats] = useState({
     totalAppointments: 0,
     newPatients: 0,
@@ -160,6 +171,59 @@ export default function DoctorSchedule() {
       return JSON.stringify(value);
     }
     return "";
+  }, []);
+
+  const formatStoredTime = useCallback((timeValue: string) => {
+    if (!timeValue) return "";
+    if (/am|pm/i.test(timeValue)) return timeValue;
+
+    const [hoursRaw, minutesRaw] = timeValue.split(":");
+    const hours = Number(hoursRaw);
+    const minutes = Number(minutesRaw);
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      return timeValue;
+    }
+
+    return new Date(2000, 0, 1, hours, minutes).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }, []);
+
+  const generateSlotsFromRange = useCallback((startTime?: string, endTime?: string, durationMinutes?: number) => {
+    if (!startTime || !endTime) return [] as string[];
+
+    const [startHoursRaw, startMinutesRaw] = startTime.split(":");
+    const [endHoursRaw, endMinutesRaw] = endTime.split(":");
+    const startHours = Number(startHoursRaw);
+    const startMinutes = Number(startMinutesRaw);
+    const endHours = Number(endHoursRaw);
+    const endMinutes = Number(endMinutesRaw);
+
+    if ([startHours, startMinutes, endHours, endMinutes].some((value) => Number.isNaN(value))) {
+      return [] as string[];
+    }
+
+    const startTotal = startHours * 60 + startMinutes;
+    const endTotal = endHours * 60 + endMinutes;
+    const step = durationMinutes && durationMinutes > 0 ? durationMinutes : 30;
+
+    const slots: string[] = [];
+    for (let current = startTotal; current < endTotal; current += step) {
+      const hours = Math.floor(current / 60);
+      const minutes = current % 60;
+      slots.push(
+        new Date(2000, 0, 1, hours, minutes).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })
+      );
+    }
+
+    return slots;
   }, []);
 
   useEffect(() => {
@@ -264,6 +328,36 @@ export default function DoctorSchedule() {
           return mapped;
         };
 
+        const mapAvailabilityDocs = (
+          docsToProcess: Array<{ id: string; data: () => Record<string, unknown> }>,
+          source: AvailabilityEntry['source']
+        ) => {
+          return docsToProcess
+            .map((docSnap) => {
+              const data = docSnap.data();
+              const slots = Array.isArray(data.slots)
+                ? (data.slots as unknown[]).map((slot) => formatStoredTime(String(slot))).filter(Boolean)
+                : generateSlotsFromRange(
+                    typeof data.startTime === 'string' ? data.startTime : undefined,
+                    typeof data.endTime === 'string' ? data.endTime : undefined,
+                    typeof data.duration === 'number' ? data.duration : undefined
+                  );
+
+              return {
+                id: docSnap.id,
+                date: String(data.date || ''),
+                slots,
+                startTime: typeof data.startTime === 'string' ? formatStoredTime(data.startTime) : undefined,
+                endTime: typeof data.endTime === 'string' ? formatStoredTime(data.endTime) : undefined,
+                duration: typeof data.duration === 'number' ? data.duration : undefined,
+                mode: typeof data.mode === 'string' ? data.mode : undefined,
+                notes: typeof data.notes === 'string' ? data.notes : undefined,
+                source,
+              } satisfies AvailabilityEntry;
+            })
+            .filter((entry) => entry.date);
+        };
+
             const startDay = displayDays[0];
             const endDay = displayDays[displayDays.length - 1];
             
@@ -295,6 +389,48 @@ export default function DoctorSchedule() {
 
             setAppointments(appts);
 
+            const availabilityQuery = query(
+              collection(db, "availability"),
+              where("doctorId", "==", user.uid),
+              where("date", ">=", startStr),
+              where("date", "<=", endStr)
+            );
+            const availabilitySnapshot = await getDocs(availabilityQuery);
+            const topLevelAvailability = mapAvailabilityDocs(
+              availabilitySnapshot.docs as Array<{ id: string; data: () => Record<string, unknown> }>,
+              'collection'
+            );
+
+            let nestedAvailability: AvailabilityEntry[] = [];
+            try {
+              const nestedSnapshot = await getDocs(collection(db, "doctors", user.uid, "availability"));
+              nestedAvailability = mapAvailabilityDocs(
+                (nestedSnapshot.docs as Array<{ id: string; data: () => Record<string, unknown> }>).filter((docSnap) => {
+                  const entryDate = String(docSnap.data().date || '');
+                  return entryDate >= startStr && entryDate <= endStr;
+                }),
+                'subcollection'
+              );
+            } catch (nestedError) {
+              console.error("Error loading nested availability:", nestedError);
+            }
+
+            const mergedAvailabilityMap = new Map<string, AvailabilityEntry>();
+            [...topLevelAvailability, ...nestedAvailability].forEach((entry) => {
+              const key = `${entry.date}-${entry.startTime || ''}-${entry.endTime || ''}-${entry.slots.join('|')}`;
+              if (!mergedAvailabilityMap.has(key)) {
+                mergedAvailabilityMap.set(key, entry);
+              }
+            });
+
+            const mergedAvailability = Array.from(mergedAvailabilityMap.values()).sort((a, b) => {
+              const dateCompare = a.date.localeCompare(b.date);
+              if (dateCompare !== 0) return dateCompare;
+              return (a.startTime || a.slots[0] || '').localeCompare(b.startTime || b.slots[0] || '');
+            });
+
+            setAvailabilityEntries(mergedAvailability);
+
             if (appts.length > 0) {
               setMobileAppointments(appts);
             } else {
@@ -308,7 +444,8 @@ export default function DoctorSchedule() {
             }
             
             // Calculate Stats
-            const totalSlots = displayDays.length * timeSlots.length; // Total grid cells
+            const totalAvailableSlots = mergedAvailability.reduce((total, entry) => total + Math.max(entry.slots.length, 1), 0);
+            const totalSlots = totalAvailableSlots > 0 ? totalAvailableSlots : displayDays.length * timeSlots.length;
             const filledSlots = appts.length;
             setStats({
                 totalAppointments: filledSlots,
@@ -323,7 +460,7 @@ export default function DoctorSchedule() {
     };
     
     fetchWeekSchedule();
-  }, [user, displayDays, viewType, currentDate, stringifyFieldValue]); // Added viewType and currentDate dependency
+  }, [user, displayDays, viewType, currentDate, stringifyFieldValue, formatStoredTime, generateSlotsFromRange]); // Added viewType and currentDate dependency
 
 
   const handlePrev = () => {
@@ -421,8 +558,6 @@ export default function DoctorSchedule() {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   };
 
-  const isPreviewAppointment = (appt: Appointment | null | undefined) => Boolean(appt?.id.startsWith("preview-"));
-
   const extractNotesField = (notesValue: string | undefined, fieldLabel: string) => {
     if (!notesValue) return undefined;
     const result = new RegExp(`${fieldLabel}\\s*:\\s*([^\\n]+)`, "i").exec(notesValue);
@@ -471,44 +606,53 @@ export default function DoctorSchedule() {
     return mobileSortedAppointments.filter((appt) => appt.date === selectedMobileDate);
   }, [mobileSortedAppointments, selectedMobileDate]);
 
-  const mobileVisibleAppointments = useMemo(() => {
-    if (mobileDayAppointments.length > 0) return mobileDayAppointments;
-    return mobileSortedAppointments.slice(0, 8);
-  }, [mobileDayAppointments, mobileSortedAppointments]);
+  const mobileDayAvailability = useMemo(() => {
+    if (!selectedMobileDate) return [];
+    return availabilityEntries.filter((entry) => entry.date === selectedMobileDate);
+  }, [availabilityEntries, selectedMobileDate]);
 
-  const mobileShowcaseCard = useMemo(() => {
-    const primary = mobileVisibleAppointments[0];
+  const mobileAvailabilitySlotCount = useMemo(() => {
+    return mobileDayAvailability.reduce((total, entry) => total + Math.max(entry.slots.length, 1), 0);
+  }, [mobileDayAvailability]);
 
-    if (primary) {
-      return {
-        source: primary,
-        name: "Patient Name",
-        id: "DR-9900",
-        isHighlighted: true,
-      };
-    }
+  const mobileAvailableSlots = useMemo(() => {
+    const uniqueSlots = new Set<string>();
 
-    const placeholder: Appointment = {
-      id: "preview-mobile-showcase",
-      date: selectedMobileDate || formatDateId(new Date()),
-      time: "09:00 AM",
-      patient: "Patient Name",
-      status: "Confirmed",
-      type: "Consultation",
-      duration: "60 min",
-      notes: "This is placeholder content for layout preview.",
-      patientId: "DR-9900",
-      patientPhone: "Phone",
-      patientEmail: "Email",
-    };
+    mobileDayAvailability.forEach((entry) => {
+      entry.slots.forEach((slot) => {
+        if (slot) uniqueSlots.add(slot);
+      });
+    });
 
-    return {
-      source: placeholder,
-      name: "Patient Name",
-      id: "DR-9900",
-      isHighlighted: true,
-    };
-  }, [mobileVisibleAppointments, selectedMobileDate]);
+    return Array.from(uniqueSlots).sort((left, right) => {
+      const leftTime = to24h(left);
+      const rightTime = to24h(right);
+      return leftTime.hh * 60 + leftTime.mm - (rightTime.hh * 60 + rightTime.mm);
+    });
+  }, [mobileDayAvailability]);
+
+  const mobileDayScheduleRows = useMemo(() => {
+    const slotSet = new Set<string>(mobileAvailableSlots);
+    const appointmentTimeSet = new Set<string>(mobileDayAppointments.map((appointment) => appointment.time));
+    const mergedTimes = Array.from(new Set([...slotSet, ...appointmentTimeSet]));
+
+    return mergedTimes
+      .sort((left, right) => {
+        const leftTime = to24h(left);
+        const rightTime = to24h(right);
+        return leftTime.hh * 60 + leftTime.mm - (rightTime.hh * 60 + rightTime.mm);
+      })
+      .map((time) => {
+        const appointment = mobileDayAppointments.find((appt) => appt.time === time) ?? null;
+        return {
+          time,
+          appointment,
+          isAvailable: slotSet.has(time) && !appointment,
+        };
+      });
+  }, [mobileAvailableSlots, mobileDayAppointments]);
+
+  const isPreviewAppointment = (appt: Appointment | null | undefined) => Boolean(appt?.id.startsWith("preview-"));
 
   const statusPillClass = (status: Appointment['status']) => {
     if (status === 'Confirmed') return 'bg-green-50 text-green-700 border-green-100';
@@ -556,7 +700,7 @@ export default function DoctorSchedule() {
             </div>
 
             {/* Mobile-first Schedule Experience */}
-            <section className="md:hidden -mx-4 px-4 py-2 space-y-4">
+            <section className="md:hidden -mx-4 px-4 py-2 space-y-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col">
                   <h1 className="text-4xl font-['Newsreader'] font-semibold text-[#14213D] leading-none">Schedule</h1>
@@ -572,7 +716,7 @@ export default function DoctorSchedule() {
                     >
                         <FaAngleLeft className="text-slate-400" />
                     </button>
-                    <p className="text-sm text-slate-500 font-bold uppercase tracking-wide min-w-25 text-center">
+                    <p className="text-sm text-slate-500 font-bold uppercase tracking-wide min-w-27.5 text-center">
                         {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                     </p>
                     <button 
@@ -618,7 +762,7 @@ export default function DoctorSchedule() {
                     <button
                       key={`mobile-day-${dayId}`}
                       onClick={() => setSelectedMobileDate(dayId)}
-                      className={`min-w-18 shrink-0 rounded-2xl border px-2 py-3 text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      className={`w-18 min-w-18 shrink-0 rounded-2xl border px-2 py-3 text-center transition-all flex flex-col items-center justify-center gap-1 ${
                         isSelected
                           ? "bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-blue-200 scale-105"
                           : "bg-white text-slate-600 border-slate-200"
@@ -628,7 +772,7 @@ export default function DoctorSchedule() {
                         {day.toLocaleDateString('en-US', { weekday: 'short' })}
                       </div>
                       <div className="text-xl font-bold leading-none">{day.getDate()}</div>
-                      {appointments.some(a => a.date === dayId) && (
+                      {(appointments.some(a => a.date === dayId) || availabilityEntries.some((entry) => entry.date === dayId)) && (
                          <div className={`w-1 h-1 rounded-full mt-1 ${isSelected ? "bg-white" : "bg-blue-500"}`}></div>
                       )}
                     </button>
@@ -636,47 +780,92 @@ export default function DoctorSchedule() {
                 })}
               </div>
 
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-xs tracking-[0.14em] uppercase text-slate-400 font-bold">
-                  Appointments (1)
-                </h2>
-                <button className="text-slate-400" aria-label="Filter appointments">
-                  <FaSlidersH className="text-sm" />
-                </button>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Appointments</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">{mobileDayAppointments.length}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Available Slots</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">{mobileAvailabilitySlotCount}</p>
+                </div>
               </div>
 
               <div className="space-y-3 pb-2">
-                <button
-                  key={`mobile-placeholder-${mobileShowcaseCard.id}`}
-                  onClick={() => openDetails(mobileShowcaseCard.source)}
-                  className="w-full rounded-3xl border text-left px-4 py-4 transition-all active:scale-[0.99] bg-white border-slate-200 text-slate-900 shadow-sm"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="h-11 w-11 rounded-xl flex items-center justify-center text-sm font-bold bg-cyan-100 text-cyan-700">
-                      {getPatientInitials(mobileShowcaseCard.name)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-base font-bold truncate text-slate-800">
-                            {mobileShowcaseCard.name}
-                          </p>
-                          <p className="text-[11px] text-slate-400">
-                            ID: #{mobileShowcaseCard.id}
-                          </p>
-                        </div>
-                        <span className="h-3 w-3 rounded-full bg-emerald-400 mt-1"></span>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-slate-100">
-                        <div className="inline-flex items-center gap-2 text-sm text-slate-600">
-                          <FaClock className="text-[11px] text-blue-500" />
-                          <span>Time</span>
-                        </div>
-                        <p className="text-[12px] text-emerald-600 mt-1 font-semibold">Ongoing</p>
-                      </div>
-                    </div>
+                <div className="flex items-center justify-between px-1">
+                  <div>
+                    <h2 className="text-xs tracking-[0.14em] uppercase text-slate-400 font-bold">Day Schedule</h2>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">{selectedMobileDate ? formatDisplayDate(selectedMobileDate) : 'Select a day'}</p>
                   </div>
-                </button>
+                  <button onClick={handleNewAvailability} className="text-xs font-semibold text-[#0A6ED1]">
+                    Add slot
+                  </button>
+                </div>
+
+                {mobileDayScheduleRows.length > 0 ? (
+                  <div className="space-y-3">
+                    {mobileDayScheduleRows.map((row) =>
+                      row.appointment ? (
+                        <button
+                          key={`mobile-row-${row.time}-${row.appointment.id}`}
+                          onClick={() => openDetails(row.appointment!)}
+                          className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-4 text-left shadow-sm transition-all active:scale-[0.99]"
+                        >
+                          <div className="flex gap-3">
+                            <div className="w-20 shrink-0 rounded-2xl bg-slate-50 px-3 py-3 text-center border border-slate-100">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Time</p>
+                              <p className="mt-1 text-sm font-bold text-slate-900">{row.time}</p>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-base font-bold truncate text-slate-800">{row.appointment.patient}</p>
+                                  <p className="text-[11px] text-slate-400">ID: #{row.appointment.patientId ? row.appointment.patientId.substring(0, 8) : 'UNKNOWN'}</p>
+                                </div>
+                                <span className={`text-[11px] font-bold px-2 py-1 rounded-full border ${statusPillClass(row.appointment.status)}`}>
+                                  {row.appointment.status}
+                                </span>
+                              </div>
+                              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm text-slate-600">
+                                <div>
+                                  <div className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Duration</div>
+                                  <p className="mt-1 font-semibold text-slate-800">{row.appointment.duration || '30 min'}</p>
+                                </div>
+                                <div>
+                                  <div className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Type</div>
+                                  <p className="mt-1 font-semibold text-slate-800">{row.appointment.type}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ) : (
+                        <div
+                          key={`mobile-row-${row.time}`}
+                          className="w-full rounded-3xl border border-blue-100 bg-linear-to-r from-blue-50 via-white to-cyan-50 px-4 py-4 shadow-sm"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-blue-500">Available</p>
+                              <p className="mt-1 text-base font-bold text-slate-900">{row.time}</p>
+                            </div>
+                            <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-[11px] font-bold text-blue-700 border border-blue-100">
+                              Open slot
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleNewAvailability}
+                    className="w-full rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500"
+                  >
+                    No schedule available for this day. Tap to add availability.
+                  </button>
+                )}
               </div>
             </section>
 

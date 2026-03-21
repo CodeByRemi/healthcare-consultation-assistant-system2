@@ -19,6 +19,7 @@ import {
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import logo from "../../assets/patientreg.png";
 import AdminSidebar from "./components/AdminSidebar";
 import AdminMobileFooter from "./components/AdminMobileFooter";
@@ -79,6 +80,7 @@ export default function AdminDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const { currentUser, userRole, loading } = useAuth();
+  const { unreadCount } = useNotifications();
 
   useEffect(() => {
     if (loading) return;
@@ -161,7 +163,11 @@ export default function AdminDashboard() {
               className="relative p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-blue-600 transition-colors"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] leading-4 text-center">0</span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] leading-4 text-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </button>
           </div>
         </motion.header>
@@ -322,7 +328,11 @@ function DoctorsListView() {
   };
 
   useEffect(() => {
-    fetchDoctors();
+    const timer = window.setTimeout(() => {
+      void fetchDoctors();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const selectedDoctor = doctors.find((doctor) => doctor.id === selectedDoctorId) ?? null;
@@ -532,7 +542,7 @@ function DoctorDetailsModal({
     {/* Confirmation Modal */}
     <AnimatePresence>
       {showSuspendConfirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-60 p-4 backdrop-blur-sm">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -968,7 +978,7 @@ function PatientDetailsModal({
     {/* Confirmation Modal */}
     <AnimatePresence>
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-60 p-4 backdrop-blur-sm">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

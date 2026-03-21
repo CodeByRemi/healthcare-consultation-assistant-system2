@@ -21,6 +21,7 @@ import PatientMobileFooter from './components/PatientMobileFooter';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { db, model } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 
 interface Message {
   id: string;
@@ -64,6 +65,7 @@ const PLACEHOLDER_MESSAGES: Message[] = [
 export default function AIChat() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const { unreadCount } = useNotifications();
   const [searchParams] = useSearchParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
@@ -414,17 +416,14 @@ export default function AIChat() {
             </div>
 
             {/* Right Side */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center">
                  <Link to="/patient/notifications" className="relative p-2 text-slate-400 hover:text-[#0A6ED1]">
                     <Bell size={18} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                 </Link>
-                 <Link
-                   to="/patient/profile"
-                   className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-50 to-blue-100 flex items-center justify-center text-[#0A6ED1] shadow-sm border border-blue-100"
-                   title="Profile"
-                 >
-                     <UserIcon size={16} />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
                  </Link>
             </div>
           </div>

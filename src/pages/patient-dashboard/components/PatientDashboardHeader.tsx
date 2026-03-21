@@ -2,6 +2,7 @@ import { FaBell } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useNotifications } from "../../../context/NotificationContext";
+import { User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
@@ -45,6 +46,14 @@ export default function PatientDashboardHeader({ toggleSidebar: _toggleSidebar }
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
+        </Link>
+
+        <Link
+          to="/patient/profile"
+          className="md:hidden flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-[#0A6ED1] hover:bg-blue-100 transition-colors"
+          title="Profile"
+        >
+          <User className="w-4 h-4" />
         </Link>
 
 

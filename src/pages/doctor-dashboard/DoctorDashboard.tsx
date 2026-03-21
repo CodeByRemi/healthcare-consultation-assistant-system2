@@ -174,20 +174,23 @@ export default function DoctorDashboard() {
                 {/* Upcoming Appointments */}
               <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col p-4 sm:p-6">
                     {/* Header */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4">
-                        <div>
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 md:mb-8 gap-4">
+                  <div className="space-y-2">
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-blue-700 border border-blue-100">
+                      {appointments.length} upcoming
+                    </span>
                     <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 mb-1">Today's Schedule</h2>
                             <p className="text-sm text-slate-500">
                                 {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • You have {appointments.length} remaining appointments
                             </p>
                         </div>
-                        <Link to="/doctor/patients" className="w-full sm:w-auto justify-center bg-[#0A6ED1] hover:bg-[#0958a8] text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
+                  <Link to="/doctor/patients" className="w-full sm:w-auto justify-center bg-[#0A6ED1] hover:bg-[#0958a8] text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
                             <FaPlus className="text-sm" /> New Appointment
                         </Link>
                     </div>
 
                     {/* Table Header */}
-                    <div className="hidden md:grid grid-cols-[1fr_2fr_1fr_0.5fr] px-4 py-3 bg-slate-50/50 rounded-xl mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <div className="hidden lg:grid grid-cols-[1fr_2fr_1fr_0.5fr] px-4 py-3 bg-slate-50/50 rounded-xl mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
                         <div>Time</div>
                         <div>Patient</div>
                         <div>Status</div>
@@ -209,13 +212,13 @@ export default function DoctorDashboard() {
                                             // Navigate to patient details on row click
                                             navigate(`/doctor/patients/${appt.patientId}`);
                                         }}
-                                        className={`cursor-pointer grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr_0.5fr] items-start md:items-center p-3 md:p-4 rounded-2xl transition-all gap-4 md:gap-4 ${
-                                            isActive ? 'bg-[#10B981]/5 border border-[#10B981]/10' : 'hover:bg-slate-50 border border-transparent'
+                                      className={`cursor-pointer grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr_0.5fr] items-start lg:items-center p-4 sm:p-5 lg:p-4 rounded-3xl transition-all gap-4 lg:gap-4 shadow-sm ${
+                                        isActive ? 'bg-[#10B981]/5 border border-[#10B981]/20 shadow-emerald-100/60' : 'bg-slate-50/50 hover:bg-white border border-slate-200 hover:border-slate-300'
                                         }`}
                                     >
                                         {/* Time */}
-                                        <div className="flex justify-between md:block">
-                                            <span className="md:hidden text-xs font-bold text-slate-400 uppercase tracking-wider">Time</span>
+                                      <div className="flex justify-between lg:block rounded-2xl bg-white px-3 py-3 lg:bg-transparent lg:p-0 border border-slate-100 lg:border-0">
+                                        <span className="lg:hidden text-xs font-bold text-slate-400 uppercase tracking-wider">Time</span>
                                             <div>
                                                 <div className={`font-bold ${isActive ? 'text-[#10B981]' : 'text-slate-900'}`}>{appt.time}</div>
                                                 <div className="text-xs text-slate-500 font-medium">{isActive ? 'In Progress' : 'Upcoming'}</div>
@@ -223,8 +226,8 @@ export default function DoctorDashboard() {
                                         </div>
 
                                         {/* Patient */}
-                                        <div className="flex justify-between md:justify-start items-center gap-3">
-                                            <span className="md:hidden text-xs font-bold text-slate-400 uppercase tracking-wider">Patient</span>
+                                      <div className="flex justify-between lg:justify-start items-center gap-3 rounded-2xl bg-white px-3 py-3 lg:bg-transparent lg:p-0 border border-slate-100 lg:border-0">
+                                        <span className="lg:hidden text-xs font-bold text-slate-400 uppercase tracking-wider">Patient</span>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
                                                     isActive ? 'bg-[#10B981] text-white' : 'bg-blue-100 text-blue-600'
@@ -239,8 +242,8 @@ export default function DoctorDashboard() {
                                         </div>
 
                                         {/* Status */}
-                                        <div className="flex justify-between md:block">
-                                            <span className="md:hidden text-xs font-bold text-slate-400 uppercase tracking-wider">Status</span>
+                                        <div className="flex justify-between lg:block rounded-2xl bg-white px-3 py-3 lg:bg-transparent lg:p-0 border border-slate-100 lg:border-0">
+                                          <span className="lg:hidden text-xs font-bold text-slate-400 uppercase tracking-wider">Status</span>
                                             <div>
                                                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide inline-block ${
                                                     isActive ? 'bg-[#10B981] text-white' :
@@ -255,7 +258,7 @@ export default function DoctorDashboard() {
                                         </div>
 
                                         {/* Actions */}
-                                        <div className="flex justify-end md:justify-end gap-2 mt-2 md:mt-0" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex justify-start sm:justify-end lg:justify-end gap-2 pt-1 lg:pt-0" onClick={(e) => e.stopPropagation()}>
                                             {isActive && (
                                                 <button className="p-2 bg-[#10B981]/10 text-[#10B981] rounded-lg hover:bg-[#10B981]/20 transition-colors" title="Start Consultation">
                                                     <FaCalendarCheck />

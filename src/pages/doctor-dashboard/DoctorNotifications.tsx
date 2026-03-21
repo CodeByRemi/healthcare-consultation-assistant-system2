@@ -3,7 +3,7 @@ import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
 import DoctorPageTransition from "./components/v2/DoctorPageTransition";
-import { FaBell, FaCalendarCheck, FaInfoCircle, FaCheckDouble, FaTrash, FaClipboardList, FaArrowLeft } from "react-icons/fa";
+import { FaBell, FaCalendarCheck, FaInfoCircle, FaTrash, FaClipboardList, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 import { useNotifications } from "../../context/NotificationContext";
@@ -12,7 +12,7 @@ export default function DoctorNotifications() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
   
-  const { notifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, markAsRead, deleteNotification } = useNotifications();
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -48,14 +48,6 @@ export default function DoctorNotifications() {
                   </div>
               </div>
               
-              <div className="flex gap-2">
-                <button 
-                  onClick={markAllAsRead}
-                  className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors text-sm font-medium flex items-center gap-2"
-                >
-                  <FaCheckDouble /> Mark all read
-                </button>
-              </div>
             </div>
 
             <div className="space-y-4">

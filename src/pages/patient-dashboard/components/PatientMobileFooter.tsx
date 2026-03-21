@@ -1,37 +1,21 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { 
   FaHome, 
   FaCalendarAlt, 
-  FaUser,
   FaUserMd,
   FaRobot,
-  FaSignOutAlt
+  FaCog
 } from "react-icons/fa";
-import { toast } from "sonner";
-import { useAuth } from "../../../context/AuthContext";
 
 export default function PatientMobileFooter() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { logout } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success("Logged out successfully");
-      navigate("/patient-login");
-    } catch (error) {
-      console.error("Logout failed", error);
-      toast.error("Failed to log out");
-    }
-  };
 
   const menuItems = [
     { icon: FaHome, path: "/patient/dashboard", label: "Home" },
     { icon: FaCalendarAlt, path: "/patient/appointments", label: "Visits" },
     { icon: FaUserMd, path: "/patient/book-appointment", label: "Book" },
     { icon: FaRobot, path: "/patient/ai-chat", label: "AI" },
-    { icon: FaUser, path: "/patient/profile", label: "Profile" },
+    { icon: FaCog, path: "/patient/settings", label: "Settings" },
   ];
 
   return (
@@ -54,14 +38,6 @@ export default function PatientMobileFooter() {
         );
       })}
 
-      <button
-        type="button"
-        onClick={handleLogout}
-        className="flex flex-col items-center gap-1 p-2 rounded-lg text-rose-500 hover:text-rose-600 transition-all"
-      >
-        <FaSignOutAlt className="text-xl" />
-        <span className="text-[10px] font-medium">Logout</span>
-      </button>
     </div>
   );
 }
