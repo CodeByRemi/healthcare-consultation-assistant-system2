@@ -176,7 +176,7 @@ export default function PatientAppointments() {
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
         />
         
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 pb-24 md:pb-8">
             <div className="max-w-7xl mx-auto w-full">
                 <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>

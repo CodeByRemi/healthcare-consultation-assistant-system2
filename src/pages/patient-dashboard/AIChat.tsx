@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { 
   Send, 
@@ -62,6 +62,7 @@ const PLACEHOLDER_MESSAGES: Message[] = [
 ];
 
 export default function AIChat() {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -266,6 +267,9 @@ export default function AIChat() {
           (_, label, path) => `[ACTION:${label}](${path})`
         );
 
+        // Normalize alternate action tag variants from the model.
+        responseText = responseText.replace(/\[ACTION\s*BUTTON\s*:\s*/gi, '[ACTION:');
+
         await addDoc(collection(db, "patients", currentUser.uid, "aiConversations", chatId, "messages"), {
           role: 'assistant',
           content: responseText,
@@ -363,7 +367,7 @@ export default function AIChat() {
 
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex bg-slate-50 overflow-hidden" style={{ height: '100dvh' }}>
       {/* Patient Sidebar */}
       <PatientSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
 
@@ -374,8 +378,8 @@ export default function AIChat() {
         
 
         {/* Mobile Header */}
-        <div className="md:hidden shrink-0">
-          <div className="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4 z-10">
+        <div className="md:hidden shrink-0 sticky top-0 z-30">
+          <div className="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4">
             {/* Left Actions */}
             <div className="flex items-center gap-2.5">
                 <Link
@@ -415,9 +419,13 @@ export default function AIChat() {
                     <Bell size={18} />
                     <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                  </Link>
-                   <div className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-50 to-blue-100 flex items-center justify-center text-[#0A6ED1] shadow-sm border border-blue-100">
+                 <Link
+                   to="/patient/profile"
+                   className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-50 to-blue-100 flex items-center justify-center text-[#0A6ED1] shadow-sm border border-blue-100"
+                   title="Profile"
+                 >
                      <UserIcon size={16} />
-                 </div>
+                 </Link>
             </div>
           </div>
           {/* Health-only notice strip */}
@@ -591,7 +599,7 @@ export default function AIChat() {
             {/* Mobile Controls removed - now part of the top header */}
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto bg-slate-50/50 scroll-smooth">
+            <div className="flex-1 overflow-y-auto bg-slate-50/50 scroll-smooth pb-24 md:pb-0">
               {!currentChatId && messages.length === 0 && !isLoading ? (
                 // Centered Welcome State
                 <div className="min-h-full flex flex-col items-center justify-center p-4">
@@ -708,9 +716,35 @@ export default function AIChat() {
                               <div className="[&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_strong]:font-semibold [&_a]:text-[#0A6ED1] [&_a]:underline [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded whitespace-pre-wrap wrap-break-word">
                                 <ReactMarkdown
                                   components={{
-                                    a: ({ ...props }) => (
-                                      <a {...props} target="_blank" rel="noopener noreferrer" />
-                                    )
+                                    a: ({ href, children, ...props }) => {
+                                      const childText = Array.isArray(children)
+                                        ? children.join('')
+                                        : String(children ?? '');
+                                      const isAction = /^ACTION(\s*BUTTON)?\s*:/i.test(childText);
+
+                                      if (isAction && href) {
+                                        const label = childText.replace(/^ACTION(\s*BUTTON)?\s*:/i, '').trim();
+                                        const isInternalPath = href.startsWith('/');
+                                        return (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              if (isInternalPath) {
+                                                navigate(href);
+                                                return;
+                                              }
+                                              window.open(href, '_blank', 'noopener,noreferrer');
+                                            }}
+                                            className="inline-flex items-center gap-2 mt-2 px-3 py-2 rounded-lg bg-[#0A6ED1] text-white text-sm font-semibold hover:bg-[#095bb0] transition-colors"
+                                          >
+                                            <CalendarPlus size={15} />
+                                            {label}
+                                          </button>
+                                        );
+                                      }
+
+                                      return <a href={href} {...props} target="_blank" rel="noopener noreferrer" />;
+                                    }
                                   }}
                                 >
                                   {message.content}

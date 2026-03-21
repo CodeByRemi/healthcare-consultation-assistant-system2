@@ -153,7 +153,7 @@ export default function DoctorDashboard() {
             </header>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {stats.map((stat, idx) => (
                 <div key={idx} className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-start justify-between hover:shadow-md transition-shadow gap-2 md:gap-0">
                         <div className="order-2 md:order-1">
@@ -172,11 +172,11 @@ export default function DoctorDashboard() {
 
             <div className="w-full">
                 {/* Upcoming Appointments */}
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col p-6">
+              <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col p-4 sm:p-6">
                     {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4">
                         <div>
-                            <h2 className="text-2xl font-serif font-bold text-slate-900 mb-1">Today's Schedule</h2>
+                    <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 mb-1">Today's Schedule</h2>
                             <p className="text-sm text-slate-500">
                                 {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • You have {appointments.length} remaining appointments
                             </p>
@@ -195,9 +195,9 @@ export default function DoctorDashboard() {
                     </div>
 
                     {/* List */}
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-2">
+                    <div className="space-y-4 md:space-y-3">
                         {isLoading ? (
-                            <div className="col-span-2 py-12 text-center text-slate-400">Loading schedule...</div>
+                        <div className="py-12 text-center text-slate-400">Loading schedule...</div>
                         ) : appointments.length > 0 ? (
                             appointments.map((appt, index) => {
                                 const isActive = (index === 0 && appt.status === 'confirmed');
@@ -209,7 +209,7 @@ export default function DoctorDashboard() {
                                             // Navigate to patient details on row click
                                             navigate(`/doctor/patients/${appt.patientId}`);
                                         }}
-                                        className={`cursor-pointer grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr_0.5fr] items-center p-3 md:p-4 rounded-2xl transition-all gap-4 md:gap-0 ${
+                                        className={`cursor-pointer grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr_0.5fr] items-start md:items-center p-3 md:p-4 rounded-2xl transition-all gap-4 md:gap-4 ${
                                             isActive ? 'bg-[#10B981]/5 border border-[#10B981]/10' : 'hover:bg-slate-50 border border-transparent'
                                         }`}
                                     >

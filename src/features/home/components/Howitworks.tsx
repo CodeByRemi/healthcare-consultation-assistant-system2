@@ -37,7 +37,7 @@ const HowItWorks = () => {
                         whileInView={{ opacity: 1, x: 0, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className="order-1 lg:order-1 flex justify-center py-8"
+                        className="order-2 lg:order-1 flex justify-center py-8"
                     >
                         <motion.div className="relative" style={{ width: '260px' }} animate={{ y: [0, -7, 0] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}>
                             {/* Phone frame */}
@@ -113,7 +113,7 @@ const HowItWorks = () => {
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className="order-2 lg:order-2"
+                        className="order-1 lg:order-2"
                     >
                          <motion.span whileInView={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 10 }} viewport={{ once: true }} transition={{ duration: 0.45 }} className="text-accent font-bold tracking-wider text-sm uppercase mb-2 block">How It Works</motion.span>
                          <motion.h2 whileInView={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 12 }} viewport={{ once: true }} transition={{ duration: 0.55, delay: 0.08 }} className="text-4xl md:text-5xl font-display text-primary leading-tight mb-8">

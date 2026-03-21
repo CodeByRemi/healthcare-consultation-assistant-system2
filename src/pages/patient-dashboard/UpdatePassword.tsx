@@ -104,7 +104,7 @@ export default function PatientUpdatePassword() {
         <main className="flex-1 flex flex-col h-screen overflow-hidden">
           <PatientDashboardHeader toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
           
-          <div className="flex-1 overflow-y-auto bg-slate-50/50">
+          <div className="flex-1 overflow-y-auto bg-slate-50/50 pb-24 md:pb-0">
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               {/* Back Button */}
               <motion.button

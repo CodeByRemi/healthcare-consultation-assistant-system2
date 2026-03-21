@@ -44,6 +44,16 @@ body,
   min-height: 100%;
 }
 
+/* Use dynamic viewport height on mobile so bottom bar/keyboard are accounted for */
+@supports (height: 100dvh) {
+  .h-screen {
+    height: 100dvh;
+  }
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
 * {
   box-sizing: border-box;
   min-width: 0;

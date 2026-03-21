@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   FaHome, 
   FaCalendarAlt, 
+  FaUser,
   FaUserMd,
   FaRobot,
   FaSignOutAlt
@@ -30,6 +31,7 @@ export default function PatientMobileFooter() {
     { icon: FaCalendarAlt, path: "/patient/appointments", label: "Visits" },
     { icon: FaUserMd, path: "/patient/book-appointment", label: "Book" },
     { icon: FaRobot, path: "/patient/ai-chat", label: "AI" },
+    { icon: FaUser, path: "/patient/profile", label: "Profile" },
   ];
 
   return (

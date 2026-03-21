@@ -324,7 +324,7 @@ export default function BookAppointment() {
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
         />
         
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
             <div className="max-w-7xl mx-auto w-full">
                 <header className="mb-8">
                     <h1 className="text-3xl md:text-4xl font-['Newsreader'] font-medium mb-2 text-slate-900">

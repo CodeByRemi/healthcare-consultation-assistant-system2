@@ -125,7 +125,7 @@ export default function LoginForm() {
           <p className="text-slate-500">
             Don't have an account?{" "}
             <Link to="/patient-reg" className="text-[#0A6ED1] font-bold hover:underline">
-              Create free account
+              Create account
             </Link>
           </p>
           <div className="mt-4">
