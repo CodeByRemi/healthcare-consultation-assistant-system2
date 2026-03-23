@@ -20,7 +20,6 @@ import {
   Phone,
   Mail,
   MapPin,
-  AlertCircle,
   Bot,
   Calendar,
   ChevronDown,

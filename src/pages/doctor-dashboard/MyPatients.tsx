@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { useNavigate } from "react-router-dom";
-import { FaSearch, FaCheck, FaTimes, FaClock, FaEllipsisH, FaUserInjured, FaCommentMedical } from "react-icons/fa";
+import { FaSearch, FaCheck, FaTimes, FaClock, FaEllipsisH, FaUserInjured } from "react-icons/fa";
 
 import { toast } from "sonner";
 import { collection, query, where, getDocs, updateDoc, doc, getDoc, addDoc, serverTimestamp, orderBy, limit } from "firebase/firestore";
@@ -79,88 +79,10 @@ export default function MyPatients() {
   // Chat Modal State
     const [selectedPatient, setSelectedPatient] = useState<SelectedPatient | null>(null);
 
-    const fetchChatHistory = async () => {
-      setLoadingChat(true);
-      setChatMessages([]);
-
-      // Simulate network delay for realistic feel
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      const placeholderChat = [
-          { 
-              role: 'system', 
-              content: 'Session', 
-              timestamp: new Date(Date.now() - 86400000) 
-          },
-          { 
-              role: 'user', 
-              content: "Patient Message", 
-              timestamp: new Date(Date.now() - 86400000 + 1000 * 60 * 2) 
-          },
-          { 
-              role: 'assistant', 
-              content: "AI Response", 
-              timestamp: new Date(Date.now() - 86400000 + 1000 * 60 * 3) 
-          },
-          { 
-              role: 'user', 
-              content: "Follow-up Message", 
-              timestamp: new Date(Date.now() - 86400000 + 1000 * 60 * 5) 
-          },
-          { 
-              role: 'assistant', 
-              content: "Follow-up Response", 
-              timestamp: new Date(Date.now() - 86400000 + 1000 * 60 * 6) 
-          }
-      ];
-
-      setChatMessages(placeholderChat);
-      setLoadingChat(false);
-      
-      /* 
-      // REAL FIRESTORE IMPLEMENTATION (Commented out for now)
-      try {
-          // Get most recent AI Conversation
-          const q = query(
-              collection(db, "patients", patientId, "aiConversations"), 
-              orderBy("lastUpdated", "desc"), 
-              limit(1)
-          );
-          
-          const snap = await getDocs(q);
-          
-          if (!snap.empty) {
-              const conversationId = snap.docs[0].id;
-              // Get messages
-              const msgQ = query(
-                  collection(db, "patients", patientId, "aiConversations", conversationId, "messages"),
-                  orderBy("timestamp", "asc")
-              );
-              
-              const msgSnap = await getDocs(msgQ);
-              const msgs = msgSnap.docs.map(doc => ({
-                  id: doc.id,
-                  ...doc.data()
-              }));
-              
-              if (msgs.length > 0) {
-                 setChatMessages(msgs);
-                 return;
-              }
-          } 
-          // If execution reaches here, it falls back to empty or demo above
-      } catch (error) {
-          console.error("Error fetching chat:", error);
-          toast.error("Failed to load chat history.");
-      } 
-      */
-  };
-
   const handlePatientClick = (patient: PatientRow) => {
     const details = defaultPatientDetails;
       const merged: SelectedPatient = { ...details, ...patient };
       setSelectedPatient(merged);
-      setModalTab('details');
   };
 
 
@@ -459,20 +381,6 @@ export default function MyPatients() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            {req.shareAIChat && (
-                                <button 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePatientClick(req);
-                                        setModalTab('chat');
-                                        fetchChatHistory();
-                                    }} 
-                                    className="p-2 bg-blue-100 text-[#0A6ED1] rounded-lg hover:bg-blue-200 transition-colors" 
-                                    title="View AI Chat History"
-                                >
-                                    <FaCommentMedical />
-                                </button>
-                            )}
                             <button onClick={(e) => { e.stopPropagation(); handleAccept(req.id); }} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Accept">
                                 <FaCheck />
                             </button>
@@ -526,20 +434,6 @@ export default function MyPatients() {
                         <td className="px-6 py-4 text-sm text-slate-600">{patient.lastVisit}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
-                            {patient.shareAIChat && (
-                                <button 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePatientClick(patient);
-                                        setModalTab('chat');
-                                        fetchChatHistory();
-                                    }}
-                                    className="text-[#0A6ED1] hover:text-[#095bb0] p-1"
-                                    title="View AI Chat"
-                                >
-                                    <FaCommentMedical />
-                                </button>
-                            )}
                             <button onClick={(e) => { e.stopPropagation(); /* Add action here */ }} className="text-slate-400 hover:text-[#0A6ED1] p-1">
                                 <FaEllipsisH />
                             </button>

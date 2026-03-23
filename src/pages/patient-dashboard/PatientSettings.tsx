@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
-import { db, auth } from "../../lib/firebase";
+import { db } from "../../lib/firebase";
 import { toast } from "sonner";
 import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";

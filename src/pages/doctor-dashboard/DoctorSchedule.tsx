@@ -382,7 +382,7 @@ export default function DoctorSchedule() {
             let blockedCount = 0;
             let newPatientsCount = 0;
 
-            querySnapshot.forEach((docSnap) => {
+            querySnapshot.forEach((docSnap: any) => {
               const data = docSnap.data();
               if (String(data.status || "").toLowerCase() === 'blocked') blockedCount++;
               if (data.isNewPatient) newPatientsCount++;
