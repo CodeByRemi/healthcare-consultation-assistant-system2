@@ -74,12 +74,13 @@ export default function DoctorDashboard() {
              
              snapshot.forEach((doc) => {
                 const data = doc.data();
-                // Basic filtering for "upcoming" logic if not done in query
-                if (data.date >= today && (data.status === 'confirmed' || data.status === 'pending')) {
+                const status = (data.status || '').toLowerCase();
+                // Strictly matching today's date for upcoming appointments
+                if (data.date === today && (status === 'confirmed' || status === 'scheduled' || status === 'pending')) {
                     appts.push({ id: doc.id, ...data } as Appointment);
                 }
                 
-                if (data.status === 'completed') completedAppts++;
+                if (status === 'completed') completedAppts++;
                 if (data.patientId) uniquePatients.add(data.patientId);
              });
 

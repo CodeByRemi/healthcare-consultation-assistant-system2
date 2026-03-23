@@ -245,7 +245,7 @@ export default function DoctorSchedule() {
                   patientDataMap.set(patientId, pDoc.data() as Record<string, unknown>);
                 }
               } catch (e) {
-                console.error(e);
+                console.error("Error loading patient details:", e);
               }
             }
           }
@@ -372,7 +372,12 @@ export default function DoctorSchedule() {
                 where("date", "<=", endStr)
             );
             
-            const querySnapshot = await getDocs(q);
+            let querySnapshot: any = { docs: [], forEach: () => {} };
+            try {
+              querySnapshot = await getDocs(q);
+            } catch (e) {
+              console.error("Error loading range appointments", e);
+            }
             const appts = await mapDocsToAppointments(querySnapshot.docs as Array<{ id: string; data: () => Record<string, unknown> }>);
             let blockedCount = 0;
             let newPatientsCount = 0;
@@ -395,7 +400,14 @@ export default function DoctorSchedule() {
               where("date", ">=", startStr),
               where("date", "<=", endStr)
             );
-            const availabilitySnapshot = await getDocs(availabilityQuery);
+            
+            let availabilitySnapshot: any = { docs: [] };
+            try {
+              availabilitySnapshot = await getDocs(availabilityQuery);
+            } catch (e) {
+              console.error("Error loading top-level availability", e);
+            }
+            
             const topLevelAvailability = mapAvailabilityDocs(
               availabilitySnapshot.docs as Array<{ id: string; data: () => Record<string, unknown> }>,
               'collection'
@@ -403,7 +415,11 @@ export default function DoctorSchedule() {
 
             let nestedAvailability: AvailabilityEntry[] = [];
             try {
-              const nestedSnapshot = await getDocs(collection(db, "doctors", user.uid, "availability"));
+              const nestedQ = query(
+                collection(db, "doctors", user.uid, "availability"),
+                where("doctorId", "==", user.uid)
+              );
+              const nestedSnapshot = await getDocs(nestedQ);
               nestedAvailability = mapAvailabilityDocs(
                 (nestedSnapshot.docs as Array<{ id: string; data: () => Record<string, unknown> }>).filter((docSnap) => {
                   const entryDate = String(docSnap.data().date || '');
@@ -431,17 +447,19 @@ export default function DoctorSchedule() {
 
             setAvailabilityEntries(mergedAvailability);
 
-            if (appts.length > 0) {
-              setMobileAppointments(appts);
-            } else {
-              const qAll = query(
-                collection(db, "appointments"),
-                where("doctorId", "==", user.uid)
-              );
-              const allSnapshot = await getDocs(qAll);
-              const allAppts = await mapDocsToAppointments(allSnapshot.docs as Array<{ id: string; data: () => Record<string, unknown> }>);
-              setMobileAppointments(allAppts);
+            const qAll = query(
+              collection(db, "appointments"),
+              where("doctorId", "==", user.uid)
+            );
+            
+            let allSnapshot: any = { docs: [] };
+            try {
+              allSnapshot = await getDocs(qAll);
+            } catch (e) {
+              console.error("Error loading all appointments", e);
             }
+            const allAppts = await mapDocsToAppointments(allSnapshot.docs as Array<{ id: string; data: () => Record<string, unknown> }>);
+            setMobileAppointments(allAppts);
             
             // Calculate Stats
             const totalAvailableSlots = mergedAvailability.reduce((total, entry) => total + Math.max(entry.slots.length, 1), 0);
@@ -505,12 +523,16 @@ export default function DoctorSchedule() {
 
   // Helpers for time formatting and ranges
   const to24h = (t: string) => {
-    const [time, period] = t.split(' ');
-    const [hhStr, mmStr] = time.split(':');
-    let hh = Number(hhStr);
-    const mm = Number(mmStr);
-    if (period?.toUpperCase() === 'PM' && hh < 12) hh += 12;
-    if (period?.toUpperCase() === 'AM' && hh === 12) hh = 0;
+    if (!t) return { hh: 0, mm: 0 };
+    const normalized = t.trim().toUpperCase();
+    const isPM = normalized.includes('PM');
+    const isAM = normalized.includes('AM');
+    const timePart = normalized.replace('AM', '').replace('PM', '').trim();
+    const [hhStr, mmStr] = timePart.split(':');
+    let hh = Number(hhStr) || 0;
+    const mm = Number(mmStr) || 0;
+    if (isPM && hh < 12) hh += 12;
+    if (isAM && hh === 12) hh = 0;
     return { hh, mm };
   };
   const format12h = (hh: number, mm: number) => {

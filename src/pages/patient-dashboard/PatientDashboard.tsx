@@ -13,15 +13,18 @@ import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { useAuth } from "../../context/AuthContext";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { useNotifications } from "../../context/NotificationContext";
 
 export default function PatientDashboard() {
   const { currentUser } = useAuth();
+  const { notifications, unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [upcomingAppointmentsCount, setUpcomingAppointmentsCount] = useState(0);
   const [personalInfo, setPersonalInfo] = useState({
     weight: "—", 
     height: "—",
@@ -48,6 +51,32 @@ export default function PatientDashboard() {
   };
 
   useEffect(() => {
+    if (!currentUser) return;
+    const q = query(
+      collection(db, "appointments"),
+      where("patientId", "==", currentUser.uid)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let count = 0;
+      const now = new Date();
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        // Check for upcoming (not cancelled/completed) appointments
+        if (data.status === "scheduled" || data.status === "pending" || data.status === "confirmed") {
+          const aptDate = data.date && data.time ? new Date(`${data.date} ${data.time}`) : null;
+          if (aptDate && aptDate.getTime() >= now.getTime()) {
+            count++;
+          } else if (!aptDate && data.status) { // fallback
+            count++;
+          }
+        }
+      });
+      setUpcomingAppointmentsCount(count);
+    });
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  useEffect(() => {
     const fetchUserData = async () => {
       setIsLoading(true);
       if (currentUser) {
@@ -60,7 +89,7 @@ export default function PatientDashboard() {
             // Use actual data if available
             if (userData.weight) setPersonalInfo(prev => ({ ...prev, weight: userData.weight }));
             if (userData.height) setPersonalInfo(prev => ({ ...prev, height: userData.height }));
-            if (userData.bloodType) setPersonalInfo(prev => ({ ...prev, bloodType: userData.bloodType }));
+            if (userData.bloodType || userData.bloodGroup) setPersonalInfo(prev => ({ ...prev, bloodType: userData.bloodType || userData.bloodGroup }));
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -116,7 +145,7 @@ export default function PatientDashboard() {
                     {[
                         {
                           label: "Upcoming Appointments",
-                          value: "0",
+                          value: upcomingAppointmentsCount.toString(),
                           icon: Calendar,
                           color: "text-blue-600",
                           bg: "bg-blue-50",
@@ -124,7 +153,7 @@ export default function PatientDashboard() {
                         },
                         {
                           label: "Unread Messages",
-                          value: "0",
+                          value: unreadCount.toString(),
                           icon: MessageSquare,
                           color: "text-amber-600",
                           bg: "bg-amber-50",
@@ -180,12 +209,29 @@ export default function PatientDashboard() {
                         <motion.div variants={itemVariants} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                             <div className="p-6 border-b border-slate-50 flex justify-between items-center">
                                 <h3 className="font-semibold text-lg text-slate-800">Recent Activity</h3>
-                                <button className="text-primary text-sm font-medium hover:underline">View All</button>
+                                <Link to="/patient/notifications" className="text-primary text-sm font-medium hover:underline">View All</Link>
                             </div>
                             <div className="divide-y divide-slate-50">
-                                <div className="p-8 text-center text-slate-400 text-sm">
-                                    No activity yet.
-                                </div>
+                                {notifications.length > 0 ? (
+                                    notifications.slice(0, 3).map((notif) => (
+                                        <div key={notif.id} className="p-4 hover:bg-slate-50 transition-colors flex gap-4 items-start">
+                                            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                                <Activity size={18} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start">
+                                                    <p className="font-medium text-slate-800 text-sm">{notif.title}</p>
+                                                    <span className="text-[10px] text-slate-400 ml-2 shrink-0">{notif.time}</span>
+                                                </div>
+                                                <p className="text-slate-500 text-xs mt-0.5 line-clamp-2">{notif.message}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-8 text-center text-slate-400 text-sm">
+                                        No activity yet.
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </div>

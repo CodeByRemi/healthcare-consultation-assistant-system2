@@ -5,7 +5,7 @@ import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { collection, getDocs, addDoc, query } from "firebase/firestore";
+import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../lib/firebase";
 
@@ -138,6 +138,7 @@ export default function BookAppointment() {
   
   // Selected Doctor for Modal
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [patientsHelpedCount, setPatientsHelpedCount] = useState<number | string>("—");
   const [hoveredSpecialty, setHoveredSpecialty] = useState<string | null>(null);
   const [confirmationModal, setConfirmationModal] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
@@ -196,6 +197,37 @@ export default function BookAppointment() {
     fetchDoctors();
   }, []);
 
+  useEffect(() => {
+    const fetchPatientsHelped = async () => {
+      if (selectedDoctor) {
+        setPatientsHelpedCount("...");
+        try {
+          const q = query(
+            collection(db, "appointments"),
+            where("doctorId", "==", selectedDoctor.id),
+            where("status", "==", "completed")
+          );
+          const snapshot = await getDocs(q);
+          const uniquePatients = new Set();
+          snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            if (data.patientId) {
+              uniquePatients.add(data.patientId);
+            }
+          });
+          setPatientsHelpedCount(uniquePatients.size);
+        } catch (error) {
+          console.error("Error fetching patients helped:", error);
+          setPatientsHelpedCount("—");
+        }
+      } else {
+        setPatientsHelpedCount("—");
+      }
+    };
+
+    fetchPatientsHelped();
+  }, [selectedDoctor]);
+
   const handleBookClick = () => {
     if (!selectedDoctor || !bookingDate || !bookingTime) {
         toast.error("Please select a doctor, date, and time.");
@@ -209,6 +241,19 @@ export default function BookAppointment() {
         toast.error("You must be logged in to book.");
         return;
     }
+
+    const [year, month, day] = bookingDate.split('-').map(Number);
+    const [timeStr, period] = bookingTime.split(' ');
+    let [hours, minutes] = timeStr.split(':').map(Number);
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+
+    const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
+    if (appointmentDateTime < new Date()) {
+        toast.error("You cannot book an appointment in the past.");
+        return;
+    }
+
     setShowConsentModal(true);
   };
 
@@ -301,16 +346,45 @@ export default function BookAppointment() {
     const date = new Date(dateString);
     const day = date.getDay();
     
+    let slots: string[] = [];
+
     // Weekend logic (just for variety)
     if (day === 0 || day === 6) {
-        return ["10:00 AM", "11:00 AM", "02:00 PM"];
+        slots = ["10:00 AM", "11:00 AM", "02:00 PM"];
+    } else {
+        slots = [
+            "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", 
+            "11:00 AM", "11:30 AM", "02:00 PM", "02:30 PM", 
+            "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
+        ];
     }
     
-    return [
-        "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", 
-        "11:00 AM", "11:30 AM", "02:00 PM", "02:30 PM", 
-        "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
-    ];
+    const now = new Date();
+    const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    
+    if (dateString === todayStr) {
+        slots = slots.filter(slot => {
+            const [time, period] = slot.split(' ');
+            let [hours, minutes] = time.split(':').map(Number);
+            if (period === 'PM' && hours !== 12) hours += 12;
+            if (period === 'AM' && hours === 12) hours = 0;
+            
+            const slotTime = new Date(now);
+            slotTime.setHours(hours, minutes, 0, 0);
+            
+            return slotTime > now;
+        });
+    }
+
+    return slots;
+  };
+
+  const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const currentSlots = getAvailableTimeSlots(bookingDate);
@@ -641,7 +715,7 @@ export default function BookAppointment() {
                                             className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none transition-all focus:border-[#0A6ED1] focus:ring-2 focus:ring-[#0A6ED1]/20"
                                             value={bookingDate}
                                             onChange={(e) => setBookingDate(e.target.value)}
-                                            min={new Date().toISOString().split('T')[0]}
+                                            min={getTodayString()}
                                         />
                                     </div>
 
@@ -786,14 +860,10 @@ export default function BookAppointment() {
                                         </div>
 
                                         {/* Quick Stats */}
-                                        <div className="grid grid-cols-2 gap-3 mt-6">
+                                        <div className="grid grid-cols-1 gap-3 mt-6">
                                             <div className="bg-green-50 p-4 rounded-2xl border border-green-200">
                                                 <div className="text-xs text-green-600 font-bold uppercase mb-1">Patients Helped</div>
-                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.patients || "—"}</div>
-                                            </div>
-                                            <div className="bg-blue-50 p-4 rounded-2xl border border-blue-200">
-                                                <div className="text-xs text-[#0A6ED1] font-bold uppercase mb-1">Success Rate</div>
-                                                <div className="text-2xl font-bold text-slate-900">{selectedDoctor.successRate || "—"}</div>
+                                                <div className="text-2xl font-bold text-slate-900">{patientsHelpedCount}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -803,17 +873,6 @@ export default function BookAppointment() {
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                     {/* Left Column - Doctor Info */}
                                     <div className="lg:col-span-2 space-y-8">
-                                        {/* About Doctor */}
-                                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                                            <h3 className="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
-                                                <FaUserMd className="text-[#0A6ED1] w-5 h-5" />
-                                                About Doctor
-                                            </h3>
-                                            <p className="text-slate-600 leading-relaxed">
-                                                {selectedDoctor.about || "Profile not updated yet."}
-                                            </p>
-                                        </div>
-
                                         {/* Education & Certifications */}
                                         <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
                                             <h3 className="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
@@ -871,7 +930,7 @@ export default function BookAppointment() {
                                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent outline-none transition-all cursor-pointer"
                                                     value={bookingDate}
                                                     onChange={(e) => setBookingDate(e.target.value)}
-                                                    min={new Date().toISOString().split('T')[0]}
+                                                    min={getTodayString()}
                                                 />
                                             </div>
 

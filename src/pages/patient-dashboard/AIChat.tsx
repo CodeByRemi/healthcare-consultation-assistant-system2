@@ -258,7 +258,7 @@ export default function AIChat() {
             contextBlock = "Recent conversation history:\n" + recentMessages.map(m => `${m.role === 'user' ? patientName : 'You'}: ${m.content}`).join('\n') + "\n\n";
         }
 
-        const prompt = `Keep in mind my name is ${patientName} and your name is Medi, the medical AI assistant. If you haven't introduced yourself yet in the recent conversation history, start with "Hi ${patientName}, I am Medi...".\n\n${contextBlock}My next message is: ${messageText}`;
+        const prompt = `Keep in mind my name is ${patientName} and your name is Medi, the medical AI assistant. You are treating a patient in Nigeria so adapt all your responses to the Nigerian context. If you ever need to recommend an emergency line or physical authorities, use Nigerian emergency numbers (like 112) or local authorities, NEVER American ones like 911. If you haven't introduced yourself yet in the recent conversation history, start with "Hi ${patientName}, I am Medi...".\n\n${contextBlock}My next message is: ${messageText}`;
 
         const result = await model.generateContent(prompt);
         const aiResponse = await result.response;

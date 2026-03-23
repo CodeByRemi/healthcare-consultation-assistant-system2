@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaCalendarAlt, FaClock } from "react-icons/fa";
 
@@ -12,10 +13,13 @@ interface RescheduleModalProps {
   appointment: Appointment | null;
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (newDate: string, newTime: string) => void;
 }
 
 export default function RescheduleModal({ appointment, isOpen, onClose, onConfirm }: RescheduleModalProps) {
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("");
+
   if (!appointment) return null;
 
   return (
@@ -52,17 +56,18 @@ export default function RescheduleModal({ appointment, isOpen, onClose, onConfir
                  <label className="text-xs font-bold text-slate-400 uppercase">New Date</label>
                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200">
                     <FaCalendarAlt className="text-slate-400" />
-                    <input type="date" className="bg-transparent w-full text-slate-700 outline-none text-sm" />
+                    <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="bg-transparent w-full text-slate-700 outline-none text-sm" min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]} />
                  </div>
                  
                  <label className="text-xs font-bold text-slate-400 uppercase">New Time</label>
                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200">
                     <FaClock className="text-slate-400" />
-                    <select className="bg-transparent w-full text-slate-700 outline-none text-sm">
-                        <option>09:00 AM</option>
-                        <option>10:00 AM</option>
-                        <option>11:00 AM</option>
-                        <option>02:00 PM</option>
+                    <select value={newTime} onChange={(e) => setNewTime(e.target.value)} className="bg-transparent w-full text-slate-700 outline-none text-sm">
+                        <option value="">Select a time</option>
+                        <option value="09:00 AM">09:00 AM</option>
+                        <option value="10:00 AM">10:00 AM</option>
+                        <option value="11:00 AM">11:00 AM</option>
+                        <option value="02:00 PM">02:00 PM</option>
                     </select>
                  </div>
               </div>
@@ -75,8 +80,9 @@ export default function RescheduleModal({ appointment, isOpen, onClose, onConfir
                    Cancel
                  </button>
                  <button 
-                   onClick={onConfirm}
-                   className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-colors"
+                   onClick={() => onConfirm(newDate, newTime)}
+                   disabled={!newDate || !newTime}
+                   className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                  >
                    Confirm
                  </button>

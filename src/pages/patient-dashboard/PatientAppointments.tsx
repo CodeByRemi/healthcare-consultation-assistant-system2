@@ -5,10 +5,10 @@ import PatientSidebar from "./components/PatientSidebar";
 import PatientDashboardHeader from "./components/PatientDashboardHeader";
 import PatientMobileFooter from "./components/PatientMobileFooter";
 import AppointmentDetailsModal from "./components/AppointmentDetailsModal";
-import RescheduleModal from "./components/RescheduleModal";
 import RateDoctorModal from "./components/RateDoctorModal";
+import RescheduleModal from "./components/RescheduleModal";
 import { toast } from "sonner";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where, updateDoc, doc, addDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
 
@@ -83,7 +83,53 @@ export default function PatientAppointments() {
     setSelectedAppointment(apt);
     setIsRescheduleOpen(true);
   };
-   
+
+  const handleCloseReschedule = () => {
+    setIsRescheduleOpen(false);
+    setSelectedAppointment(null);
+  };
+
+  const handleConfirmReschedule = async (newDate: string, newTime: string) => {
+    if (!selectedAppointment || !currentUser) return;
+    try {
+      const docRef = doc(db, "appointments", selectedAppointment.id);
+      await updateDoc(docRef, {
+        date: newDate,
+        time: newTime,
+        status: "pending",
+        updatedAt: new Date().toISOString()
+      });
+
+      // Add notification for patient
+      await addDoc(collection(db, "notifications"), {
+        userId: currentUser.uid,
+        title: "Appointment Rescheduled",
+        message: `Your appointment with ${selectedAppointment.doctorName} has been rescheduled to ${newDate} at ${newTime}.`,
+        type: "appointment",
+        read: false,
+        createdAt: new Date().toISOString()
+      });
+
+      // Add notification for doctor
+      if (selectedAppointment.doctorId) {
+        await addDoc(collection(db, "notifications"), {
+          userId: selectedAppointment.doctorId,
+          title: "Appointment Rescheduled",
+          message: `Your appointment with a patient has been rescheduled to ${newDate} at ${newTime}.`,
+          type: "appointment",
+          read: false,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      toast.success("Appointment rescheduled successfully.");
+      handleCloseReschedule();
+    } catch (error) {
+      console.error("Error rescheduling appointment:", error);
+      toast.error("Failed to reschedule appointment.");
+    }
+  };
+
   const handleOpenRate = (apt: Appointment) => {
     setSelectedAppointment(apt);
     setIsRateOpen(true);
@@ -94,25 +140,37 @@ export default function PatientAppointments() {
     setSelectedAppointment(null);
   };
 
-  const handleCloseReschedule = () => {
-    setIsRescheduleOpen(false);
-    setSelectedAppointment(null);
-  };
-
   const handleCloseRate = () => {
     setIsRateOpen(false);
     setSelectedAppointment(null);
   };
 
-  const handleRescheduleConfirm = () => {
-    // Implement actual reschedule logic here later
-    toast.success("Reschedule request submitted.");
-    handleCloseReschedule();
-  };
-
   const handleRescheduleFromDetails = (apt: Appointment) => {
     handleCloseDetails();
     setTimeout(() => handleOpenReschedule(apt), 200); // Small delay for smoother transition
+  };
+
+  const handleCancelAppointment = async (apt: Appointment) => {
+    // Cannot cancel if it is within 24 hours
+    const appointmentDate = new Date(`${apt.date} ${apt.time}`);
+    const now = new Date();
+    const diffHours = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (diffHours < 24) {
+      toast.error("Cannot cancel appointment less than 24 hours before the scheduled time.");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
+
+    try {
+      const docRef = doc(db, "appointments", apt.id);
+      await updateDoc(docRef, { status: "cancelled", cancelledAt: new Date().toISOString() });
+      toast.success("Appointment cancelled successfully.");
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      toast.error("Failed to cancel appointment.");
+    }
   };
 
   useEffect(() => {
@@ -302,14 +360,22 @@ export default function PatientAppointments() {
                                       <FaStar className="w-3.5 h-3.5 text-amber-300" />
                                       Rated
                                     </button>
-                                ) : (
-                                    <button
-                                      onClick={() => handleOpenReschedule(apt)}
-                                      className="px-4 py-2 text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg font-medium transition-colors text-sm whitespace-nowrap"
-                                    >
-                                        Reschedule
-                                    </button>
-                                )}
+                                ) : apt.status.toLowerCase() !== "cancelled" ? (
+                                    <>
+                                      <button
+                                        onClick={() => handleOpenReschedule(apt)}
+                                        className="px-4 py-2 text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg font-medium transition-colors text-sm whitespace-nowrap"
+                                      >
+                                          Reschedule
+                                      </button>
+                                      <button
+                                        onClick={() => handleCancelAppointment(apt)}
+                                        className="px-4 py-2 text-[#EF4444] hover:bg-red-50 border border-[#EF4444] rounded-lg font-medium transition-colors text-sm whitespace-nowrap"
+                                      >
+                                          Cancel
+                                      </button>
+                                    </>
+                                ) : null}
                                 <button
                                   onClick={() => handleOpenDetails(apt)}
                                   className="px-4 py-2 border border-[#0A6ED1] text-[#0A6ED1] hover:bg-blue-50 rounded-lg font-medium transition-colors text-sm whitespace-nowrap"
@@ -350,13 +416,14 @@ export default function PatientAppointments() {
         onClose={handleCloseDetails} 
         appointment={selectedAppointment} 
         onReschedule={handleRescheduleFromDetails} 
+        onCancel={handleCancelAppointment}
       />
 
-      <RescheduleModal 
-        isOpen={isRescheduleOpen} 
-        onClose={handleCloseReschedule} 
-        appointment={selectedAppointment} 
-        onConfirm={handleRescheduleConfirm} 
+      <RescheduleModal
+        isOpen={isRescheduleOpen}
+        onClose={handleCloseReschedule}
+        appointment={selectedAppointment}
+        onConfirm={handleConfirmReschedule}
       />
 
       <RateDoctorModal

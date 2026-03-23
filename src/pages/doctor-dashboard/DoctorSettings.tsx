@@ -7,7 +7,8 @@ import DoctorPageTransition from "./components/v2/DoctorPageTransition";
 import { FaUserMd, FaBell, FaCalendarAlt, FaToggleOn, FaToggleOff, FaSignOutAlt } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+import { db, auth } from "../../lib/firebase";
 import { toast } from "sonner";
 
 export default function DoctorSettings() {
@@ -22,6 +23,11 @@ export default function DoctorSettings() {
     emailAlerts: true,
     smsAlerts: false
   });
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -59,6 +65,42 @@ export default function DoctorSettings() {
       toast.error("Failed to update setting");
       // Revert on failure
       setSettings(prev => ({ ...prev, [key]: !newValue }));
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !currentUser.email) return;
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+      await reauthenticateWithCredential(currentUser, credential);
+      await updatePassword(currentUser, newPassword);
+      
+      toast.success("Password updated successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      console.error("Error updating password:", error);
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        toast.error("Incorrect current password.");
+      } else {
+        toast.error(error.message || "Failed to update password.");
+      }
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -139,9 +181,45 @@ export default function DoctorSettings() {
                         <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-100 dark:border-slate-600">
                              <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Password</h3>
                              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Update your password to keep your account secure.</p>
-                             <Link to="/doctor/update-password" className="px-4 py-2 bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-500 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors inline-block">
-                                Change Password
-                             </Link>
+                             <form onSubmit={handleUpdatePassword} className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Current Password</label>
+                                  <input
+                                    type="password"
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]"
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">New Password</label>
+                                  <input
+                                    type="password"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]"
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirm New Password</label>
+                                  <input
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]"
+                                    required
+                                  />
+                                </div>
+                                <button
+                                  type="submit"
+                                  disabled={isUpdatingPassword}
+                                  className="px-4 py-2 bg-[#0A6ED1] text-white border border-transparent rounded-lg text-sm font-medium hover:bg-[#0958a8] transition-colors disabled:opacity-50"
+                                >
+                                  {isUpdatingPassword ? "Updating..." : "Update Password"}
+                                </button>
+                             </form>
                         </div>
 
                         <button 

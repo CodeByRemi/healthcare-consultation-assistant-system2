@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { db, model } from "../../lib/firebase";
 import { toast } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,37 +45,7 @@ interface ChatSession {
   updatedAt: any;
 }
 
-// MOCK DATA FOR DEMO (Defined outside to avoid re-renders)
-const MOCK_SESSIONS_DATA: ChatSession[] = [
-  {
-    id: "session-1",
-    title: "Initial Consultation check",
-    date: "05/03/2026",
-    preview: "Discussed symptoms of persistent headache and fatigue...",
-    updatedAt: new Date()
-  },
-  {
-    id: "session-2", 
-    title: "Follow-up Check",
-    date: "12/02/2026", 
-    preview: "Reviewing medication outcomes...",
-    updatedAt: new Date(Date.now() - 86400000)
-  }
-];
-
-const MOCK_MESSAGES_DATA: Record<string, Message[]> = {
-  "session-1": [
-      { id: "m1", text: "I've been feeling a persistent headache for the past 3 days.", sender: "user", timestamp: new Date(Date.now() - 10000000) },
-      { id: "m2", text: "I understand. Can you describe the pain? Is it throbbing or constant?", sender: "ai", timestamp: new Date(Date.now() - 9000000) },
-      { id: "m3", text: "It's mostly throbbing, especially in the mornings.", sender: "user", timestamp: new Date(Date.now() - 8000000) },
-      { id: "m4", text: "**Noted.** Based on your symptoms, I recommend monitoring your blood pressure. \n\n*   Drink plenty of water\n*   Rest in a dark room\n\nIf it persists, please consult a specialist.", sender: "ai", timestamp: new Date(Date.now() - 7000000) },
-      { id: "m5", text: "Okay, I will try that. Thank you.", sender: "user", timestamp: new Date(Date.now() - 6000000) }
-  ],
-  "session-2": [
-      { id: "m5", text: "The medication seems to be working.", sender: "user", timestamp: new Date() },
-      { id: "m6", text: "That is great news! Have you experienced any side effects?", sender: "ai", timestamp: new Date() }
-  ]
-};
+// Unused mock arrays removed
 
 interface AppointmentRecord {
   id: string;
@@ -94,6 +64,7 @@ interface PatientFirestoreData {
   weight?: string;
   bmi?: string;
   bloodType?: string;
+  genotype?: string;
   history?: string[];
   allergies?: string;
   medications?: string;
@@ -217,20 +188,19 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
     age: patientData?.dob ? Math.floor((Date.now() - new Date(patientData.dob).getTime()) / 31557600000).toString() : "--",
     dob: patientData?.dob || 'YYYY-MM-DD',
     gender: patientData?.gender || "Unknown",
-    height: patientData?.height || "-'-",
-    weight: patientData?.weight || "--- lbs",
-    bmi: patientData?.bmi || "--.-",
-    bloodType: patientData?.bloodType || "--",
+    height: patientData?.height || "Not provided",
+    weight: patientData?.weight || "Not provided",
+    bloodType: patientData?.bloodType || "Not provided",
+    genotype: patientData?.genotype || "Not provided",
     history: patientData?.history || ["No medical history recorded"],
     allergies: patientData?.allergies || ['None declared'],
     medications: patientData?.medications || ['None declared'],
     insurance: patientData?.insurance || 'Not provided',
-    address: patientData?.address || 'Address not provided',
-    emergencyContact: patientData?.emergencyContact || { name: '-', relation: '-', phone: '-' },
+    address: patientData?.address || "Not provided",
     image: patientData?.photoURL || patientData?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(patientData?.name || patientData?.fullName || 'P')}&background=0D8ABC&color=fff`,
     lastVitals: patientData?.lastVitals || { bp: "--/--", heartRate: "-- bpm", temp: "--.-F", oxygen: "--%" },
-    phone: patientData?.phone || patientData?.phoneNumber || "---",
-    email: patientData?.email || "---"
+    phone: patientData?.phone || patientData?.phoneNumber || "Not provided",
+    email: patientData?.email || "Not provided"
   };
   
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -238,6 +208,8 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isSessionDropdownOpen, setIsSessionDropdownOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionDropdownRef = useRef<HTMLDivElement>(null);
@@ -263,37 +235,109 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
     }
   }, [messages, activeSessionId]);
 
-  // Load Chat Sessions (Mock + Firebase Fallback Logic)
+  // Load Chat Sessions from DB
   useEffect(() => {
-    if (activeTab === 'ai-assistant') {
-        // Use Mock data primarily for demo visualization if "nothing is showing"
-        // In a real app, this would be the database success callback
-        setLoadingSessions(true);
-        setTimeout(() => {
-            setChatSessions(MOCK_SESSIONS_DATA);
-            if (MOCK_SESSIONS_DATA.length > 0 && !activeSessionId) {
-                setActiveSessionId(MOCK_SESSIONS_DATA[0].id);
+    const fetchChatSessions = async () => {
+      if (activeTab === 'ai-assistant' && id) {
+          setLoadingSessions(true);
+          try {
+            const sessionsQuery = query(
+              collection(db, "patients", id, "aiConversations"),
+              orderBy("lastUpdated", "desc")
+            );
+            const snap = await getDocs(sessionsQuery);
+            const loadedSessions: ChatSession[] = [];
+            snap.forEach((docSnap) => {
+              const data = docSnap.data();
+              const dateVal = data.lastUpdated?.toDate();
+              loadedSessions.push({
+                id: docSnap.id,
+                title: data.title || "AI Consultation",
+                date: dateVal ? dateVal.toLocaleDateString() : "Unknown",
+                preview: data.summary || "Conversation details...",
+                updatedAt: data.lastUpdated
+              });
+            });
+            
+            // Generate simple AI "Summary" locally directly in the preview if possible
+            setChatSessions(loadedSessions);
+            if (loadedSessions.length > 0 && !activeSessionId) {
+                setActiveSessionId(loadedSessions[0].id);
             }
+          } catch (err) {
+            console.error("Failed to load chat sessions", err);
+          } finally {
             setLoadingSessions(false);
-        }, 500);
-    }
+          }
+      }
+    };
+    fetchChatSessions();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]); // activeSessionId intentionally omitted to prevent session reset on selection
+  }, [activeTab, id]); // activeSessionId intentionally omitted to prevent session reset on selection
 
   // Load Messages when Session Changes
   useEffect(() => {
-    if (activeSessionId) {
-        setLoadingMessages(true);
-        // Simulate fetch delay
-        setTimeout(() => {
-            const sessionMessages = MOCK_MESSAGES_DATA[activeSessionId] || [];
-            setMessages(sessionMessages);
+    const fetchMessages = async () => {
+      if (activeSessionId && id) {
+          setLoadingMessages(true);
+          try {
+            const msgsQuery = query(
+              collection(db, "patients", id, "aiConversations", activeSessionId, "messages"),
+              orderBy("timestamp", "asc")
+            );
+            const snap = await getDocs(msgsQuery);
+            const loadedMessages: Message[] = [];
+            snap.forEach((docSnap) => {
+              const data = docSnap.data();
+              loadedMessages.push({
+                id: docSnap.id,
+                text: data.content || data.text || "",
+                sender: (data.role === 'assistant' || data.sender === 'ai') ? 'ai' : 'user',
+                timestamp: data.timestamp
+              });
+            });
+            setMessages(loadedMessages);
+
+              // AI Summary Logic
+              setAiSummary(null);
+              const activeSessionDoc = await getDoc(doc(db, "patients", id, "aiConversations", activeSessionId));
+              if (activeSessionDoc.exists()) {
+                const sessionData = activeSessionDoc.data();
+                if (sessionData.summary) {
+                  setAiSummary(sessionData.summary);
+                } else if (loadedMessages.length > 0) {
+                  // Generate summary
+                  setIsGeneratingSummary(true);
+                  try {
+                    const prompt = "Please provide a brief, professional summary of the patient's symptoms and the AI's advice based on this conversation:\n" + loadedMessages.map(m => m.sender + ": " + m.text).join("\n");
+                    const result = await model.generateContent(prompt);
+                    const generatedText = await result.response.text();
+                    
+                    setAiSummary(generatedText);
+                    
+                    // Save to Firestore
+                    await updateDoc(doc(db, "patients", id, "aiConversations", activeSessionId), {
+                      summary: generatedText
+                    });
+                  } catch (e) {
+                    console.error("Failed to generate AI summary", e);
+                  } finally {
+                    setIsGeneratingSummary(false);
+                  }
+                }
+              }
+          } catch (err) {
+             console.error("Failed to load messages", err);
+             setMessages([]);
+          } finally {
             setLoadingMessages(false);
-        }, 300);
-    } else {
-        setMessages([]);
-    }
-  }, [activeSessionId]);
+          }
+      } else {
+          setMessages([]);
+      }
+    };
+    fetchMessages();
+  }, [activeSessionId, id]);
 
 
 
@@ -435,22 +479,6 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
                             </div>
                         </div>
                     </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 border-l-4 border-l-red-500">
-                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-red-600">
-                            <AlertCircle size={20} />
-                            Emergency Contact
-                        </h3>
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-red-500 font-bold text-lg">
-                                {patient.emergencyContact.name.charAt(0)}
-                            </div>
-                            <div>
-                                <p className="font-bold text-slate-900">{patient.emergencyContact.name}</p>
-                                <p className="text-sm text-slate-500">{patient.emergencyContact.relation} • {patient.emergencyContact.phone}</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Column 2: Physical Attributes */}
@@ -484,8 +512,8 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
                                 <Activity size={20} />
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500 font-semibold uppercase">BMI</p>
-                                <p className="font-bold text-slate-900">{patient.bmi}</p>
+                                <p className="text-xs text-slate-500 font-semibold uppercase">Genotype</p>
+                                <p className="font-bold text-slate-900">{patient.genotype}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
@@ -584,8 +612,32 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
                             ) : loadingMessages ? (
                                 <div className="flex justify-center p-12"><span className="loading loading-spinner text-[#0A6ED1] loading-md"></span></div>
                             ) : (
-                                <AnimatePresence initial={false}>
-                                    {messages.map((msg) => (
+                                <AnimatePresence initial={false}>                                      {messages.length > 0 && (
+                                        <div className="w-full mb-8 bg-blue-50/50 border border-blue-100 rounded-2xl p-6 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl -mr-10 -mt-10" />
+                                            <div className="flex gap-4 items-start relative z-10">
+                                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                                    <Bot size={22} className="text-[#0A6ED1]" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
+                                                        AI Chat Summary
+                                                        <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Auto-Generated</span>
+                                                    </h4>
+                                                    <div className="text-sm text-slate-600 leading-relaxed space-y-2">
+                                                          {isGeneratingSummary ? (
+                                                            <div className="flex items-center gap-2 text-slate-500">
+                                                              <div className="w-4 h-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin"></div>
+                                                              <span>Generating summary...</span>
+                                                            </div>
+                                                          ) : (
+                                                            <div className="prose prose-sm prose-slate max-w-none"><ReactMarkdown>{aiSummary || "No summary available."}</ReactMarkdown></div>
+                                                          )}
+                                                      </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                      )}                                    {messages.map((msg) => (
                                         <motion.div 
                                             key={msg.id}
                                             initial={{ opacity: 0, y: 10 }}

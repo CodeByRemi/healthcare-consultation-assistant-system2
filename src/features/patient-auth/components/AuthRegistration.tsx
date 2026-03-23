@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaArrowRight } from "react-icons/fa";
 import { toast } from "sonner";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
 import patientimg from "../../../assets/patientreg.png";
@@ -57,7 +57,9 @@ export default function RegisterForm() {
         role: "patient"
       });
 
-      toast.success("Account created successfully!");
+      await sendEmailVerification(user);
+
+      toast.success("Account created successfully! Please check your email to verify your account.");
       navigate("/patient/onboarding");
     } catch (error: any) {
       console.error("Registration error:", error);

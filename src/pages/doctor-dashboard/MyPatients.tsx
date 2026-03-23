@@ -3,10 +3,10 @@ import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { useNavigate } from "react-router-dom";
 import { FaSearch, FaCheck, FaTimes, FaClock, FaEllipsisH, FaUserInjured, FaCommentMedical } from "react-icons/fa";
-import { MessageCircle, User, Bot, Send, Calendar } from "lucide-react";
+
 import { toast } from "sonner";
-import { collection, query, where, getDocs, updateDoc, doc, getDoc, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { collection, query, where, getDocs, updateDoc, doc, getDoc, addDoc, serverTimestamp, orderBy, limit } from "firebase/firestore";
+import { db, model } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
 import DoctorMobileFooter from "./components/v2/DoctorMobileFooter";
 import DoctorPageTransition from "./components/v2/DoctorPageTransition";
@@ -29,11 +29,6 @@ type PatientDetails = {
     bloodType: string;
     genotype: string;
     address: string;
-    emergencyContact: {
-        name: string;
-        relation: string;
-        phone: string;
-    };
 };
 
 type PatientRow = {
@@ -52,12 +47,6 @@ type PatientRow = {
     [key: string]: unknown;
 };
 
-type ChatMessage = {
-    role: string;
-    content: string;
-    timestamp: Date | { toDate: () => Date };
-};
-
 type SelectedPatient = PatientRow & PatientDetails;
 
 const defaultPatientDetails: PatientDetails = {
@@ -72,12 +61,7 @@ const defaultPatientDetails: PatientDetails = {
     weight: "Weight",
     bloodType: "Blood Type",
     genotype: "Genotype",
-    address: "Address",
-    emergencyContact: {
-        name: "Contact Name",
-        relation: "Relationship",
-        phone: "Contact Phone"
-    }
+    address: "Address"
 };
 
 export default function MyPatients() {
@@ -94,11 +78,6 @@ export default function MyPatients() {
   
   // Chat Modal State
     const [selectedPatient, setSelectedPatient] = useState<SelectedPatient | null>(null);
-  const [modalTab, setModalTab] = useState<'details' | 'chat'>('details');
-    const [endingAppointmentId, setEndingAppointmentId] = useState<string | null>(null);
-
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [loadingChat, setLoadingChat] = useState(false);
 
     const fetchChatHistory = async () => {
       setLoadingChat(true);
@@ -184,15 +163,6 @@ export default function MyPatients() {
       setModalTab('details');
   };
 
-    const toDateValue = (timestamp: ChatMessage["timestamp"] | undefined) => {
-        if (!timestamp) return new Date();
-        if (timestamp instanceof Date) return timestamp;
-        if (typeof timestamp === "object" && "toDate" in timestamp && typeof timestamp.toDate === "function") {
-            return timestamp.toDate();
-        }
-        return new Date();
-    };
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -250,15 +220,14 @@ export default function MyPatients() {
                 date: data.date || "Date",
                 
                 // Inject deeper DB fields for the details modal
-                bloodType: pData.bloodType || "--",
+                bloodType: pData.bloodType || pData.bloodGroup || "--",
                 genotype: pData.genotype || "--",
                 height: pData.height || "--",
                 weight: pData.weight || "--",
-                phone: pData.phoneNumber || data.patientPhone || "--",
+                phone: pData.phoneNumber || pData.phone || data.patientPhone || "--",
                 email: pData.email || data.patientEmail || "--",
                 address: pData.address || "--",
-                gender: pData.gender || "--",
-                emergencyContact: pData.emergencyContact || { name: "--", relation: "--", phone: "--" }
+                gender: pData.gender || "--"
             };
 
             if (data.status === 'pending') {
@@ -302,6 +271,44 @@ export default function MyPatients() {
     fetchData();
   }, [currentUser]);
 
+  
+  const generateAndSaveAISummary = async (patientId: string, appointmentId: string) => {
+    try {
+      // 1. Fetch patient's AI chats
+      const convosRef = collection(db, "patients", patientId, "aiConversations");
+      const q = query(convosRef, orderBy("lastUpdated", "desc"), limit(1));
+      const qSnap = await getDocs(q);
+      
+      if (qSnap.empty) return; // No chat history
+      const latestConvoId = qSnap.docs[0].id;
+      
+      const msgsRef = collection(db, "patients", patientId, "aiConversations", latestConvoId, "messages");
+      const msgsSnap = await getDocs(query(msgsRef, orderBy("timestamp", "asc")));
+      
+      if (msgsSnap.empty) return;
+      
+      let chatText = '';
+      msgsSnap.docs.forEach(doc => {
+        const d = doc.data();
+        chatText += `${d.role === 'user' ? 'Patient' : 'AI'}: ${d.content}\n`;
+      });
+      
+      // 2. Generate summary
+      const prompt = `Summarize the following AI consultation history for a doctor to review. Make it concise and highlight the main symptoms, duration, and any important medical context. Do NOT include the full chat.\n\nChat:\n${chatText}`;
+      const result = await model.generateContent(prompt);
+      const summary = result.response.text();
+      
+      // 3. Save to appointment
+      await updateDoc(doc(db, "appointments", appointmentId), {
+        aiChatSummary: summary,
+        aiChatSummaryGeneratedAt: new Date().toISOString()
+      });
+      console.log('AI Chat Summary generated and saved.');
+    } catch (e) {
+      console.error("Error generating AI chat summary:", e);
+    }
+  };
+
   const handleAccept = async (id: string) => {
       try {
           await updateDoc(doc(db, "appointments", id), { status: 'confirmed' });
@@ -309,6 +316,22 @@ export default function MyPatients() {
           // Update local state
           const accepted = requests.find(r => r.id === id);
           if (accepted) {
+              const drName = (accepted['doctorName'] as string) || "your doctor";
+              if (accepted.patientId) {
+                  await addDoc(collection(db, "notifications"), {
+                      userId: accepted.patientId,
+                      type: "appointment",
+                      title: "Appointment Confirmed",
+                      message: `Your appointment with ${drName} has been confirmed.`,
+                      details: id,
+                      read: false,
+                      createdAt: serverTimestamp(),
+                  });
+              }
+
+              if (accepted.shareAIChat) {
+                  if (accepted.patientId) { generateAndSaveAISummary(accepted.patientId, accepted.id); }
+              }
               setRequests(prev => prev.filter(r => r.id !== id));
               setPatients(prev => {
                   // Check if patient already exists
@@ -326,6 +349,21 @@ export default function MyPatients() {
       try {
           await updateDoc(doc(db, "appointments", id), { status: 'cancelled' });
           toast.success("Appointment declined");
+          
+          const declined = requests.find(r => r.id === id);
+          if (declined && declined.patientId) {
+              const drName = (declined['doctorName'] as string) || "your doctor";
+              await addDoc(collection(db, "notifications"), {
+                  userId: declined.patientId,
+                  type: "appointment",
+                  title: "Appointment Cancelled",
+                  message: `Your appointment with ${drName} has been cancelled.`,
+                  details: id,
+                  read: false,
+                  createdAt: serverTimestamp(),
+              });
+          }
+
           setRequests(prev => prev.filter(r => r.id !== id));
       } catch (error) {
           console.error("Error declining appointment:", error);
@@ -333,58 +371,7 @@ export default function MyPatients() {
       }
   };
 
-  const endConsultation = async (appointmentId: string) => {
-      try {
-          setEndingAppointmentId(appointmentId);
-          await updateDoc(doc(db, "appointments", appointmentId), {
-              status: 'completed',
-              consultationEndedByDoctor: true,
-              consultationEndedAt: new Date().toISOString(),
-              allowRating: true,
-              ratingSubmitted: false,
-              updatedAt: new Date().toISOString(),
-          });
 
-          const patientUid = selectedPatient?.patientId;
-          const drName = (selectedPatient?.['doctorName'] as string) || "your doctor";
-          if (patientUid) {
-              await addDoc(collection(db, "notifications"), {
-                  userId: patientUid,
-                  type: "appointment",
-                  title: "Rate Your Doctor",
-                  message: `Your consultation with ${drName} has ended. How was your experience?`,
-                  details: appointmentId,
-                  read: false,
-                  createdAt: serverTimestamp(),
-              });
-          }
-
-          setRequests(prev => prev.filter(r => r.id !== appointmentId));
-          setPatients(prev => prev.map((p) => (
-              p.id === appointmentId ? { ...p, status: 'completed', lastVisit: new Date().toISOString().split('T')[0] } : p
-          )));
-          setSelectedPatient((prev) => (prev && prev.id === appointmentId ? { ...prev, status: 'completed' } : prev));
-
-          toast.success("Consultation ended. Patient has been notified.");
-      } catch (error) {
-          console.error("Error ending consultation:", error);
-          toast.error("Failed to end consultation. Please try again.");
-      } finally {
-          setEndingAppointmentId(null);
-      }
-  };
-
-  const handleEndConsultation = (appointmentId: string) => {
-      toast("Are you sure you want to end consultation?", {
-          description: "This will notify the patient and unlock doctor rating.",
-          action: {
-              label: "End Consultation",
-              onClick: () => {
-                  void endConsultation(appointmentId);
-              },
-          },
-      });
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-['Manrope']">
@@ -600,29 +587,8 @@ export default function MyPatients() {
                     </button>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex border-b border-slate-100 px-6">
-                    <button 
-                        onClick={() => setModalTab('details')}
-                        className={`py-4 px-4 font-semibold text-sm border-b-2 transition-colors ${modalTab === 'details' ? 'border-[#0A6ED1] text-[#0A6ED1]' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
-                    >
-                        Patient Details
-                    </button>
-                    <button 
-                        onClick={() => {
-                            setModalTab('chat');
-                            fetchChatHistory();
-                        }}
-                        className={`py-4 px-4 font-semibold text-sm border-b-2 transition-colors flex items-center gap-2 ${modalTab === 'chat' ? 'border-[#0A6ED1] text-[#0A6ED1]' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
-                    >
-                        AI Chat History
-                        {loadingChat && <div className="w-3 h-3 rounded-full border-2 border-slate-300 border-t-[#0A6ED1] animate-spin"></div>}
-                    </button>
-                </div>
-
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
-                    {modalTab === 'details' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Left Column */}
                             <div className="space-y-6">
@@ -685,17 +651,6 @@ export default function MyPatients() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                                     <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                        <div className="w-1 h-5 bg-red-500 rounded-full"></div>
-                                        Emergency Contact
-                                    </h3>
-                                    <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-                                        <p className="font-bold text-slate-900">{selectedPatient.emergencyContact?.name || "Not provided"}</p>
-                                        <p className="text-sm text-slate-600 mt-1">{selectedPatient.emergencyContact?.relation || "--"} • {selectedPatient.emergencyContact?.phone || "--"}</p>
-                                    </div>
-                                </div>
-
                                 <div className="flex gap-3 pt-2">
                                      <button 
                                         onClick={() => {
@@ -706,91 +661,9 @@ export default function MyPatients() {
                                      >
                                         Start Consultation
                                      </button>
-                                                 <button
-                                                     onClick={() => handleEndConsultation(selectedPatient.id)}
-                                                     disabled={selectedPatient.status?.toLowerCase() === 'completed' || endingAppointmentId === selectedPatient.id}
-                                                     className="w-full py-3 bg-red-50 text-red-700 border border-red-200 rounded-xl font-bold hover:bg-red-100 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                                 >
-                                                     {endingAppointmentId === selectedPatient.id
-                                                        ? 'Ending...'
-                                                        : selectedPatient.status?.toLowerCase() === 'completed'
-                                                          ? 'Consultation Ended'
-                                                          : 'Stop Appointment'}
-                                                 </button>
                                 </div>
                             </div>
                         </div>
-                    ) : (
-                        <div className="h-full flex flex-col bg-slate-50/50 rounded-2xl border border-slate-100 overflow-hidden relative">
-                           {loadingChat ? (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0A6ED1] mb-3"></div>
-                                    <p className="text-slate-500 text-sm font-medium">Loading consultation history...</p>
-                                </div>
-                           ) : null}
-
-                           {chatMessages.length === 0 && !loadingChat ? (
-                                <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                                        <MessageCircle size={24} className="opacity-40" />
-                                    </div>
-                                    <p>No chat history available.</p>
-                                </div>
-                           ) : (
-                                <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                                     <div className="flex items-center justify-center">
-                                        <div className="bg-white px-4 py-1.5 rounded-full border border-slate-200 shadow-sm flex items-center gap-2 text-xs font-semibold text-slate-500">
-                                            <Calendar size={12} className="text-[#0A6ED1]" />
-                                            <span>Consultation Session</span>
-                                            <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                                            <span>{toDateValue(chatMessages[0]?.timestamp).toLocaleDateString()}</span>
-                                        </div>
-                                     </div>
-
-                                     {chatMessages.filter(m => m.role !== 'system').map((msg, idx) => (
-                                        <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                            {msg.role !== 'user' && (
-                                                <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-sm mt-1">
-                                                    <Bot size={16} className="text-[#0A6ED1]" />
-                                                </div>
-                                            )}
-
-                                            <div className={`flex flex-col max-w-[75%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                                <div className={`p-4 rounded-2xl text-[14px] leading-relaxed shadow-sm whitespace-pre-wrap ${
-                                                    msg.role === 'user' 
-                                                    ? 'bg-[#0A6ED1] text-white rounded-tr-none shadow-blue-500/10' 
-                                                    : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
-                                                }`}>
-                                                    {msg.content}
-                                                </div>
-                                                <span className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1 px-1">
-                                                    {toDateValue(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                                    {msg.role === 'user' && <span className="text-[#0A6ED1]">Sent</span>}
-                                                </span>
-                                            </div>
-
-                                            {msg.role === 'user' && (
-                                                <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 mt-1">
-                                                    <User size={16} className="text-[#0A6ED1]" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                    <div className="h-4"></div>
-                                </div>
-                           )}
-                           
-                           {/* Read Only Input Area Visualization */}
-                            <div className="p-4 bg-white border-t border-slate-100 flex items-center gap-3 opacity-60 pointer-events-none select-none grayscale-[0.5]">
-                                <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-400 italic">
-                                    End of consultation history
-                                </div>
-                                <div className="p-3 bg-slate-100 rounded-xl text-slate-400">
-                                    <Send size={18} />
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

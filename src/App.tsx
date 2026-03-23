@@ -1,4 +1,6 @@
 import React from "react";
+import ErrorBoundary from "./components/ErrorBoundary";
+import NotFound from "./pages/common/NotFound";
 import { Routes, Route } from "react-router-dom";
 import Home from "./pages/common/Home";
 import ChooseYourPath from "./pages/common/ChooseYourPath";
@@ -61,7 +63,8 @@ function App() {
   return (
     <>
       <Toaster position="top-center" richColors />
-      <Routes>
+      <ErrorBoundary>
+        <Routes>
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/update-password" element={<AdminRoute><AdminUpdatePassword /></AdminRoute>} />
@@ -107,7 +110,9 @@ function App() {
         <Route path="/doctor/step-3" element={<DoctorRegistrationStep3 />} />
         <Route path="/doctor/step-4" element={<DoctorRegistrationStep4 />} />
         <Route path="/admindashboard" element={<AdminDashboard />} />
-      </Routes>
+        <Route path="*" element={<NotFound />} />
+        </Routes>
+      </ErrorBoundary>
     </>
   );
 }
