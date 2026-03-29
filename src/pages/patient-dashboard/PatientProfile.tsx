@@ -189,6 +189,7 @@ export default function PatientProfile() {
                       disabled={!isEditing}
                       onChange={(e) => setProfileData({...profileData, dob: e.target.value})}
                       className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0A6ED1]/20 disabled:text-slate-500 disabled:bg-slate-100"
+                      max="2026-12-31"
                     />
                   </div>
 

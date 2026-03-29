@@ -164,6 +164,7 @@ export default function PatientOnboarding() {
                         onChange={handleChange}
                         className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0A6ED1] focus:border-transparent"
                         required
+                        max="2026-12-31"
                       />
                     </div>
                     <div className="space-y-2">

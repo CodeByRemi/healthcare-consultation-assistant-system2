@@ -1,6 +1,7 @@
-import { FaUserMd } from "react-icons/fa";
+import { FaUserMd, FaBell } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
+import { useNotifications } from "../../../../context/NotificationContext";
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
@@ -13,6 +14,7 @@ interface HeaderProps {
 
 export default function DoctorHeader({ toggleSidebar }: HeaderProps) {
   const { currentUser } = useAuth();
+  const { unreadCount } = useNotifications();
   const [doctorName, setDoctorName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -63,6 +65,20 @@ export default function DoctorHeader({ toggleSidebar }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
+        <Link 
+          to="/doctor/notifications" 
+          className="relative p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700"
+          title="Notifications"
+        >
+          <FaBell className="w-5 h-5" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+            </span>
+          )}
+        </Link>
+
         <div className="h-8 w-px bg-slate-200 mx-2 hidden md:block"></div>
 
         <Link to="/doctor/profile" className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full hover:bg-slate-50 transition-colors">

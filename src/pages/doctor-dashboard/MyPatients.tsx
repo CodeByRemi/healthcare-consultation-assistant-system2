@@ -77,12 +77,14 @@ export default function MyPatients() {
     const [patients, setPatients] = useState<PatientRow[]>([]);
   
   // Chat Modal State
-    const [selectedPatient, setSelectedPatient] = useState<SelectedPatient | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<SelectedPatient | null>(null);
+  const [modalTab, setModalTab] = useState("overview");
 
   const handlePatientClick = (patient: PatientRow) => {
     const details = defaultPatientDetails;
       const merged: SelectedPatient = { ...details, ...patient };
       setSelectedPatient(merged);
+      setModalTab("overview");
   };
 
 
@@ -481,8 +483,28 @@ export default function MyPatients() {
                     </button>
                 </div>
 
+                {/* Modal Tabs */}
+                <div className="px-6 flex gap-6 border-b border-slate-100 bg-slate-50/50">
+                    <button 
+                        onClick={() => setModalTab("overview")} 
+                        className={`py-3 px-2 font-medium text-sm border-b-2 transition-colors ${modalTab === "overview" ? "border-[#0A6ED1] text-[#0A6ED1]" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                    >
+                        Patient Overview
+                    </button>
+                    {((selectedPatient as any).aiChatSummary || selectedPatient.shareAIChat) && (
+                        <button 
+                            onClick={() => setModalTab("ai-chat")} 
+                            className={`py-3 px-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${modalTab === "ai-chat" ? "border-[#0A6ED1] text-[#0A6ED1]" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                        >
+                            <span className="w-2 h-2 rounded-full bg-[#0A6ED1]"></span>
+                            AI Chat
+                        </button>
+                    )}
+                </div>
+
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 bg-slate-50/30">
+                    {modalTab === "overview" ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Left Column */}
                             <div className="space-y-6">
@@ -558,6 +580,45 @@ export default function MyPatients() {
                                 </div>
                             </div>
                         </div>
+                    ) : modalTab === "ai-chat" ? (
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-h-[300px]">
+                            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <div className="w-1 h-5 bg-[#0A6ED1] rounded-full"></div>
+                                AI Consultation Summary
+                            </h3>
+                            <div className="prose prose-slate max-w-none">
+                                {typeof window !== 'undefined' && (selectedPatient as any).aiChatSummary ? (
+                                    <div className="whitespace-pre-wrap text-slate-700 leading-relaxed">
+                                        {(selectedPatient as any).aiChatSummary}
+                                    </div>
+                                ) : selectedPatient.shareAIChat ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-slate-500 mb-4">Patient consented to share AI assistant history. The summary will be generated once you accept the appointment, or you can generate it now.</p>
+                                        <button 
+                                            onClick={async () => {
+                                                if (selectedPatient.patientId) {
+                                                    toast.info("Generating summary...");
+                                                    await generateAndSaveAISummary(selectedPatient.patientId, selectedPatient.id);
+                                                    setSelectedPatient({...selectedPatient, ...{aiChatSummary: "Summary is being generated in the background. Please accept or close and reopen to see it."}});
+                                                }
+                                            }}
+                                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors"
+                                        >
+                                            Generate Summary Now
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="text-slate-500 italic">No AI discussion summary available for this request.</p>
+                                )}
+                            </div>
+                            {(selectedPatient as any).aiChatSummaryGeneratedAt && (
+                                <div className="mt-6 text-xs text-slate-400 border-t border-slate-100 pt-4 flex items-center gap-2">
+                                    <FaClock />
+                                    Generated on {new Date((selectedPatient as any).aiChatSummaryGeneratedAt).toLocaleString()}
+                                </div>
+                            )}
+                        </div>
+                    ) : null}
                 </div>
             </div>
         </div>
