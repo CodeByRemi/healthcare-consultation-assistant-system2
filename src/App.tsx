@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import NotFound from "./pages/common/NotFound";
 import { Routes, Route } from "react-router-dom";
@@ -60,8 +61,22 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 // In your Routes
   
 function App() {
+  const location = useLocation();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const timer = setTimeout(() => setLoading(false), 250);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
   return (
     <>
+      {loading && (
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        </div>
+      )}
       <Toaster position="top-center" richColors />
       <ErrorBoundary>
         <Routes>

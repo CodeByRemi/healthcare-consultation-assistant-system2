@@ -292,7 +292,7 @@ export default function AppointmentDetails() {
       }
     };
     fetchAppointments();
-  }, []);
+  }, [entity, targetId]);
 
   const recentAppointments = appointments.filter(a => a.status === 'Upcoming' || a.status === 'Present');
   const pastAppointments = appointments.filter(a => a.status === 'Past' || a.status === 'Cancelled');

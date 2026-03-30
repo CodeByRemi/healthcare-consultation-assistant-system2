@@ -8,8 +8,7 @@ import { useAuth } from "../../context/AuthContext";
 interface ChatHistoryItem {
   id: string;
   title: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  lastUpdated: any;
+  lastUpdated: Date | number | null;
 }
 
 const PLACEHOLDER_CHAT_ID = "placeholder-prev-chat";

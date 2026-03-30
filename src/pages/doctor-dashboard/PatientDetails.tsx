@@ -31,8 +31,7 @@ interface Message {
   id: string;
   text: string;
   sender: "user" | "ai";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  timestamp: any; 
+  timestamp: Date | number;
 }
 
 interface ChatSession {
@@ -40,8 +39,7 @@ interface ChatSession {
   title: string;
   date: string;
   preview: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  updatedAt: any;
+  updatedAt: Date | number;
 }
 
 // Unused mock arrays removed
@@ -615,7 +613,7 @@ export default function PatientDetails() { // Dynamic route /doctor/patients/:id
                                         <div className="w-full mb-8 bg-blue-50/50 border border-blue-100 rounded-2xl p-6 relative overflow-hidden">
                                             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl -mr-10 -mt-10" />
                                             <div className="flex gap-4 items-start relative z-10">
-                                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
                                                     <Bot size={22} className="text-[#0A6ED1]" />
                                                 </div>
                                                 <div className="flex-1">

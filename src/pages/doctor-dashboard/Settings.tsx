@@ -298,11 +298,10 @@ export default function DoctorSettings() {
                     <button 
                       onClick={async () => {
                         try {
-                           // Try existing auth logout first
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          if ((currentUser as any)?.logout) {
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              await (currentUser as any).logout();
+                          // Try existing auth logout first
+                          const maybeLogout = (currentUser as unknown) as { logout?: () => Promise<void> };
+                          if (maybeLogout?.logout) {
+                              await maybeLogout.logout();
                           } else {
                               // Fallback to direct firebase signOut if context logout isn't available
                               const { signOut } = await import("firebase/auth");
