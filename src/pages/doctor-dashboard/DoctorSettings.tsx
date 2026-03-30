@@ -144,10 +144,9 @@ export default function DoctorSettings() {
                   <button 
                     onClick={async () => {
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        if ((currentUser as any)?.logout) {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            await (currentUser as any).logout();
+                        const maybeLogout = (currentUser as unknown) as { logout?: () => Promise<void> };
+                        if (maybeLogout?.logout) {
+                            await maybeLogout.logout();
                         } else if (logout) {
                             await logout();
                         }
@@ -225,10 +224,9 @@ export default function DoctorSettings() {
                         <button 
                             onClick={async () => {
                                 try {
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                    if ((currentUser as any)?.logout) {
-                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                        await (currentUser as any).logout();
+                                    const maybeLogout = (currentUser as unknown) as { logout?: () => Promise<void> };
+                                    if (maybeLogout?.logout) {
+                                        await maybeLogout.logout();
                                     } else if (logout) {
                                         await logout();
                                     }

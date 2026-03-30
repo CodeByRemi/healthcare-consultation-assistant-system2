@@ -244,7 +244,8 @@ export default function BookAppointment() {
 
     const [year, month, day] = bookingDate.split('-').map(Number);
     const [timeStr, period] = bookingTime.split(' ');
-    let [hours, minutes] = timeStr.split(':').map(Number);
+    const [parsedHours, minutes] = timeStr.split(':').map(Number);
+    let hours = parsedHours;
     if (period === 'PM' && hours !== 12) hours += 12;
     if (period === 'AM' && hours === 12) hours = 0;
 
@@ -365,7 +366,8 @@ export default function BookAppointment() {
     if (dateString === todayStr) {
         slots = slots.filter(slot => {
             const [time, period] = slot.split(' ');
-            let [hours, minutes] = time.split(':').map(Number);
+            const [parsedHours, minutes] = time.split(':').map(Number);
+            let hours = parsedHours;
             if (period === 'PM' && hours !== 12) hours += 12;
             if (period === 'AM' && hours === 12) hours = 0;
             

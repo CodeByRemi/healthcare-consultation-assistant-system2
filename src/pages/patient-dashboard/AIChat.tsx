@@ -27,15 +27,13 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  timestamp: any; 
+  timestamp: Date | number;
 }
 
 interface ChatHistory {
   id: string;
   title: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  lastUpdated: any;
+  lastUpdated: Date | number;
   isPinned: boolean;
 }
 
@@ -343,10 +341,11 @@ export default function AIChat() {
   const pinnedChats = chatHistory.filter(c => c.isPinned);
   const regularChats = chatHistory.filter(c => !c.isPinned);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const formatTimeAgo = (dateInput: any) => {
+  type TimestampLike = { toDate: () => Date } | Date | string | number;
+
+  const formatTimeAgo = (dateInput: TimestampLike) => {
     if (!dateInput) return '';
-    const date = dateInput.toDate ? dateInput.toDate() : new Date(dateInput);
+    const date = (dateInput as { toDate?: () => Date }).toDate ? (dateInput as { toDate: () => Date }).toDate() : new Date(dateInput);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -357,10 +356,9 @@ export default function AIChat() {
     return `${Math.floor(days / 7)} weeks ago`;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const formatTime = (dateInput: any) => {
+  const formatTime = (dateInput: TimestampLike) => {
     if (!dateInput) return '';
-    const date = dateInput.toDate ? dateInput.toDate() : new Date(dateInput);
+    const date = (dateInput as { toDate?: () => Date }).toDate ? (dateInput as { toDate: () => Date }).toDate() : new Date(dateInput);
     return date.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit'

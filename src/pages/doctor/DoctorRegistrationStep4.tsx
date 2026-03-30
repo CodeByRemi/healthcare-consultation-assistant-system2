@@ -92,7 +92,6 @@ export default function DoctorRegistrationStep4() {
 
       // 3. Create Doctor Document in Firestore
       // We exclude password and raw file object from Firestore
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _p, profilePhoto: _pp, ...doctorProfileData } = prevData;
 
       await setDoc(doc(db, "doctors", user.uid), {
@@ -112,8 +111,7 @@ export default function DoctorRegistrationStep4() {
     } catch (error: unknown) {
       console.error("Registration error:", error);
       let errorMessage = "Failed to submit registration.";
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((error as any).code === 'auth/email-already-in-use') {
+      if ((error as { code?: string }).code === 'auth/email-already-in-use') {
         errorMessage = "Email is already in use.";
       }
       toast.error(errorMessage);

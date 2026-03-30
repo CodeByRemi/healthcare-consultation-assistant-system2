@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import DoctorSidebar from "./components/v2/DoctorSidebar";
 import DoctorHeader from "./components/v2/DoctorHeader";
 import { useNavigate } from "react-router-dom";
@@ -472,7 +473,12 @@ export default function MyPatients() {
                         <div>
                             <h2 className="text-2xl font-bold text-slate-900">{selectedPatient.name}</h2>
                             <div className="flex items-center gap-3 mt-2 text-sm text-slate-500">
-                                <span className="bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm">{selectedPatient.age} yrs</span>
+                                <span className="bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm">
+                                    {/^\s*\d+/i.test(selectedPatient.age.toString())
+                                        ? selectedPatient.age.toString().replace(/\s*yrs?$/i, "") + " yrs"
+                                        : selectedPatient.age
+                                    }
+                                </span>
                                 <span className="bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm capitalize">{selectedPatient.gender}</span>
                                 <span className="text-slate-400">ID: #{selectedPatient.patientId}</span>
                             </div>
@@ -581,7 +587,7 @@ export default function MyPatients() {
                             </div>
                         </div>
                     ) : modalTab === "ai-chat" ? (
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-h-[300px]">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-h-75">
                             <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
                                 <div className="w-1 h-5 bg-[#0A6ED1] rounded-full"></div>
                                 AI Consultation Summary
@@ -589,7 +595,7 @@ export default function MyPatients() {
                             <div className="prose prose-slate max-w-none">
                                 {typeof window !== 'undefined' && (selectedPatient as any).aiChatSummary ? (
                                     <div className="whitespace-pre-wrap text-slate-700 leading-relaxed">
-                                        {(selectedPatient as any).aiChatSummary}
+                                        <ReactMarkdown>{(selectedPatient as any).aiChatSummary}</ReactMarkdown>
                                     </div>
                                 ) : selectedPatient.shareAIChat ? (
                                     <div className="text-center py-8">

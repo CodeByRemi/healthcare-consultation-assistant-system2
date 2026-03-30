@@ -44,8 +44,7 @@ export default function AdminLogin() {
       navigate('/admin'); // Redirect to Admin Dashboard
     } catch (error: unknown) {
       console.error("Login error:", error);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errorCode = (error as any).code;
+      const errorCode = (error as { code?: string }).code;
       let errorMessage = "Invalid credentials.";
       
       if (errorCode === 'auth/user-not-found') errorMessage = "No account found with this email.";

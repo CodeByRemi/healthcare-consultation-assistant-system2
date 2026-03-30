@@ -242,7 +242,7 @@ export default function AdminSettings() {
           </section>
 
           {/* Danger Zone */}
-          <section className="bg-gradient-to-br from-white to-gray-50/50 rounded-2xl shadow-sm border border-gray-200 overflow-hidden md:col-span-2">
+          <section className="bg-linear-to-br from-white to-gray-50/50 rounded-2xl shadow-sm border border-gray-200 overflow-hidden md:col-span-2">
             <div className="border-b border-gray-100 p-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="bg-red-50 p-2.5 rounded-xl text-red-600 border border-red-100">
@@ -262,7 +262,7 @@ export default function AdminSettings() {
                         await signOut(auth);
                         toast.success("Signed out successfully");
                         navigate("/admin/login");
-                      } catch (error) {
+                      } catch {
                         toast.error("Failed to sign out");
                       }
                   }}
